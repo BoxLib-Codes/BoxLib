@@ -14,7 +14,7 @@
 #include <IntVect.H>
 #include <Array.H>
 #include <Amr.H>
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <Utility.H>
 #include <Geometry.H>
 #include <VisMF.H>
@@ -2064,7 +2064,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
     {
         finest_level = m_amr->finestLevel();
     }
-    while (!m_amr->getAmrLevels().defined(finest_level))
+    while (!m_amr->getAmrRegions().defined(finest_level))
     {
         finest_level--;
     }
@@ -4257,11 +4257,11 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     Real      strttime = ParallelDescriptor::second();
     //
     // On startup there are cases where Redistribute() could be called
-    // with a given finestLevel() where that AmrLevel has yet to be defined.
+    // with a given finestLevel() where that AmrRegion has yet to be defined.
     //
     int theEffectiveFinestLevel = m_amr->finestLevel();
 
-    while (!m_amr->getAmrLevels().defined(theEffectiveFinestLevel))
+    while (!m_amr->getAmrRegions().defined(theEffectiveFinestLevel))
         theEffectiveFinestLevel--;
 
     if (m_particles.size() < theEffectiveFinestLevel+1)
@@ -4394,7 +4394,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     if (m_particles.size() > theEffectiveFinestLevel+1)
     {
         //
-        // Looks like we lost an AmrLevel on a regrid.
+        // Looks like we lost an AmrRegion on a regrid.
         //
         if (ParallelDescriptor::IOProcessor())
             std::cout << "ParticleContainer<N>::Redistribute() resizing m_particles from "

@@ -6,15 +6,15 @@
 #include <Box.H>
 #include <Geometry.H>
 #include <Amr.H>
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 
 extern LevelBld* getLevelBld ();
 
 //
-// Builds problem-specific AmrLevels.
+// Builds problem-specific AmrRegions.
 //
 // Abstract base class specifying an interface for building problem-specific
-// AmrLevels.  
+// AmrRegions.  
 //
 
 class LevelBld
@@ -37,20 +37,20 @@ public:
     virtual void variableCleanUp () = 0;
     //
     // This is a virtual constructor for types derived
-    // from AmrLevel.  The derived type is initialized
+    // from AmrRegion.  The derived type is initialized
     // with the default constructor.
     // This is a pure virtual function and hence MUST
     // be implemented by derived classes.
     //
-    virtual AmrLevel* operator() () = 0;
+    virtual AmrRegion* operator() () = 0;
     //
     // This is a virtual constructor for types derived
-    // from AmrLevel.  The derived type is initialized
+    // from AmrRegion.  The derived type is initialized
     // with the five specified variables.
     // This is a pure virtual function and hence MUST
     // be implemented by derived classes.
     //
-    virtual AmrLevel* operator() (Amr&            papa,
+    virtual AmrRegion* operator() (Amr&            papa,
                                   int             lev,
                                   const Geometry& geom_lev,
                                   const BoxArray& ba,

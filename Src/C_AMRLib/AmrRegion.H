@@ -1,6 +1,6 @@
 
-#ifndef _AmrLevel_H_
-#define _AmrLevel_H_ 
+#ifndef _AmrRegion_H_
+#define _AmrRegion_H_ 
 
 #include <REAL.H>
 #include <Box.H>
@@ -26,11 +26,11 @@ class TagBoxArray;
 //
 // Virtual base class for managing individual levels.
 //
-// AmrLevel functions both as a container for state data on a level
+// AmrRegion functions both as a container for state data on a level
 // and also manages the advancement of data in time.
 //
 
-class AmrLevel
+class AmrRegion
 {
   friend class FillPatchIterator;
   friend class FillPatchIteratorHelper;
@@ -48,7 +48,7 @@ public:
     //
     // The destructor.
     //
-    virtual ~AmrLevel ();
+    virtual ~AmrRegion ();
     //
     // A string written as the first item in writePlotFile() at
     // level zero. This MUST be defined by each derived class.
@@ -179,13 +179,13 @@ public:
     //
     virtual void removeOldData ();
     //
-    // Init data on this level from another AmrLevel (during regrid).
+    // Init data on this level from another AmrRegion (during regrid).
     // This is a pure virtual function and hence MUST be
     // implemented by derived classes.
     //
-    virtual void init (AmrLevel &old) = 0;
+    virtual void init (AmrRegion &old) = 0;
     //
-    // Init data on this level after regridding if old AmrLevel
+    // Init data on this level after regridding if old AmrRegion
     // did not previously exist. This is a pure virtual function
     // and hence MUST be implemented by derived classes.
     //
@@ -195,7 +195,7 @@ public:
     //
     void reset ();
     //
-    // Returns this AmrLevel.
+    // Returns this AmrRegion.
     //
     int Level () const;
     //
@@ -348,9 +348,9 @@ protected:
     //
     // The constructors -- for derived classes.
     //
-    AmrLevel ();
+    AmrRegion ();
 
-    AmrLevel (Amr&            papa,
+    AmrRegion (Amr&            papa,
               int             lev,
               const Geometry& level_geom,
               const BoxArray& bl,
@@ -365,7 +365,7 @@ protected:
     int level;                        // AMR level (0 is coarsest).
     Geometry geom;                    // Geom at this level.
     BoxArray grids;                   // Cell-centered locations of grids.
-    Amr* parent;                      // Pointer to parent AMR structure.
+    Amr* master;                      // Pointer to master AMR structure.
     IntVect crse_ratio;               // Refinement ratio to coarser level.
     IntVect fine_ratio;               // Refinement ratio to finer level.
     static DeriveList derive_lst;     // List of derived quantities.
@@ -379,8 +379,8 @@ private:
     //
     // Disallowed.
     //
-    AmrLevel (const AmrLevel&);
-    AmrLevel& operator = (const AmrLevel&);
+    AmrRegion (const AmrRegion&);
+    AmrRegion& operator = (const AmrRegion&);
 };
 
 //
@@ -394,10 +394,10 @@ class FillPatchIterator
 {
   public:
 
-    FillPatchIterator (AmrLevel& amrlevel,
+    FillPatchIterator (AmrRegion& amrlevel,
                        MultiFab& leveldata);
 
-    FillPatchIterator (AmrLevel& amrlevel,
+    FillPatchIterator (AmrRegion& amrlevel,
                        MultiFab& leveldata,
                        int       boxGrow,
                        Real      time,
@@ -431,7 +431,7 @@ class FillPatchIterator
     //
     // The data.
     //
-    AmrLevel&                         m_amrlevel;
+    AmrRegion&                         m_amrlevel;
     MultiFab&                         m_leveldata;
     std::vector< std::pair<int,int> > m_range;
     MultiFab                          m_fabs;
@@ -446,10 +446,10 @@ public:
 
     friend class FillPatchIterator;
 
-    FillPatchIteratorHelper (AmrLevel& amrlevel,
+    FillPatchIteratorHelper (AmrRegion& amrlevel,
                              MultiFab& leveldata);
 
-    FillPatchIteratorHelper (AmrLevel&     amrlevel,
+    FillPatchIteratorHelper (AmrRegion&     amrlevel,
                              MultiFab&     leveldata,
                              int           boxGrow,
                              Real          time,
@@ -481,7 +481,7 @@ private:
     //
     // The data.
     //
-    AmrLevel&                    m_amrlevel;
+    AmrRegion&                    m_amrlevel;
     MultiFab&                    m_leveldata;
     MultiFabCopyDescriptor       m_mfcd;
     Array<Array<MultiFabId> >    m_mfid;     // [level][oldnew]
@@ -501,86 +501,86 @@ private:
 
 inline
 int
-AmrLevel::Level () const
+AmrRegion::Level () const
 {
     return level;
 }
 
 inline
 const BoxArray&
-AmrLevel::boxArray () const
+AmrRegion::boxArray () const
 {
     return grids;
 }
 
 inline
 int
-AmrLevel::numGrids () const
+AmrRegion::numGrids () const
 {
     return grids.size();
 }
 
 inline
 const Box&
-AmrLevel::Domain () const
+AmrRegion::Domain () const
 {
     return geom.Domain();
 }
 
 inline
 int
-AmrLevel::nStep () const
+AmrRegion::nStep () const
 {
-    return parent->levelSteps(level);
+    return master->levelSteps(level);
 }
 
 inline
 const Geometry&
-AmrLevel::Geom () const
+AmrRegion::Geom () const
 {
     return geom;
 }
 
 inline
 StateData&
-AmrLevel::get_state_data (int state_indx)
+AmrRegion::get_state_data (int state_indx)
 {
     return state[state_indx];
 }
 
 inline
 MultiFab&
-AmrLevel::get_old_data (int state_indx)
+AmrRegion::get_old_data (int state_indx)
 {
     return state[state_indx].oldData();
 }
 
 inline
 const MultiFab&
-AmrLevel::get_old_data (int state_indx) const
+AmrRegion::get_old_data (int state_indx) const
 {
     return state[state_indx].oldData();
 }
 
 inline
 MultiFab&
-AmrLevel::get_new_data (int state_indx)
+AmrRegion::get_new_data (int state_indx)
 {
     return state[state_indx].newData();
 }
 
 inline
 const MultiFab&
-AmrLevel::get_new_data (int state_indx) const
+AmrRegion::get_new_data (int state_indx) const
 {
     return state[state_indx].newData();
 }
 
 inline
 const DescriptorList&
-AmrLevel::get_desc_lst ()
+AmrRegion::get_desc_lst ()
 {
     return desc_lst;
 }
 
-#endif /*_AmrLevel_H_*/
+#endif /*_AmrRegion_H_*/

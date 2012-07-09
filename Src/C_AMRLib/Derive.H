@@ -33,7 +33,7 @@ extern "C"
 // Computes quantities derived from state data.
 //
 // DeriveRec is designed to compute quantities which can be derived
-// from the state data contained in AmrLevel and its derivatives. Some
+// from the state data contained in AmrRegion and its derivatives. Some
 // examples might be kinetic energy, vorticity, concentration gradients ...
 //
 
@@ -138,7 +138,7 @@ protected:
 
     void buildBC (const DescriptorList& d_list);
     //
-    // An element of a linked list to point to state quantities in AmrLevels.
+    // An element of a linked list to point to state quantities in AmrRegions.
     //
     struct StateRange
     {

@@ -13,7 +13,7 @@
 #include <BoxDomain.H>
 #include <Cluster.H>
 #include <LevelBld.H>
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <PROB_AMR_F.H>
 #include <Amr.H>
 #include <ParallelDescriptor.H>
@@ -131,8 +131,8 @@ Amr::setDtMin (const Array<Real>& dt_min_in)
         dt_min[i] = dt_min_in[i];
 }
 
-PArray<AmrLevel>&
-Amr::getAmrLevels ()
+PArray<AmrRegion>&
+Amr::getAmrRegions ()
 {
     return amr_level;
 }
@@ -493,7 +493,7 @@ void
 Amr::fillStatePlotVarList ()
 {
     state_plot_vars.clear();
-    const DescriptorList& desc_lst = AmrLevel::get_desc_lst();
+    const DescriptorList& desc_lst = AmrRegion::get_desc_lst();
     for (int typ = 0; typ < desc_lst.size(); typ++)
         for (int comp = 0; comp < desc_lst[typ].nComp();comp++)
             if (desc_lst[typ].getType() == IndexType::TheCellType())
@@ -538,7 +538,7 @@ void
 Amr::fillDerivePlotVarList ()
 {
     derive_plot_vars.clear();
-    DeriveList& derive_lst = AmrLevel::get_derive_lst();
+    DeriveList& derive_lst = AmrRegion::get_derive_lst();
     std::list<DeriveRec>& dlist = derive_lst.dlist();
     for (std::list<DeriveRec>::const_iterator it = dlist.begin(), End = dlist.end();
          it != End;
@@ -1385,7 +1385,7 @@ Amr::checkPoint ()
     //
     // Dump out any SlabStats MultiFabs.
     //
-    AmrLevel::get_slabstat_lst().checkPoint(getAmrLevels(), level_steps[0]);
+    AmrRegion::get_slabstat_lst().checkPoint(getAmrRegions(), level_steps[0]);
 #endif
     //
     // Don't forget to reset FAB format.
@@ -1460,7 +1460,7 @@ Amr::timeStep (int  level,
             //
             // Construct skeleton of new level.
             //
-            AmrLevel* a = (*levelbld)(*this,0,geom[0],lev0,cumtime);
+            AmrRegion* a = (*levelbld)(*this,0,geom[0],lev0,cumtime);
 
             a->init(amr_level[0]);
             amr_level.clear(0);
@@ -1577,7 +1577,7 @@ Amr::timeStep (int  level,
 #endif
 
 #ifdef USE_SLABSTAT
-    AmrLevel::get_slabstat_lst().update(amr_level[level],time,dt_level[level]);
+    AmrRegion::get_slabstat_lst().update(amr_level[level],time,dt_level[level]);
 #endif
     //
     // Advance grids at higher level.
@@ -1886,7 +1886,7 @@ Amr::regrid (int  lbase,
         //
         // Construct skeleton of new level.
         //
-        AmrLevel* a = (*levelbld)(*this,lev,geom[lev],new_grid_places[lev],cumtime);
+        AmrRegion* a = (*levelbld)(*this,lev,geom[lev],new_grid_places[lev],cumtime);
 
         if (initial)
         {
@@ -2491,7 +2491,7 @@ Amr::bldFineLevels (Real strt_time)
         //
         finest_level = new_finest;
 
-        AmrLevel* level = (*levelbld)(*this,
+        AmrRegion* level = (*levelbld)(*this,
                                       new_finest,
                                       geom[new_finest],
                                       grids[new_finest],

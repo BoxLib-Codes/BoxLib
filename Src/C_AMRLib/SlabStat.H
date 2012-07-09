@@ -9,7 +9,7 @@
 //
 // Forward declaration.
 //
-class AmrLevel;
+class AmrRegion;
 
 extern "C"
 {
@@ -200,11 +200,11 @@ public:
     //
     // Update the statistics in the list.
     //
-    void update (AmrLevel& amrlevel, Real time, Real dt);
+    void update (AmrRegion& amrlevel, Real time, Real dt);
     //
     // Write out any SlabStats in the list.
     //
-    void checkPoint (PArray<AmrLevel>& amrLevels, int level0_step);
+    void checkPoint (PArray<AmrRegion>& amrLevels, int level0_step);
 
     std::list<SlabStatRec*>& list ();
 

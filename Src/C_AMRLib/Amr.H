@@ -14,7 +14,7 @@
 #include <StationData.H>
 #endif
 
-class AmrLevel;
+class AmrRegion;
 class LevelBld;
 class BoxDomain;
 
@@ -24,7 +24,7 @@ class BoxDomain;
 //
 // The Amr class is designed to manage parts of the computation  which do
 // not belong on a single level, like establishing and updating the hierarchy
-// of levels, global timestepping, and managing the different AmrLevels
+// of levels, global timestepping, and managing the different AmrRegions
 //
 
 class Amr
@@ -224,13 +224,13 @@ public:
     //
     const BoxArray& boxArray (int lev) const;
     //
-    // AmrLevel lev.
+    // AmrRegion lev.
     //
-    AmrLevel&  getLevel (int lev);
+    AmrRegion&  getLevel (int lev);
     //
-    // PArray of AmrLevels.
+    // PArray of AmrRegions.
     //
-    PArray<AmrLevel>& getAmrLevels ();
+    PArray<AmrRegion>& getAmrRegions ();
     //
     // Total number of cells.
     //
@@ -384,7 +384,7 @@ protected:
     int              max_level;    // Maximum allowed level.
     int              finest_level; // Current finest level.
     Array<IntVect>   ref_ratio;    // Refinement ratios [0:finest_level-1]
-    PArray<AmrLevel> amr_level;    // Array of levels
+    PArray<AmrRegion> amr_level;    // Array of levels
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Array<Real>      dt_level;     // Timestep at this level.
@@ -440,7 +440,7 @@ private:
 };
 
 inline
-AmrLevel&
+AmrRegion&
 Amr::getLevel (int lev)
 {
     return amr_level[lev];

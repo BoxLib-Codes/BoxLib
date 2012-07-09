@@ -14,7 +14,7 @@
 //
 // Forward declaration.
 //
-class AmrLevel;
+class AmrRegion;
 
 struct StationRec
 {
@@ -44,17 +44,17 @@ public:
     //
     // Data files have the form: "Station/stn_CPU_NNNN"
     //
-    void init (const PArray<AmrLevel>& levels, const int finestlevel);
+    void init (const PArray<AmrRegion>& levels, const int finestlevel);
     //
     // Collect data for all station points at level and write to station file.
     //
     void report (Real            time,
                  int             level,
-                 const AmrLevel& amrlevel);
+                 const AmrRegion& amrlevel);
     //
     // Locate finest level grid for each station point.
     //
-    void findGrid (const PArray<AmrLevel>& levels,
+    void findGrid (const PArray<AmrRegion>& levels,
                    const Array<Geometry>&  geoms);
 private:
 

@@ -1,6 +1,6 @@
 
 #include <winstd.H>
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <ParmParse.H>
 #include <SlabStat.H>
 #include <Utility.H>
@@ -259,7 +259,7 @@ SlabStatList::list ()
 }
 
 void
-SlabStatList::update (AmrLevel& amrlevel,
+SlabStatList::update (AmrRegion& amrlevel,
                       Real      time,
                       Real      dt)
 {
@@ -300,7 +300,7 @@ SlabStatList::update (AmrLevel& amrlevel,
 }
 
 void
-SlabStatList::checkPoint (PArray<AmrLevel>& amrLevels,
+SlabStatList::checkPoint (PArray<AmrRegion>& amrLevels,
                           int               level0_step)
 {
     if (m_list.empty()) return;

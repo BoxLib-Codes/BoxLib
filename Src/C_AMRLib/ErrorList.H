@@ -35,7 +35,7 @@ extern "C"
 //
 //
 // ErrorRec is designed to tag cells for regridding based on the state
-// data contained in AmrLevel and its derivatives.  It is conceivable that
+// data contained in AmrRegion and its derivatives.  It is conceivable that
 // actual error tagging will be through derivation, so provision is made
 // for this as well.
 //

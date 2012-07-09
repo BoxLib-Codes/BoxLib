@@ -2,33 +2,33 @@
 #include <winstd.H>
 #include <sstream>
 
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <Derive.H>
 #include <ParallelDescriptor.H>
 #include <Utility.H>
 #include <ParmParse.H>
 
-DescriptorList AmrLevel::desc_lst;
-DeriveList     AmrLevel::derive_lst;
+DescriptorList AmrRegion::desc_lst;
+DeriveList     AmrRegion::derive_lst;
 
 #ifdef USE_SLABSTAT
-SlabStatList   AmrLevel::slabstat_lst;
+SlabStatList   AmrRegion::slabstat_lst;
 #endif
 
 void
-AmrLevel::postCoarseTimeStep (Real time)
+AmrRegion::postCoarseTimeStep (Real time)
 {}
 
 #ifdef USE_SLABSTAT
 SlabStatList&
-AmrLevel::get_slabstat_lst ()
+AmrRegion::get_slabstat_lst ()
 {
     return slabstat_lst;
 }
 #endif
 
 void
-AmrLevel::set_preferred_boundary_values (MultiFab& S,
+AmrRegion::set_preferred_boundary_values (MultiFab& S,
                                          int       state_index,
                                          int       scomp,
                                          int       dcomp,
@@ -37,23 +37,23 @@ AmrLevel::set_preferred_boundary_values (MultiFab& S,
 {}
 
 DeriveList&
-AmrLevel::get_derive_lst ()
+AmrRegion::get_derive_lst ()
 {
     return derive_lst;
 }
 
 void
-AmrLevel::manual_tags_placement (TagBoxArray&    tags,
+AmrRegion::manual_tags_placement (TagBoxArray&    tags,
                                  Array<IntVect>& bf_lev)
 {}
 
-AmrLevel::AmrLevel ()
+AmrRegion::AmrRegion ()
 {
-   parent = 0;
+   master = 0;
    level = -1;
 }
 
-AmrLevel::AmrLevel (Amr&            papa,
+AmrRegion::AmrRegion (Amr&            papa,
                     int             lev,
                     const Geometry& level_geom,
                     const BoxArray& ba,
@@ -63,18 +63,18 @@ AmrLevel::AmrLevel (Amr&            papa,
     grids(ba)
 {
     level  = lev;
-    parent = &papa;
+    master = &papa;
 
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
 
     if (level > 0)
     {
-        crse_ratio = parent->refRatio(level-1);
+        crse_ratio = master->refRatio(level-1);
     }
-    if (level < parent->maxLevel())
+    if (level < master->maxLevel())
     {
-        fine_ratio = parent->refRatio(level);
+        fine_ratio = master->refRatio(level);
     }
 
     state.resize(desc_lst.size());
@@ -85,18 +85,18 @@ AmrLevel::AmrLevel (Amr&            papa,
                         grids,
                         desc_lst[i],
                         time,
-                        parent->dtLevel(lev));
+                        master->dtLevel(lev));
     }
 
     finishConstructor();
 }
 
 void
-AmrLevel::restart (Amr&          papa,
+AmrRegion::restart (Amr&          papa,
                    std::istream& is,
 		   bool          bReadSpecial)
 {
-    parent = &papa;
+    master = &papa;
 
     is >> level;
     is >> geom;
@@ -106,11 +106,11 @@ AmrLevel::restart (Amr&          papa,
 
     if (level > 0)
     {
-        crse_ratio = parent->refRatio(level-1);
+        crse_ratio = master->refRatio(level-1);
     }
-    if (level < parent->maxLevel())
+    if (level < master->maxLevel())
     {
-        fine_ratio = parent->refRatio(level);
+        fine_ratio = master->refRatio(level);
     }
 
     if (bReadSpecial)
@@ -137,10 +137,10 @@ AmrLevel::restart (Amr&          papa,
 }
 
 void
-AmrLevel::finishConstructor () {}
+AmrRegion::finishConstructor () {}
 
 void
-AmrLevel::setTimeLevel (Real time,
+AmrRegion::setTimeLevel (Real time,
                         Real dt_old,
                         Real dt_new)
 {
@@ -151,7 +151,7 @@ AmrLevel::setTimeLevel (Real time,
 }
 
 bool
-AmrLevel::isStateVariable (const std::string& name,
+AmrRegion::isStateVariable (const std::string& name,
                            int&           typ,
                            int&            n)
 {
@@ -169,7 +169,7 @@ AmrLevel::isStateVariable (const std::string& name,
 }
 
 long
-AmrLevel::countCells () const
+AmrRegion::countCells () const
 {
     long cnt = 0;
     for (int i = 0, N = grids.size(); i < N; i++)
@@ -180,7 +180,7 @@ AmrLevel::countCells () const
 }
 
 void
-AmrLevel::checkPoint (const std::string& dir,
+AmrRegion::checkPoint (const std::string& dir,
                       std::ostream&      os,
                       VisMF::How         how,
                       bool               dump_old)
@@ -237,13 +237,13 @@ AmrLevel::checkPoint (const std::string& dir,
     }
 }
 
-AmrLevel::~AmrLevel ()
+AmrRegion::~AmrRegion ()
 {
-    parent = 0;
+    master = 0;
 }
 
 void
-AmrLevel::allocOldData ()
+AmrRegion::allocOldData ()
 {
     for (int i = 0; i < desc_lst.size(); i++)
     {
@@ -252,7 +252,7 @@ AmrLevel::allocOldData ()
 }
 
 void
-AmrLevel::removeOldData ()
+AmrRegion::removeOldData ()
 {
     for (int i = 0; i < desc_lst.size(); i++)
     {
@@ -261,7 +261,7 @@ AmrLevel::removeOldData ()
 }
 
 void
-AmrLevel::reset ()
+AmrRegion::reset ()
 {
     for (int i = 0; i < desc_lst.size(); i++)
     {
@@ -270,7 +270,7 @@ AmrLevel::reset ()
 }
 
 MultiFab&
-AmrLevel::get_data (int  state_indx,
+AmrRegion::get_data (int  state_indx,
                     Real time)
 {
     const Real old_time = state[state_indx].prevTime();
@@ -294,7 +294,7 @@ AmrLevel::get_data (int  state_indx,
 }
 
 void
-AmrLevel::setPhysBoundaryValues (FArrayBox& dest,
+AmrRegion::setPhysBoundaryValues (FArrayBox& dest,
                                  int        state_indx,
                                  Real       time,
                                  int        dest_comp,
@@ -305,7 +305,7 @@ AmrLevel::setPhysBoundaryValues (FArrayBox& dest,
                                    geom.ProbDomain(),dest_comp,src_comp,num_comp);
 }
 
-FillPatchIteratorHelper::FillPatchIteratorHelper (AmrLevel& amrlevel,
+FillPatchIteratorHelper::FillPatchIteratorHelper (AmrRegion& amrlevel,
                                                   MultiFab& leveldata)
     :
     MFIter(leveldata),
@@ -319,7 +319,7 @@ FillPatchIteratorHelper::FillPatchIteratorHelper (AmrLevel& amrlevel,
     m_init(false)
 {}
 
-FillPatchIterator::FillPatchIterator (AmrLevel& amrlevel,
+FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
                                       MultiFab& leveldata)
     :
     MFIter(leveldata),
@@ -328,7 +328,7 @@ FillPatchIterator::FillPatchIterator (AmrLevel& amrlevel,
     m_ncomp(0)
 {}
 
-FillPatchIteratorHelper::FillPatchIteratorHelper (AmrLevel&     amrlevel,
+FillPatchIteratorHelper::FillPatchIteratorHelper (AmrRegion&     amrlevel,
                                                   MultiFab&     leveldata,
                                                   int           boxGrow,
                                                   Real          time,
@@ -355,7 +355,7 @@ FillPatchIteratorHelper::FillPatchIteratorHelper (AmrLevel&     amrlevel,
     Initialize(boxGrow,time,index,scomp,ncomp,mapper);
 }
 
-FillPatchIterator::FillPatchIterator (AmrLevel& amrlevel,
+FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
                                       MultiFab& leveldata,
                                       int       boxGrow,
                                       Real      time,
@@ -370,8 +370,8 @@ FillPatchIterator::FillPatchIterator (AmrLevel& amrlevel,
 {
     BL_ASSERT(scomp >= 0);
     BL_ASSERT(ncomp >= 1);
-    BL_ASSERT(AmrLevel::desc_lst[index].inRange(scomp,ncomp));
-    BL_ASSERT(0 <= index && index < AmrLevel::desc_lst.size());
+    BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
+    BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
 
     Initialize(boxGrow,time,index,scomp,ncomp);
 }
@@ -400,8 +400,8 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     BL_ASSERT(mapper);
     BL_ASSERT(scomp >= 0);
     BL_ASSERT(ncomp >= 1);
-    BL_ASSERT(AmrLevel::desc_lst[index].inRange(scomp,ncomp));
-    BL_ASSERT(0 <= index && index < AmrLevel::desc_lst.size());
+    BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
+    BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
 
     m_map          = mapper;
     m_time         = time;
@@ -412,15 +412,15 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     m_FixUpCorners = NeedToTouchUpPhysCorners(m_amrlevel.geom);
 
     const int         MyProc     = ParallelDescriptor::MyProc();
-    PArray<AmrLevel>& amrLevels  = m_amrlevel.parent->getAmrLevels();
-    const AmrLevel&   topLevel   = amrLevels[m_amrlevel.level];
+    PArray<AmrRegion>& amrLevels  = m_amrlevel.master->getAmrRegions();
+    const AmrRegion&   topLevel   = amrLevels[m_amrlevel.level];
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
-    const bool        extrap     = AmrLevel::desc_lst[m_index].extrap();
+    const bool        extrap     = AmrRegion::desc_lst[m_index].extrap();
     //
     // Check that the interpolaters are identical.
     //
-    BL_ASSERT(AmrLevel::desc_lst[m_index].identicalInterps(scomp,ncomp));
+    BL_ASSERT(AmrRegion::desc_lst[m_index].identicalInterps(scomp,ncomp));
 
     for (int l = 0; l <= m_amrlevel.level; ++l)
     {
@@ -627,9 +627,9 @@ FillPatchIterator::Initialize (int  boxGrow,
 
     BL_ASSERT(scomp >= 0);
     BL_ASSERT(ncomp >= 1);
-    BL_ASSERT(0 <= index && index < AmrLevel::desc_lst.size());
+    BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
 
-    const StateDescriptor& desc = AmrLevel::desc_lst[index];
+    const StateDescriptor& desc = AmrRegion::desc_lst[index];
 
     m_ncomp = ncomp;
     m_range = desc.sameInterps(scomp,ncomp);
@@ -711,7 +711,7 @@ HasPhysBndry (const Box&      b,
 static
 void
 FixUpPhysCorners (FArrayBox&      fab,
-                  AmrLevel&       TheLevel,
+                  AmrRegion&       TheLevel,
                   int             state_indx,
                   Real            time,
                   int             scomp,
@@ -804,8 +804,8 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     Array<IntVect>             pshifts(27);
     Array<BCRec>               bcr(m_ncomp);
     Array< PArray<FArrayBox> > cfab(m_amrlevel.level+1);
-    const bool                 extrap    = AmrLevel::desc_lst[m_index].extrap();
-    PArray<AmrLevel>&          amrLevels = m_amrlevel.parent->getAmrLevels();
+    const bool                 extrap    = AmrRegion::desc_lst[m_index].extrap();
+    PArray<AmrRegion>&          amrLevels = m_amrlevel.master->getAmrRegions();
 
 #ifndef NDEBUG
     //
@@ -854,7 +854,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     //
     for (int l = 0; l < m_amrlevel.level; l++)
     {
-        AmrLevel&          TheLevel   = amrLevels[l];
+        AmrRegion&          TheLevel   = amrLevels[l];
         StateData&         TheState   = TheLevel.state[m_index];
         PArray<FArrayBox>& CrseFabs   = cfab[l];
         const Geometry&    TheGeom    = TheLevel.geom;
@@ -930,7 +930,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
         StateData&          fState        = amrLevels[l+1].state[m_index];
         const Box&          fDomain       = fState.getDomain();
         PArray<FArrayBox>&  FinerCrseFabs = cfab[l+1];
-        const Array<BCRec>& theBCs        = AmrLevel::desc_lst[m_index].getBCs();
+        const Array<BCRec>& theBCs        = AmrRegion::desc_lst[m_index].getBCs();
 
         FArrayBox finefab, crsefab;
 
@@ -1071,7 +1071,7 @@ FillPatchIteratorHelper::~FillPatchIteratorHelper () {}
 FillPatchIterator::~FillPatchIterator () {}
 
 void
-AmrLevel::FillCoarsePatch (MultiFab& mf,
+AmrRegion::FillCoarsePatch (MultiFab& mf,
                            int       dcomp,
                            Real      time,
                            int       index,
@@ -1090,7 +1090,7 @@ AmrLevel::FillCoarsePatch (MultiFab& mf,
     const StateDescriptor&  desc    = desc_lst[index];
     const Box&              pdomain = state[index].getDomain();
     const BoxArray&         mf_BA   = mf.boxArray();
-    AmrLevel&               clev    = parent->getLevel(level-1);
+    AmrRegion&               clev    = master->getLevel(level-1);
 
     std::vector< std::pair<int,int> > ranges  = desc.sameInterps(scomp,ncomp);
 
@@ -1140,7 +1140,7 @@ AmrLevel::FillCoarsePatch (MultiFab& mf,
 }
 
 MultiFab*
-AmrLevel::derive (const std::string& name,
+AmrRegion::derive (const std::string& name,
                   Real           time,
                   int            ngrow)
 {
@@ -1208,7 +1208,7 @@ AmrLevel::derive (const std::string& name,
             const Real* dx      = geom.CellSize();
             const int*  bcr     = rec->getBC();
             const Real* xlo     = gridloc.lo();
-            Real        dt      = parent->dtLevel(level);
+            Real        dt      = master->dtLevel(level);
 
             rec->derFunc()(ddat,ARLIM(dlo),ARLIM(dhi),&n_der,
                            cdat,ARLIM(clo),ARLIM(chi),&n_state,
@@ -1221,7 +1221,7 @@ AmrLevel::derive (const std::string& name,
         //
         // If we got here, cannot derive given name.
         //
-        std::string msg("AmrLevel::derive(MultiFab*): unknown variable: ");
+        std::string msg("AmrRegion::derive(MultiFab*): unknown variable: ");
         msg += name;
         BoxLib::Error(msg.c_str());
     }
@@ -1230,7 +1230,7 @@ AmrLevel::derive (const std::string& name,
 }
 
 void
-AmrLevel::derive (const std::string& name,
+AmrRegion::derive (const std::string& name,
                   Real           time,
                   MultiFab&      mf,
                   int            dcomp)
@@ -1295,7 +1295,7 @@ AmrLevel::derive (const std::string& name,
             const int*  bcr     = rec->getBC();
             const RealBox temp  = RealBox(mf[idx].box(),geom.CellSize(),geom.ProbLo());
             const Real* xlo     = temp.lo();
-            Real        dt      = parent->dtLevel(level);
+            Real        dt      = master->dtLevel(level);
 
             rec->derFunc()(ddat,ARLIM(dlo),ARLIM(dhi),&n_der,
                            cdat,ARLIM(clo),ARLIM(chi),&n_state,
@@ -1308,14 +1308,14 @@ AmrLevel::derive (const std::string& name,
         //
         // If we got here, cannot derive given name.
         //
-        std::string msg("AmrLevel::derive(MultiFab*): unknown variable: ");
+        std::string msg("AmrRegion::derive(MultiFab*): unknown variable: ");
         msg += name;
         BoxLib::Error(msg.c_str());
     }
 }
 
 Array<int>
-AmrLevel::getBCArray (int State_Type,
+AmrRegion::getBCArray (int State_Type,
                       int gridno,
                       int strt_comp,
                       int ncomp)
@@ -1333,13 +1333,13 @@ AmrLevel::getBCArray (int State_Type,
 }
 
 int
-AmrLevel::okToRegrid ()
+AmrRegion::okToRegrid ()
 {
     return true;
 }
 
 void
-AmrLevel::setPlotVariables ()
+AmrRegion::setPlotVariables ()
 {
     ParmParse pp("amr");
 
@@ -1354,11 +1354,11 @@ AmrLevel::setPlotVariables ()
             pp.get("plot_vars", nm, i);
 
             if (nm == "ALL") 
-                parent->fillStatePlotVarList();
+                master->fillStatePlotVarList();
             else if (nm == "NONE")
-                parent->clearStatePlotVarList();
+                master->clearStatePlotVarList();
             else
-                parent->addStatePlotVar(nm);
+                master->addStatePlotVar(nm);
         }
     }
     else 
@@ -1366,7 +1366,7 @@ AmrLevel::setPlotVariables ()
         //
         // The default is to add them all.
         //
-        parent->fillStatePlotVarList();
+        master->fillStatePlotVarList();
     }
   
     if (pp.contains("derive_plot_vars"))
@@ -1380,11 +1380,11 @@ AmrLevel::setPlotVariables ()
             pp.get("derive_plot_vars", nm, i);
 
             if (nm == "ALL") 
-                parent->fillDerivePlotVarList();
+                master->fillDerivePlotVarList();
             else if (nm == "NONE")
-                parent->clearDerivePlotVarList();
+                master->clearDerivePlotVarList();
             else
-                parent->addDerivePlotVar(nm);
+                master->addDerivePlotVar(nm);
         }
     }
     else 
@@ -1392,12 +1392,12 @@ AmrLevel::setPlotVariables ()
         //
         // The default is to add none of them.
         //
-        parent->clearDerivePlotVarList();
+        master->clearDerivePlotVarList();
     }
 }
 
-AmrLevel::TimeLevel
-AmrLevel::which_time (int  indx,
+AmrRegion::TimeLevel
+AmrRegion::which_time (int  indx,
                       Real time) const
 {
     const Real oldtime = state[indx].prevTime();
@@ -1433,7 +1433,7 @@ AmrLevel::which_time (int  indx,
 }
 
 Real
-AmrLevel::estimateWork ()
+AmrRegion::estimateWork ()
 {
     return 1.0*countCells();
 }

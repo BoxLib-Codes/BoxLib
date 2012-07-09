@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <ParmParse.H>
 #include <StationData.H>
 #include <Utility.H>
@@ -21,7 +21,7 @@ StationData::~StationData ()
 }
 
 void
-StationData::init (const PArray<AmrLevel>& levels, const int finestlevel)
+StationData::init (const PArray<AmrRegion>& levels, const int finestlevel)
 {
     //
     // ParmParse variables:
@@ -48,9 +48,9 @@ StationData::init (const PArray<AmrLevel>& levels, const int finestlevel)
 
             m_IsDerived[i] = false;
 
-            if (!AmrLevel::isStateVariable(m_vars[i],m_typ[i],m_ncomp[i]))
+            if (!AmrRegion::isStateVariable(m_vars[i],m_typ[i],m_ncomp[i]))
             {
-                if (AmrLevel::get_derive_lst().canDerive(m_vars[i]))
+                if (AmrRegion::get_derive_lst().canDerive(m_vars[i]))
                 {
                     m_IsDerived[i] = true;
                     m_ncomp[i] = 0;
@@ -185,7 +185,7 @@ StationData::init (const PArray<AmrLevel>& levels, const int finestlevel)
 void
 StationData::report (Real            time,
                      int             level,
-                     const AmrLevel& amrlevel)
+                     const AmrRegion& amrlevel)
 {
     if (m_stn.size() <= 0)
         return;
@@ -203,7 +203,7 @@ StationData::report (Real            time,
         if (m_IsDerived[iVar])
         {
             mfPtrs[iVar] =
-                const_cast<AmrLevel&>(amrlevel).derive(m_vars[iVar], time, nGhost);
+                const_cast<AmrRegion&>(amrlevel).derive(m_vars[iVar], time, nGhost);
         }
     }
 
@@ -297,7 +297,7 @@ StationData::report (Real            time,
 }
 
 void
-StationData::findGrid (const PArray<AmrLevel>& levels,
+StationData::findGrid (const PArray<AmrRegion>& levels,
                        const Array<Geometry>&  geoms)
 {
     BL_ASSERT(geoms.size() == levels.size());
