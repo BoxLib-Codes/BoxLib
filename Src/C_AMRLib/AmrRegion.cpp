@@ -259,6 +259,7 @@ AmrRegion::checkPoint (const std::string& dir,
 AmrRegion::~AmrRegion ()
 {
     master = 0;
+    parent_region = 0;
 }
 
 void

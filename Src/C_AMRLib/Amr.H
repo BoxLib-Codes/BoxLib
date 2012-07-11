@@ -9,6 +9,7 @@
 #include <BoxArray.H>
 #include <Array.H>
 #include <PArray.H>
+#include <PList.H>
 #include <ParmParse.H>
 #ifdef USE_STATIONDATA
 #include <StationData.H>
@@ -31,7 +32,7 @@ class Amr
 {
 public:
     // Typedef the list of regions for amr_level stuff.
-    typedef std::list<AmrRegion*> RegionList;
+    typedef PList<AmrRegion> RegionList;
     //
     // The constructor.
     //

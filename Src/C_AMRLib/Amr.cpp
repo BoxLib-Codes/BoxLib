@@ -94,7 +94,6 @@ Amr::Finalize ()
 {
     Amr::state_plot_vars.clear();
     Amr::derive_plot_vars.clear();
-
     initialized = false;
 }
 
@@ -163,13 +162,13 @@ Amr::setDtMin (const Array<Real>& dt_min_in)
         dt_min[i] = dt_min_in[i];
 }
 
-PArray<std::list<AmrRegion*> >&
+PArray<PList<AmrRegion> >&
 Amr::getAmrRegions ()
 {
     return amr_level;
 }
 
-std::list<AmrRegion*>&
+PList<AmrRegion> &
 Amr::getRegions (int level)
 {
     return amr_level[level];
@@ -628,9 +627,7 @@ Amr::~Amr ()
 
     if (level_steps[0] > last_plotfile)
         writePlotFile(plot_file_root,level_steps[0]);
-
     levelbld->variableCleanUp();
-
     Amr::Finalize();
 }
 
@@ -1254,9 +1251,9 @@ Amr::restart (const std::string& filename)
        int lev;
        for (lev = 0; lev <= finest_level; lev++)
        { ///TODO/DEBUG: upgrade
-           RegionList ll;
-           ll.push_back((*levelbld)());
-           amr_level.set(lev,&ll);
+           RegionList* ll = new RegionList(PListManage);
+           ll->push_back((*levelbld)());
+           amr_level.set(lev,ll);
            amr_level[lev].front()->restart(*this, is);
        }
        //
@@ -1321,9 +1318,9 @@ Amr::restart (const std::string& filename)
        int lev;
        for (lev = 0; lev <= new_finest_level; lev++)
        {
-           RegionList ll;
-           ll.push_back((*levelbld)());
-           amr_level.set(lev,&ll);
+           RegionList* ll = new RegionList(PListManage);
+           ll->push_back((*levelbld)());
+           amr_level.set(lev,ll);
            amr_level[lev].front()->restart(*this, is);
        }
        //
@@ -1546,9 +1543,9 @@ Amr::timeStep (int  level,
 
             a->init(*amr_level[0].front());
             amr_level.clear(0);
-            RegionList ll;
-            ll.push_back(a);
-            amr_level.set(0,&ll);
+            RegionList* ll = new RegionList(PListManage);
+            ll->push_back(a);
+            amr_level.set(0,ll);
 
             amr_level[0].front()->post_regrid(0,0);
 
@@ -1892,9 +1889,9 @@ Amr::defBaseLevel (Real strt_time)
     //
     // Now build level 0 grids.
     //
-    RegionList ll;
-    ll.push_back((*levelbld)(*this,0,geom[0],lev0,strt_time));
-    amr_level.set(0,&ll);
+    RegionList* ll = new RegionList(PListManage);
+    ll->push_back((*levelbld)(*this,0,geom[0],lev0,strt_time));
+    amr_level.set(0,ll);
 
     lev0.clear();
     //
@@ -1989,9 +1986,9 @@ Amr::regrid (int  lbase,
             //
             ///TODO/DEBUG: upgrade
             amr_level.clear(lev);
-            RegionList ll;
-            ll.push_back(a);
-            amr_level.set(lev,&ll);
+            RegionList* ll = new RegionList(PListManage);
+            ll->push_back(a);
+            amr_level.set(lev,ll);
             amr_level[lev].front()->initData();
         }
         else if (amr_level.defined(lev))
@@ -2004,17 +2001,17 @@ Amr::regrid (int  lbase,
             ///TODO/DEBUG: upgrade
             a->init(*amr_level[lev].front());
             amr_level.clear(lev);
-            RegionList ll;
-            ll.push_back(a);
-            amr_level.set(lev,&ll);
+            RegionList* ll = new RegionList(PListManage);
+            ll->push_back(a);
+            amr_level.set(lev,ll);
        }
         else
         {///TODO/DEBUG: upgrade
             a->init();
             amr_level.clear(lev);
-            RegionList ll;
-            ll.push_back(a);
-            amr_level.set(lev,&ll);
+            RegionList* ll = new RegionList(PListManage);
+            ll->push_back(a);
+            amr_level.set(lev,ll);
         }
 
     }
@@ -2604,9 +2601,9 @@ Amr::bldFineLevels (Real strt_time)
                                       grids[new_finest],
                                       strt_time);
 
-        RegionList ll;
-        ll.push_back(level);
-        amr_level.set(new_finest,&ll);
+        RegionList* ll = new RegionList(PListManage);
+        ll->push_back(level);
+        amr_level.set(new_finest,ll);
         ///TODO/DEBUG: upgrade
         amr_level[new_finest].front()->initData();
     }
