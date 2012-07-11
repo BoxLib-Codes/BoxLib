@@ -44,7 +44,7 @@ public:
     //
     // Data files have the form: "Station/stn_CPU_NNNN"
     //
-    void init (const PArray<AmrRegion>& levels, const int finestlevel);
+    void init (const PArray<std::list<AmrRegion>>& levels, const int finestlevel);
     //
     // Collect data for all station points at level and write to station file.
     //
@@ -54,7 +54,7 @@ public:
     //
     // Locate finest level grid for each station point.
     //
-    void findGrid (const PArray<AmrRegion>& levels,
+    void findGrid (const PArray<std::list<AmrRegion>>& levels,
                    const Array<Geometry>&  geoms);
 private:
 

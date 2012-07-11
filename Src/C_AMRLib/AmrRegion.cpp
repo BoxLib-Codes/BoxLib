@@ -64,6 +64,25 @@ AmrRegion::AmrRegion (Amr&            papa,
 {
     level  = lev;
     master = &papa;
+    if (level > 0)
+    {
+        BoxArray cba = ba;
+        cba.coarsen(master->refRatio(level-1));
+        parent_region = &papa.getParent(level - 1, cba);
+        ancestor_regions.resize(level+1);
+        AmrRegion* temp_region = this;
+        for (int i = level; i >= 0; i--)
+        {
+            ancestor_regions.set(i, temp_region);
+            temp_region = temp_region->parent_region;
+        }
+    }
+    else
+    {
+        parent_region = this;
+        ancestor_regions.resize(1);
+        ancestor_regions.set(0,this);
+    }
 
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
@@ -412,7 +431,8 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     m_FixUpCorners = NeedToTouchUpPhysCorners(m_amrlevel.geom);
 
     const int         MyProc     = ParallelDescriptor::MyProc();
-    PArray<AmrRegion>& amrLevels  = m_amrlevel.master->getAmrRegions();
+    ///TODO/DEBUG: This non-reference might be a slowdown.
+    PArray<AmrRegion>&  amrLevels = m_amrlevel.ancestor_regions;
     const AmrRegion&   topLevel   = amrLevels[m_amrlevel.level];
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
@@ -805,7 +825,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     Array<BCRec>               bcr(m_ncomp);
     Array< PArray<FArrayBox> > cfab(m_amrlevel.level+1);
     const bool                 extrap    = AmrRegion::desc_lst[m_index].extrap();
-    PArray<AmrRegion>&          amrLevels = m_amrlevel.master->getAmrRegions();
+    PArray<AmrRegion>&          amrLevels = m_amrlevel.ancestor_regions;
 
 #ifndef NDEBUG
     //

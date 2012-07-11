@@ -56,7 +56,7 @@ public:
     //
     BoxArray ();
     //
-    /// Make a boxarray out of a single box
+    // Make a boxarray out of a single box
     //
     BoxArray (const Box& bx);
     //

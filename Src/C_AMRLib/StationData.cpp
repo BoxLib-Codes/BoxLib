@@ -21,7 +21,7 @@ StationData::~StationData ()
 }
 
 void
-StationData::init (const PArray<AmrRegion>& levels, const int finestlevel)
+StationData::init (const PArray<std::list<AmrRegion>>& levels, const int finestlevel)
 {
     //
     // ParmParse variables:
@@ -111,7 +111,7 @@ StationData::init (const PArray<AmrRegion>& levels, const int finestlevel)
 
     // adjust the positions so they are not exactly on a grid line
     // cannot use [levels.size()-1] because of level capping
-    const Real *fineDX = levels[finestlevel].Geom().CellSize();
+    const Real *fineDX = levels[finestlevel].front().Geom().CellSize();
     for(int i(0); i < m_stn.size(); ++i) {
       for(int d(0); d < BL_SPACEDIM; ++d) {
         Real tempPos(m_stn[i].pos[d]), dx(fineDX[d]);
@@ -297,7 +297,7 @@ StationData::report (Real            time,
 }
 
 void
-StationData::findGrid (const PArray<AmrRegion>& levels,
+StationData::findGrid (const PArray<std::list<AmrRegion>>& levels,
                        const Array<Geometry>&  geoms)
 {
     BL_ASSERT(geoms.size() == levels.size());
@@ -318,33 +318,38 @@ StationData::findGrid (const PArray<AmrRegion>& levels,
     {
         if (levels.defined(level))
         {
-            Array<RealBox> boxes(levels[level].boxArray().size());
-
-            for (int i = 0; i < boxes.size(); i++)
+            //TODO/DEBUG: Check that this breaks properly and gives the right data.
+            for (RegionList::iterator it = amr_level[k].begin(); it != amr_level[k].end(); it++)
             {
-                boxes[i] = RealBox(levels[level].boxArray()[i],
-                                   levels[level].Geom().CellSize(),
-                                   levels[level].Geom().ProbLo());
-            }
+                AmrRegion region = *it;
+                Array<RealBox> boxes(region.boxArray().size());
 
-
-            MultiFab mf(levels[level].boxArray(),1,0,Fab_noallocate);
-
-            BL_ASSERT(mf.boxArray().size() == boxes.size());
-
-            for (int i = 0; i < m_stn.size(); i++)
-            {
-                if (m_stn[i].level < 0)
+                for (int i = 0; i < boxes.size(); i++)
                 {
-                    for (int j = 0; j < boxes.size(); j++)
-                    {
-                        if (boxes[j].contains(&m_stn[i].pos[0]))
-                        {
-                            m_stn[i].grd   = j;
-                            m_stn[i].own   = (mf.DistributionMap()[j] == MyProc);
-                            m_stn[i].level = level;
+                    boxes[i] = RealBox(region.boxArray()[i],
+                                       region.Geom().CellSize(),
+                                       region.Geom().ProbLo());
+                }
 
-                            break;
+
+                MultiFab mf(region.boxArray(),1,0,Fab_noallocate);
+
+                BL_ASSERT(mf.boxArray().size() == boxes.size());
+
+                for (int i = 0; i < m_stn.size(); i++)
+                {
+                    if (m_stn[i].level < 0)
+                    {
+                        for (int j = 0; j < boxes.size(); j++)
+                        {
+                            if (boxes[j].contains(&m_stn[i].pos[0]))
+                            {
+                                m_stn[i].grd   = j;
+                                m_stn[i].own   = (mf.DistributionMap()[j] == MyProc);
+                                m_stn[i].level = level;
+
+                                break;
+                            }
                         }
                     }
                 }

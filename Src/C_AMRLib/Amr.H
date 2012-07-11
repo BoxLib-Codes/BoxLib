@@ -30,6 +30,8 @@ class BoxDomain;
 class Amr
 {
 public:
+    // Typedef the list of regions for amr_level stuff.
+    typedef std::list<AmrRegion*> RegionList;
     //
     // The constructor.
     //
@@ -228,9 +230,18 @@ public:
     //
     AmrRegion&  getLevel (int lev);
     //
+    // Search the specified level for the region containing
+    // The specified boxArray;
+    //
+    AmrRegion&  getParent (int lev, const BoxArray& ba);
+    //
     // PArray of AmrRegions.
     //
-    PArray<AmrRegion>& getAmrRegions ();
+    PArray<RegionList>& getAmrRegions ();
+    //
+    // PArray of AmrRegions.
+    //
+    RegionList& getRegions (int level);
     //
     // Total number of cells.
     //
@@ -384,7 +395,7 @@ protected:
     int              max_level;    // Maximum allowed level.
     int              finest_level; // Current finest level.
     Array<IntVect>   ref_ratio;    // Refinement ratios [0:finest_level-1]
-    PArray<AmrRegion> amr_level;    // Array of levels
+    PArray<RegionList> amr_level;    // Array of list of Regions
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Array<Real>      dt_level;     // Timestep at this level.
@@ -438,13 +449,6 @@ private:
     Amr (const Amr& rhs);
     Amr& operator= (const Amr& rhs);
 };
-
-inline
-AmrRegion&
-Amr::getLevel (int lev)
-{
-    return amr_level[lev];
-}
 
 inline
 int

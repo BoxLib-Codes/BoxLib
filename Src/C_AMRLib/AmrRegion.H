@@ -370,6 +370,8 @@ protected:
     IntVect fine_ratio;               // Refinement ratio to finer level.
     static DeriveList derive_lst;     // List of derived quantities.
     static DescriptorList desc_lst;   // List of state variables.
+    AmrRegion* parent_region;         // The coarser region containing this region.
+    PArray<AmrRegion> ancestor_regions;
 #ifdef USE_SLABSTAT
     static SlabStatList slabstat_lst; // List of SlabStats.
 #endif
@@ -431,7 +433,7 @@ class FillPatchIterator
     //
     // The data.
     //
-    AmrRegion&                         m_amrlevel;
+    AmrRegion&                        m_amrlevel;
     MultiFab&                         m_leveldata;
     std::vector< std::pair<int,int> > m_range;
     MultiFab                          m_fabs;
