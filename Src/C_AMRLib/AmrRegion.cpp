@@ -69,11 +69,13 @@ AmrRegion::AmrRegion (Amr&            papa,
         BoxArray cba = ba;
         cba.coarsen(master->refRatio(level-1));
         parent_region = &papa.getParent(level - 1, cba);
+        std::cout << "DEBUG: ANC - PARENT " << parent_region->level << ": " << parent_region->numGrids()<<"\n";
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
         for (int i = level; i >= 0; i--)
         {
             ancestor_regions.set(i, temp_region);
+            std::cout << "DEBUG: ANC REG " << i << "/"<<level<<": " << temp_region->numGrids() << "\n";
             temp_region = temp_region->parent_region;
         }
     }
@@ -392,7 +394,7 @@ FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
     BL_ASSERT(ncomp >= 1);
     BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
     BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
-
+    std::cout << "DEBUG: Starting to initialize\n";
     Initialize(boxGrow,time,index,scomp,ncomp);
 }
 
@@ -443,10 +445,14 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     //
     BL_ASSERT(AmrRegion::desc_lst[m_index].identicalInterps(scomp,ncomp));
 
+    std::cout << "DEBUG: fpih loopin" << m_amrlevel.level << "\n";
     for (int l = 0; l <= m_amrlevel.level; ++l)
     {
+        std::cout << "DEBUG: rd for " << l << "\n";
+        std::cout << "DEBUG: level has grids" << amrLevels[l].numGrids() << "\n";
         amrLevels[l].state[m_index].RegisterData(m_mfcd, m_mfid[l]);
     }
+    std::cout << "DEBUG: loped\n";
     for (int i = 0, N = m_ba.size(); i < N; ++i)
     {
         if (m_leveldata.DistributionMap()[i] == MyProc)
@@ -459,6 +465,7 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     }
     m_ba.grow(m_growsize);  // These are the ones we want to fillpatch.
 
+    std::cout << "DEBUG: fpih first loop done\n";
     BoxList unfillableThisLevel(boxType), tempUnfillable(boxType);
     std::vector<Box> unfilledThisLevel, crse_boxes;
 
@@ -654,7 +661,8 @@ FillPatchIterator::Initialize (int  boxGrow,
 
     m_ncomp = ncomp;
     m_range = desc.sameInterps(scomp,ncomp);
-
+    
+    std::cout << "DEBUG: getting ba\n";
     BoxArray nba = m_leveldata.boxArray();
 
     nba.grow(boxGrow);
@@ -665,11 +673,15 @@ FillPatchIterator::Initialize (int  boxGrow,
 
     FillPatchIteratorHelper* fph = 0;
 
+    std::cout << "DEBUG: Loopin\n";
     for (int i = 0, DComp = 0; i < m_range.size(); i++)
     {
         const int SComp = m_range[i].first;
         const int NComp = m_range[i].second;
 
+        std::cout << "DEBUG: Making fpi\n";
+        desc.interp(SComp);
+        std::cout << "DEBUG: checked interp\n";
         fph = new FillPatchIteratorHelper(m_amrlevel,
                                           m_leveldata,
                                           boxGrow,
@@ -678,7 +690,7 @@ FillPatchIterator::Initialize (int  boxGrow,
                                           SComp,
                                           NComp,
                                           desc.interp(SComp));
-
+        std::cout << "DEBUG: Made fpi\n";
         for (MFIter mfi(m_fabs); mfi.isValid(); ++mfi)
         {
             fph->fill(m_fabs[mfi.index()],DComp,mfi.index());
@@ -691,6 +703,7 @@ FillPatchIterator::Initialize (int  boxGrow,
     //
     // Call hack to touch up fillPatched data
     //
+    std::cout << "DEBUG: setting boundaries\n";
     m_amrlevel.set_preferred_boundary_values(m_fabs,
                                              index,
                                              scomp,
@@ -1174,9 +1187,10 @@ AmrRegion::derive (const std::string& name,
     if (isStateVariable(name, index, scomp))
     {
         mf = new MultiFab(state[index].boxArray(), 1, ngrow);
-
+        get_new_data(index);
+        std::cout << "DEBUG: can get new data\n";
         FillPatchIterator fpi(*this,get_new_data(index),ngrow,time,index,scomp,1);
-
+        std::cout << "DEBUG: Made fpi\n";
         for ( ; fpi.isValid(); ++fpi)
         {
             BL_ASSERT((*mf)[fpi].box() == fpi().box());

@@ -1989,6 +1989,7 @@ Amr::regrid (int  lbase,
             RegionList* ll = new RegionList(PListManage);
             ll->push_back(a);
             amr_level.set(lev,ll);
+            std::cout << "\t\tDEBUG: In regrid\n";
             amr_level[lev].front()->initData();
         }
         else if (amr_level.defined(lev))
