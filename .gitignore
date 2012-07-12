@@ -8,3 +8,13 @@ o/
 t/
 TAGS
 
+#ethan's custom ignores
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.pdf
+*.ps
+*.toc
+.gitignore
