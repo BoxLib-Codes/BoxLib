@@ -1967,6 +1967,11 @@ Amr::regrid (int  lbase,
         DistributionMapping::FlushCache();
     }
 
+    if (initial)
+    {
+        for (int lev = start; lev <= new_finest; lev++) 
+            amr_level.clear(lev);
+    }
     //
     // Define the new grids from level start up to new_finest.
     //
@@ -1985,11 +1990,10 @@ Amr::regrid (int  lbase,
             //       be officially inserted into the hierarchy prior to the call.
             //
             ///TODO/DEBUG: upgrade
-            amr_level.clear(lev);
+            
             RegionList* ll = new RegionList(PListManage);
             ll->push_back(a);
             amr_level.set(lev,ll);
-            std::cout << "\t\tDEBUG: In regrid\n";
             amr_level[lev].front()->initData();
         }
         else if (amr_level.defined(lev))
@@ -2000,6 +2004,8 @@ Amr::regrid (int  lbase,
             //       which therefore needs remain in the hierarchy during the call.
             //
             ///TODO/DEBUG: upgrade
+            //Haaaaack. This will need to change when we evolve regridding.
+            amr_level[lev].front()->set_ancestors(lev-1,a->get_ancestors());
             a->init(*amr_level[lev].front());
             amr_level.clear(lev);
             RegionList* ll = new RegionList(PListManage);

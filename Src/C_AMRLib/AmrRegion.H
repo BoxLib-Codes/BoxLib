@@ -344,6 +344,12 @@ public:
     // 
     TimeLevel which_time (int  state_indx,
                           Real time) const;
+                          
+    // 
+    // Sets/Gets the ancester list. Currently only needed for a regridding hack.
+    //
+    void set_ancestors(int finest_level, PArray<AmrRegion>& ancs);
+    PArray<AmrRegion>& get_ancestors();
 protected:
     //
     // The constructors -- for derived classes.
@@ -583,6 +589,24 @@ const DescriptorList&
 AmrRegion::get_desc_lst ()
 {
     return desc_lst;
+}
+
+inline
+void 
+AmrRegion::set_ancestors(int finest_level, PArray<AmrRegion>& ancs)
+{
+    for(int i = 0; i <= finest_level; i++)
+    {   
+        ancestor_regions.clear(i);
+        ancestor_regions.set(i,&ancs[i]);
+    }
+}
+
+inline
+PArray<AmrRegion>&
+AmrRegion::get_ancestors()
+{
+    return ancestor_regions;
 }
 
 #endif /*_AmrRegion_H_*/
