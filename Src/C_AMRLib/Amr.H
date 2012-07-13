@@ -314,6 +314,8 @@ public:
     // distance between cells in the 2 boxes.
     // 
     static void FOFCluster(int d, BoxArray boxes, std::list<BoxList>& clusters);
+    
+    AmrRegion* build_blank_region();
                                          
 protected:
     //

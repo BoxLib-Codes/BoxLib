@@ -23,16 +23,43 @@ StateData::StateData ()
    old_time.stop  = INVALID_TIME;
 }
 
-StateData::StateData (StateData& sd1, StateData& sd2) 
+StateData::StateData (PArray<StateData> sds) 
 {
-    //BL_ASSERT(sd1.StateDescriptor() == sd1.StateDescriptor());
-    //desc = sd1.StateDescriptor();
-    BL_ASSERT(false); ///Not implemented yet
-    new_data = old_data = 0;
-    new_time.start = INVALID_TIME;
-    new_time.stop  = INVALID_TIME;
-    old_time.start = INVALID_TIME;
-    old_time.stop  = INVALID_TIME;
+    int N = sds.size();
+    BL_ASSERT(N > 0);
+    PArray<MultiFab> mfs(N);
+    
+    // Set old data
+    for (int i = 0; i < N;  i++)
+    {
+        mfs.set(i,&sds[i].oldData());
+    }
+    old_data = new MultiFab(mfs);
+    
+    // Set new data
+    for (int i = 0; i < N;  i++)
+    {
+        mfs.set(i,&sds[i].newData());
+    }
+    new_data = new MultiFab(mfs);
+    
+    ///TODO/DEBUG: check these more carefully.
+    //
+    // Set state descriptor
+    // It might be worth adding some sort of consistency test on the 
+    // state descriptors.
+    //
+    desc = sds[0].descriptor();
+    
+    //
+    // Set Times 
+    // Similarly it may be worth checking/setting these more carefully;
+    // these could vary among the source StateDatas
+    //
+    new_time.start = sds[0].getNewStart();
+    new_time.stop = sds[0].getNewStop();
+    old_time.start = sds[0].getOldStart();
+    old_time.stop = sds[0].getOldStop();
 }
 
 StateData::StateData (const Box&             p_domain,

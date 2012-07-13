@@ -1436,3 +1436,82 @@ AmrRegion::estimateWork ()
 {
     return 1.0*countCells();
 }
+
+void
+AmrRegion::get_descendants (int finest_level, PArray<AmrRegion>& descendants)
+{
+    int num_levels = level-finest_level+1;
+    // If finest level or no children, set only this region.
+    if (level == finest_level || child_regions.empty())
+    {
+        descendants.set(0,this);
+    }
+    else
+    {
+        descendants.set(0,this);
+        PArray<RegionList > descendant_list(num_levels-1);
+        // recursively get descendants from all children.
+        for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
+        {
+            PArray<AmrRegion> sub_decs(num_levels-1,PArrayManage);
+            (*it)->get_descendants(finest_level, sub_decs);
+            for (int j = 0; j < num_levels - 1; j++)
+            {
+                if (sub_decs.defined(j))
+                    descendant_list[j].push_back(&sub_decs[j]);
+            }
+        }
+        // Aggregate the descendants at each level.
+        for (int i = 1; i < num_levels; i++)
+        {
+            AmrRegion* a = master->build_blank_region();
+            a->define(descendant_list[i-1], master);
+            descendants.set(i,a);
+        }
+    }
+}
+
+void
+AmrRegion::define(RegionList& regions, Amr* papa)
+{
+    std::cout << "DEBUG: Calling AmrRegion define\n";
+    int N = regions.size();
+    BL_ASSERT(N > 0);
+    //
+    // We could add consistency checks for all regions
+    //
+    // Initialize the basic data
+    AmrRegion* first = regions.front();
+    level = first->Level();
+    geom = first->Geom();
+    master = papa;
+
+    // Initialize ratios.
+    fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
+    crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
+    if (level > 0)
+        crse_ratio = master->refRatio(level-1);
+    if (level < master->maxLevel())
+        fine_ratio = master->refRatio(level);
+        
+    // Combine the boxarrays.
+    BoxList bl;
+    for (RegionList::iterator it = regions.begin(); it != regions.end(); it++)
+        bl.join((*it)->boxArray().boxList());
+    grids.define(bl);
+    
+    // Combine the state data.
+    PArray<StateData> state_source(N);
+    int num_states = first->desc_lst.size();
+    state.resize(num_states);
+    for (int i = 0; i < num_states; i++)
+    {
+        int ri = 0;
+        for (RegionList::iterator it = regions.begin(); it != regions.end(); it++, ri++)
+        {
+            state_source.set(ri, &(*it)->get_state_data(ri));
+        }
+        StateData s(state_source);
+        state.set(i,s);
+    }
+}

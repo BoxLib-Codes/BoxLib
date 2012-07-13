@@ -38,9 +38,9 @@ public:
                Real                   cur_time,
                Real                   dt);
     //
-    // Constructs a merged statedata out of 2 other state datas.
+    // Constructs a merged statedata out a list of state datas.
     //
-    StateData (StateData& sd1, StateData& sd2);
+    StateData (PArray<StateData> sds);
     //
     // The destructor.
     //
@@ -154,6 +154,10 @@ public:
     // Returns the previous time.
     //
     Real prevTime () const;
+    Real getNewStart() const;
+    Real getNewStop() const;
+    Real getOldStart() const;
+    Real getOldStop() const;
     //
     // Returns the new data.
     //
@@ -273,6 +277,34 @@ Real
 StateData::prevTime () const
 {
     return 0.5*(old_time.start + old_time.stop);
+}
+
+inline
+Real
+StateData::getNewStart () const
+{
+    return new_time.start;
+}
+
+inline
+Real
+StateData::getNewStop () const
+{
+    return new_time.stop;
+}
+
+inline
+Real
+StateData::getOldStart () const
+{
+    return old_time.start;
+}
+
+inline
+Real
+StateData::getOldStop () const
+{
+    return old_time.stop;
 }
 
 inline

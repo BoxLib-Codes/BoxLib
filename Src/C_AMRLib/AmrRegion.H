@@ -30,6 +30,8 @@ class AmrRegion
 {
   friend class FillPatchIterator;
   friend class FillPatchIteratorHelper;
+  
+  typedef PList<AmrRegion> RegionList;
 
 public:
     //
@@ -346,6 +348,20 @@ public:
     //
     void set_ancestors(int finest_level, PArray<AmrRegion>& ancs);
     PArray<AmrRegion>& get_ancestors();
+    
+    // 
+    // Sets/Gets the children. May need to evolve.
+    //
+    void set_children(PList<AmrRegion>& kids);
+    PList<AmrRegion>& get_children();
+    
+    //
+    // Gets the aggregated ancestors of this region.
+    //
+    void get_descendants(int finest_level, PArray<AmrRegion>& descendants);
+    
+    void define(PList<AmrRegion>& regions, Amr* papa);
+    
 protected:
     //
     // The constructors -- for derived classes.
@@ -375,6 +391,7 @@ protected:
     static DescriptorList desc_lst;     // List of state variables.
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
+    PList<AmrRegion>     child_regions;
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.
 #endif
@@ -601,6 +618,20 @@ PArray<AmrRegion>&
 AmrRegion::get_ancestors()
 {
     return ancestor_regions;
+}
+
+inline
+void 
+AmrRegion::set_children(PList<AmrRegion>& kids)
+{
+    child_regions = kids;
+}
+
+inline
+PList<AmrRegion>&
+AmrRegion::get_children()
+{
+    return child_regions;
 }
 
 #endif /*_AmrRegion_H_*/

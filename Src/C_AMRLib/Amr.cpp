@@ -1926,6 +1926,7 @@ Amr::regrid (int  lbase,
         active_levels.set(i,&getLevel(i));
     }
     
+    std::cout << "DEBUG: Regridding lbase " << lbase << " to finest " << finest_level <<"\n";
     
     if (lbase <= std::min(finest_level,max_level-1))
       grid_places(lbase,active_levels,time,new_finest, new_grid_places);
@@ -2224,7 +2225,6 @@ Amr::grid_places (int               lbase,
                   int&              new_finest,
                   Array<BoxArray>&  new_grids)
 {
-    std::cout << "DEBUG: starting grid_places\n";
     int i, max_crse = std::min(finest_level,max_level-1);
 
     const Real strttime = ParallelDescriptor::second();
@@ -2249,7 +2249,7 @@ Amr::grid_places (int               lbase,
 
         new_grids[0] = lev0;
     }
-    std::cout << "DEBUG: found lev0 \n";
+    ///TODO/DEBUG: We'll need a fixed grids syntax for regions. - Probably
     if (!grids_file.empty())
     {
 #define STRIP while( is.get() != '\n' )
@@ -2317,7 +2317,6 @@ Amr::grid_places (int               lbase,
     Array<BoxList> p_n(max_level);      // Proper nesting domain.
     Array<BoxList> p_n_comp(max_level); // Complement proper nesting domain.
 
-    std::cout << "DEBUG: gonna get box array\n";
     BoxList bl(active_levels[lbase].boxArray());
     bl.simplify();
     bl.coarsen(bf_lev[lbase]);
@@ -2328,7 +2327,6 @@ Amr::grid_places (int               lbase,
     p_n[lbase].complementIn(pc_domain[lbase],p_n_comp[lbase]);
     p_n[lbase].simplify();
     bl.clear();
-
     for (i = lbase+1; i <= max_crse; i++)
     {
         p_n_comp[i] = p_n_comp[i-1];
@@ -2349,7 +2347,6 @@ Amr::grid_places (int               lbase,
     //
     new_finest = lbase;
 
-    std::cout << "DEBUG: Starting big loop\n";
     for (int levc = max_crse; levc >= lbase; levc--)
     {
         int levf = levc+1;
@@ -2614,8 +2611,8 @@ Amr::bldFineLevels (Real strt_time)
         ///TODO/DEBUG: Evolve this array.
         std::cout << "DEBUG: Building fine levels\n";
         PArray<AmrRegion> active_levels;
-        active_levels.resize(1);
-        for (int i = 0; i < finest_level; i++)
+        active_levels.resize(finest_level+1);
+        for (int i = 0; i <= finest_level; i++)
         {
             active_levels.set(i,&getLevel(i));
         }
@@ -2914,4 +2911,10 @@ Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxList>& clusters )
         }
     }
     return; 
+}
+
+AmrRegion*
+Amr::build_blank_region()
+{
+    return (*levelbld)();
 }
