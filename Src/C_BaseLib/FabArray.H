@@ -437,6 +437,15 @@ template <class FAB> class FabArrayCopyDescriptor;
 
 enum FabAlloc { Fab_noallocate = 0, Fab_allocate };
 
+//
+// An enumumeration that controls whether or not the memory for a FAB
+// will be cleared on deconstruction. Memory should be cleared in almost
+// all cases, the exception being FabArrays that are constructed to point
+// at pre-existing data such as those used in multifab mergers.
+//
+
+enum FabClear { Fab_clear = 0, Fab_noclear = 1 };
+
 template <class FAB>
 class FabArray
     :
@@ -465,7 +474,16 @@ public:
     FabArray (const BoxArray& bxs,
               int             nvar,
               int             ngrow,
-              FabAlloc        mem_mode = Fab_allocate);
+              FabAlloc        mem_mode = Fab_allocate,
+              FabClear        clear = Fab_clear);
+    //
+    // Construct a FabArray<FAB> as the merger of the fabs specified
+    // in fab_arrs. By default this is a non-allocated fab; it points
+    // to the data used in those fabs without copying it or deleting them.
+    //
+    FabArray (PArray<FabArray<FAB> >& fab_arrs,
+              FabAlloc               mem_mode = Fab_noallocate,
+              FabClear               clear = Fab_noclear);
     //
     // The destructor -- deletes all FABs in the array.
     //
@@ -486,6 +504,10 @@ public:
                  int                        ngrow,
 		 const DistributionMapping& dm,
                  FabAlloc                   mem_mode);
+    //
+    // Define the FabArray based on the merger of the listed arrays,
+    //
+    void mergeDefine (PArray<FabArray<FAB> > fab_arrs);
     //
     // Returns true if the FabArray is well-defined.  That is,
     // if FABs are allocated for each Box in the BoxArray and the
@@ -652,6 +674,8 @@ protected:
                      const DistributionMapping* dm);
 
     std::map<int,FAB*> m_fabs;
+    
+    FabClear clear_mode;
 
     typedef typename std::map<int,FAB*>::value_type ValueType;
 
@@ -1038,9 +1062,12 @@ template <class FAB>
 void
 FabArray<FAB>::clear ()
 {
-    for (Iterator it = m_fabs.begin(), End = m_fabs.end(); it != End; ++it)
-        delete it->second;
-
+    // Delete the fabs if in clearmode.
+    if (clear_mode == Fab_clear)
+    {
+        for (Iterator it = m_fabs.begin(), End = m_fabs.end(); it != End; ++it)
+            delete it->second;
+    }
     m_fabs.clear();
     boxarray.clear();
 }
@@ -1064,15 +1091,30 @@ FabArray<FAB>::setVal (value_type   val,
 
 template <class FAB>
 FabArray<FAB>::FabArray ()
-{}
+{
+    clear_mode = Fab_clear;
+}
 
 template <class FAB>
 FabArray<FAB>::FabArray (const BoxArray& bxs,
                          int             nvar,
                          int             ngrow,
-                         FabAlloc        alloc)
+                         FabAlloc        alloc,
+                         FabClear        clear)
 {
+    clear_mode = clear;
     define(bxs,nvar,ngrow,alloc);
+}
+
+template <class FAB>
+FabArray<FAB>::FabArray (PArray<FabArray<FAB> >& fab_arrs,
+                         FabAlloc               mem_mode,
+                         FabClear               clear)
+{
+    clear_mode =clear;
+    if (mem_mode == Fab_allocate)
+        BoxLib::Abort("Allocating FABS in the FabArray merge constructor is not yet defined.\n");
+    mergeDefine(fab_arrs);
 }
 
 template <class FAB>
@@ -1163,6 +1205,47 @@ FabArray<FAB>::define (const BoxArray&            bxs,
                        FabAlloc                   alloc)
 {
     defineDoit(bxs,nvar,ngrow,alloc,&dm);
+}
+
+template <class FAB>
+void
+FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> > fab_arrs)
+{
+    int N = fab_arrs.size();
+    BL_ASSERT(N > 0);
+    //Create the new BoxArray
+    BoxList bl;
+    for (int i = 0; i < N; i++)
+        bl.join(fab_arrs[i].boxArray().boxList());
+    boxarray.define(bl);
+    int nboxes = boxarray.size();
+    BL_ASSERT(boxarray.isDisjoint());
+    
+    // Set other data
+    n_grow = fab_arrs[0].nGrow();
+    n_comp = fab_arrs[0].nComp();
+    
+    // Create the distribution map
+    Array<DistributionMapping> dmaps(N);
+    for (int i = 0; i < N; i++)
+        dmaps.set(i,fab_arrs[i].DistributionMap());
+    distributionMap.define(nboxes,dmaps);
+    
+    // Setup indexes and the fab map.
+    const int MyProc = ParallelDescriptor::MyProc();
+    int i = 0;
+    for (int f_i = 0; f_i < N; f_i++)
+    {
+        int n = fab_arrs[f_i].boxArray().size();
+        for (int j = 0; j < n; j++, i++)
+        {
+            if (distributionMap[i] == MyProc)
+            {
+                indexMap.push_back(i);
+                m_fabs.insert(m_fabs.end(),std::pair<int, FAB*>(i,&fab_arrs[f_i][j]));
+            }
+        }
+    }
 }
 
 template <class FAB>

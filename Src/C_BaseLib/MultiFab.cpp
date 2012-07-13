@@ -230,6 +230,18 @@ MultiFab::MultiFab (const BoxArray& bxs,
     if ((check_for_nan || check_for_inf) && alloc == Fab_allocate) setVal(0);
 }
 
+MultiFab::MultiFab (PArray<MultiFab> mfs,
+                    FabAlloc               mem_mode,
+                    FabClear               clear)
+{
+    int N = mfs.size();
+    BL_ASSERT(N > 0);
+    PArray<FabArray<FArrayBox> > fab_arrs(N);
+    for (int i = 0; i < N; i++)
+        fab_arrs.set(i,dynamic_cast<FabArray<FArrayBox> *>(&mfs[i]));
+    FabArray<FArrayBox>::FabArray<FArrayBox>(fab_arrs, mem_mode, clear);
+}
+
 void
 MultiFab::operator= (const Real& r)
 {

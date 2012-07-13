@@ -6,6 +6,7 @@
 #include <Pointers.H>
 #include <BoxLib.H>
 #include <Array.H>
+#include <PArray.H>
 #include <Box.H>
 
 class BoxArray;
@@ -53,6 +54,11 @@ class DistributionMapping
     //
     DistributionMapping (const DistributionMapping& d1,
                          const DistributionMapping& d2);
+    //
+    // A similarly specialized distribution map. Defines the distribution
+    // map from the union of dmaps. Don't use this unless you understand it.
+    //
+    void define (int nboxes, Array<DistributionMapping>& dmaps);
     //
     // The destructor.
     //

@@ -319,6 +319,32 @@ DistributionMapping::DistributionMapping (const DistributionMapping& d1,
 }
 
 void
+DistributionMapping::define (int nboxes, Array<DistributionMapping>& dmaps)
+{
+    Initialize();
+    
+    if (m_ref->m_pmap.size() != nboxes + 1)
+    {
+        m_ref->m_pmap.resize(nboxes + 1);
+    }
+    
+    int N = dmaps.size();
+    int i = 0;
+    // Loop over supplied Dmaps and add their entries.
+    for (int d_i = 0; d_i < N; d_i++)
+    {
+        const Array<int>& pmap = dmaps[d_i].ProcessorMap();
+        const int L = pmap.size()-1;  // Length not including sentinel.
+        for (int j = 0; j < L; i++, j++)
+            m_ref->m_pmap[i] = pmap[j];
+    }
+    //
+    // Set sentinel equal to our processor number.
+    //
+    m_ref->m_pmap[m_ref->m_pmap.size()-1] = ParallelDescriptor::MyProc();
+}
+
+void
 DistributionMapping::define (const BoxArray& boxes, int nprocs)
 {
     Initialize();
