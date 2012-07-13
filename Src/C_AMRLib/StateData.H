@@ -38,6 +38,10 @@ public:
                Real                   cur_time,
                Real                   dt);
     //
+    // Constructs a merged statedata out of 2 other state datas.
+    //
+    StateData (StateData& sd1, StateData& sd2);
+    //
     // The destructor.
     //
     ~StateData ();

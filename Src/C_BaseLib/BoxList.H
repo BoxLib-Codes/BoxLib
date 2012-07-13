@@ -77,7 +77,7 @@ public:
     //
     BoxList ();
     //
-    /// Make a boxList consisting of a single Box
+    // Make a boxList consisting of a single Box
     //
     BoxList (const Box& bx);
     //

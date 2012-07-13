@@ -1905,6 +1905,7 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
+    //AmrRegion& base_region = getLevel(lbase);
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "REGRID: at level lbase = " << lbase << std::endl;
 
@@ -1917,13 +1918,30 @@ Amr::regrid (int  lbase,
     int             new_finest;
     Array<BoxArray> new_grid_places(max_level+1);
 
+    ///TODO/DEBUG: Evolve this array.
+    PArray<AmrRegion> active_levels;
+    active_levels.resize(finest_level);
+    for (int i = 0; i < finest_level; i++)
+    {
+        active_levels.set(i,&getLevel(i));
+    }
+    
+    
     if (lbase <= std::min(finest_level,max_level-1))
-      grid_places(lbase,time,new_finest, new_grid_places);
+      grid_places(lbase,active_levels,time,new_finest, new_grid_places);
 
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != amr_level[0].front()->boxArray()) && (!initial);
 
     const int start = regrid_level_zero ? 0 : lbase+1;
+    
+    //Debug loop for clustering.
+    for (int i = start; i <= new_finest; i++)
+    {
+        std::list<BoxList> clusters;
+        FOFCluster(0,new_grid_places[i],clusters);
+        std::cout << "DEBUG: Found " << clusters.size() << " Clusters at Level " << i << "\n";
+    }
 
     //
     // If use_efficient_regrid flag is set, then test to see whether we in fact 
@@ -1932,10 +1950,11 @@ Amr::regrid (int  lbase,
     //
     if (use_efficient_regrid == 1 && !regrid_level_zero && (finest_level == new_finest) )
     {
-        bool grids_unchanged = true; ///TODO/DEBUG: upgrade
+        bool grids_unchanged = true; 
         for (int lev = start; lev <= finest_level && grids_unchanged; lev++)
         {
-            if (new_grid_places[lev] != amr_level[lev].front()->boxArray()) grids_unchanged = false;
+            if (new_grid_places[lev] != boxArray(lev)) grids_unchanged = false;
+            //if (new_grid_places[lev] != amr_level[lev].front()->boxArray()) grids_unchanged = false;
         }
         if (grids_unchanged) 
         {
@@ -2199,11 +2218,13 @@ Amr::ProjPeriodic (BoxList&        blout,
 }
 
 void
-Amr::grid_places (int              lbase,
-                  Real             time,
-                  int&             new_finest,
-                  Array<BoxArray>& new_grids)
+Amr::grid_places (int               lbase,
+                  PArray<AmrRegion>& active_levels,
+                  Real              time,
+                  int&              new_finest,
+                  Array<BoxArray>&  new_grids)
 {
+    std::cout << "DEBUG: starting grid_places\n";
     int i, max_crse = std::min(finest_level,max_level-1);
 
     const Real strttime = ParallelDescriptor::second();
@@ -2228,7 +2249,7 @@ Amr::grid_places (int              lbase,
 
         new_grids[0] = lev0;
     }
-
+    std::cout << "DEBUG: found lev0 \n";
     if (!grids_file.empty())
     {
 #define STRIP while( is.get() != '\n' )
@@ -2296,8 +2317,8 @@ Amr::grid_places (int              lbase,
     Array<BoxList> p_n(max_level);      // Proper nesting domain.
     Array<BoxList> p_n_comp(max_level); // Complement proper nesting domain.
 
-    /// TODO/DEBUG: Upgrade??
-    BoxList bl(amr_level[lbase].front()->boxArray());
+    std::cout << "DEBUG: gonna get box array\n";
+    BoxList bl(active_levels[lbase].boxArray());
     bl.simplify();
     bl.coarsen(bf_lev[lbase]);
     p_n_comp[lbase].complementIn(pc_domain[lbase],bl);
@@ -2328,6 +2349,7 @@ Amr::grid_places (int              lbase,
     //
     new_finest = lbase;
 
+    std::cout << "DEBUG: Starting big loop\n";
     for (int levc = max_crse; levc >= lbase; levc--)
     {
         int levf = levc+1;
@@ -2345,8 +2367,7 @@ Amr::grid_places (int              lbase,
             ba_proj.grow(n_proper);
             ba_proj.coarsen(ref_ratio[levc]);
 
-            ///TODO/DEBUG: upgrade
-            BoxArray levcBA = amr_level[levc].front()->boxArray();
+            BoxArray levcBA = active_levels[levc].boxArray();
 
             while (!levcBA.contains(ba_proj))
             {
@@ -2356,11 +2377,9 @@ Amr::grid_places (int              lbase,
                 ngrow++;
             }
         }
-        ///TODO/DEBUG: upgrade
-        TagBoxArray tags(amr_level[levc].front()->boxArray(),n_error_buf[levc]+ngrow);
+        TagBoxArray tags(active_levels[levc].boxArray(),n_error_buf[levc]+ngrow);
 
-        ///TODO/DEBUG: upgrade
-        amr_level[levc].front()->errorEst(tags,
+        active_levels[levc].errorEst(tags,
                                  TagBox::CLEAR,TagBox::SET,time,
                                  n_error_buf[levc],ngrow);
         //
@@ -2449,8 +2468,7 @@ Amr::grid_places (int              lbase,
         // Remove or add tagged points which violate/satisfy additional 
         // user-specified criteria.
         //
-        ///TODO/DEBUG: upgrade
-        amr_level[levc].front()->manual_tags_placement(tags, bf_lev);
+        active_levels[levc].manual_tags_placement(tags, bf_lev);
         //
         // Map tagged points through periodic boundaries, if any.
         //
@@ -2593,9 +2611,17 @@ Amr::bldFineLevels (Real strt_time)
     do
     {
         int new_finest;
-
-        grid_places(finest_level,strt_time,new_finest,grids);
-
+        ///TODO/DEBUG: Evolve this array.
+        std::cout << "DEBUG: Building fine levels\n";
+        PArray<AmrRegion> active_levels;
+        active_levels.resize(1);
+        for (int i = 0; i < finest_level; i++)
+        {
+            active_levels.set(i,&getLevel(i));
+        }
+        std::cout << "DEBUG: calling grid_places\n";
+        grid_places(finest_level,active_levels,strt_time,new_finest,grids);
+        std::cout << "DEBUG: grid places called\n";
         if (new_finest <= finest_level) break;
         //
         // Create a new level and link with others.
@@ -2793,7 +2819,7 @@ Amr::initPltAndChk(ParmParse * pp)
 
 
 bool
-Amr::okToRegrid(int level)
+Amr::okToRegrid (int level)
 {
     bool ok = true;
     for (RegionList::iterator it = amr_level[level].begin(); ok && it != amr_level[level].end(); it++)
@@ -2802,7 +2828,7 @@ Amr::okToRegrid(int level)
 }
 
 Real
-Amr::computeOptimalSubcycling(int n, int* best, Real* dt_max, Real* est_work, int* cycle_max)
+Amr::computeOptimalSubcycling (int n, int* best, Real* dt_max, Real* est_work, int* cycle_max)
 {
     BL_ASSERT(cycle_max[0] == 1);
     // internally these represent the total number of steps at a level, 
@@ -2848,3 +2874,44 @@ Amr::computeOptimalSubcycling(int n, int* best, Real* dt_max, Real* est_work, in
     return best_dt;
 }
 
+void
+Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxList>& clusters )
+{
+    std::list<BoxList>::iterator it;
+    int N = boxes.size();
+    for (int i = 0;i < N; i++)
+    {
+        BoxList* cluster_id = 0;
+        const Box box = boxes[i];
+        Box bgrown = boxes[i];
+        // We grow the box by d+1; this way it will intersect boxes 
+        // that are within distance d of the real box.
+        bgrown.grow(d+1);
+        for (it = clusters.begin(); it != clusters.end(); it++)
+        {
+            if (!BoxLib::intersect(*it, bgrown).isEmpty())
+            {
+                if (cluster_id == 0)
+                {
+                    // This is the first cluster this box belongs to
+                    cluster_id = &(*it);
+                    it->push_back(box);
+                }
+                else
+                {
+                    // This box belongs to multiple clusters; combine them.
+                    cluster_id->join(*it);
+                    clusters.erase(it);
+                    it--;
+                }
+            }
+        }
+        if (cluster_id == 0)
+        {
+            // We didn't find a cluster. Make a new one.
+            BoxList* new_cluster = new BoxList(box);
+            clusters.push_back(*new_cluster);
+        }
+    }
+    return; 
+}

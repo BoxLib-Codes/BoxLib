@@ -23,6 +23,18 @@ StateData::StateData ()
    old_time.stop  = INVALID_TIME;
 }
 
+StateData::StateData (StateData& sd1, StateData& sd2) 
+{
+    //BL_ASSERT(sd1.StateDescriptor() == sd1.StateDescriptor());
+    //desc = sd1.StateDescriptor();
+    BL_ASSERT(false); ///Not implemented yet
+    new_data = old_data = 0;
+    new_time.start = INVALID_TIME;
+    new_time.stop  = INVALID_TIME;
+    old_time.start = INVALID_TIME;
+    old_time.stop  = INVALID_TIME;
+}
+
 StateData::StateData (const Box&             p_domain,
                       const BoxArray&        grds,
                       const StateDescriptor* d,

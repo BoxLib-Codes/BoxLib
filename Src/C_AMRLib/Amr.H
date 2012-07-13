@@ -307,6 +307,13 @@ public:
                                          Real* dt_max, 
                                          Real* est_work, 
                                          int* cycle_max);
+    
+    //
+    // Uses a friends-of-friends clustering algorithm with min distance d
+    // to identify clusters in boxes. Distance is computed as the minimum '
+    // distance between cells in the 2 boxes.
+    // 
+    static void FOFCluster(int d, BoxArray boxes, std::list<BoxList>& clusters);
                                          
 protected:
     //
@@ -355,10 +362,11 @@ protected:
     //
     // Define new grid locations (called from regrid) and put into new_grids.
     //
-    void grid_places (int              lbase,
-                      Real             time,
-                      int&             new_finest,
-                      Array<BoxArray>& new_grids);
+    void grid_places (int               lbase,
+                      PArray<AmrRegion>& active_levels,
+                      Real              time,
+                      int&              new_finest,
+                      Array<BoxArray>&  new_grids);
     //
     // Do a single timestep on level L.
     //
