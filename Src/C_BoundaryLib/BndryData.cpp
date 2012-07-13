@@ -25,19 +25,19 @@ BndryData::BndryData (const BoxArray& _grids,
     define(_grids,_ncomp,_geom);
 }
 
-const Array<BoundCond>&
-BndryData::bndryConds (const Orientation& _face, int igrid) const
+const Array< Array<BoundCond> >&
+BndryData::bndryConds (int igrid) const
 {
-    std::map< int,Array<BoundCond> >::const_iterator it = bcond[_face].find(igrid);
-    BL_ASSERT(it != bcond[_face].end());
+    std::map< int, Array< Array<BoundCond> > >::const_iterator it = bcond.find(igrid);
+    BL_ASSERT(it != bcond.end());
     return it->second;
 }
 
-Real
-BndryData::bndryLocs (const Orientation& _face, int igrid) const
+const BndryData::RealTuple&
+BndryData::bndryLocs (int igrid) const
 {
-    std::map<int,Real>::const_iterator it = bcloc[_face].find(igrid);
-    BL_ASSERT(it != bcloc[_face].end());
+    std::map<int,RealTuple>::const_iterator it = bcloc.find(igrid);
+    BL_ASSERT(it != bcloc.end());
     return it->second;
 }
 
@@ -47,21 +47,19 @@ BndryData::init (const BndryData& src)
     //
     // Got to save the geometric info.
     //
+    geom    = src.geom;
     m_ncomp = src.m_ncomp;
-
-    geom = src.geom;
     //
     // Redefine grids and bndry array.
     //
     const int ngrd  = grids.size();
 
+    bcloc = src.bcloc;
+    bcond = src.bcond;
+
     for (OrientationIter fi; fi; ++fi)
     {
         const Orientation face = fi();
-
-        bcond[face] = src.bcond[face];
-
-        bcloc[face] = src.bcloc[face];
 
         masks[face].resize(ngrd);
 
@@ -146,7 +144,6 @@ BndryData::define (const BoxArray& _grids,
         const int         coord_dir = face.coordDir();
 
         masks[face].resize(ngrd);
-//        bcloc[face].resize(ngrd);
 
         BndryRegister::define(face,IndexType::TheCellType(),0,1,0,_ncomp);
         //
@@ -155,8 +152,6 @@ BndryData::define (const BoxArray& _grids,
         for (FabSetIter bfsi(bndry[face]); bfsi.isValid(); ++bfsi)
         {
             const int igrid = bfsi.index();
-
-            bcond[face][igrid].resize(_ncomp);
 
             Box face_box = BoxLib::adjCell(grids[igrid], face, 1);
             //
@@ -217,6 +212,23 @@ BndryData::define (const BoxArray& _grids,
             }
         }
     }
+    //
+    // Define "bcond".
+    //
+    // We note that all orientations of the FabSets have the same distribution.
+    // We'll use the low 0 side as the model.
+    //
+    for (FabSetIter bfsi(bndry[Orientation(0,Orientation::low)]);
+         bfsi.isValid();
+         ++bfsi)
+    {
+        Array< Array<BoundCond> >& abc = bcond[bfsi.index()];
+
+        abc.resize(2*BL_SPACEDIM);
+
+        for (OrientationIter fi; fi; ++fi)
+            abc[fi()].resize(_ncomp);
+    }
 }
 
 std::ostream&
@@ -234,17 +246,21 @@ operator<< (std::ostream&    os,
 
     for (int grd = 0; grd < ngrds; grd++)
     {
+        const BndryData::RealTuple& bdl = bd.bndryLocs(grd);
+
+        const Array< Array<BoundCond> > & bcs = bd.bndryConds(grd);
+
         for (OrientationIter face; face; ++face)
         {
-            Orientation f = face();
+            const Orientation f = face();
 
             os << "::: face " << (int)(f) << " of grid " << grds[grd] << "\nBC = ";
 
-            const Array<BoundCond>& bc = bd.bndryConds(f,grd);
+            const Array<BoundCond>& bc = bcs[f];
 
             for (int i = 0; i < ncomp; ++i)
                 os << bc[i] << ' ';
-            os << " LOC = " << bd.bndryLocs(f,grd) << '\n';
+            os << " LOC = " << bdl[f] << '\n';
             os << bd.masks[f][grd];
             os << bd.bndry[f][grd];
         }
@@ -274,17 +290,21 @@ BndryData::writeOn (std::ostream& os) const
 
     for (int grd = 0; grd < ngrds; grd++)
     {
+        const BndryData::RealTuple& bdl = bndryLocs(grd);
+
+        const Array< Array<BoundCond> >& bcs = bndryConds(grd);
+
         for (OrientationIter face; face; ++face)
         {
-            Orientation f = face();
+            const Orientation f = face();
 
-            const Array<BoundCond>& bc = bndryConds(f,grd);
+            const Array<BoundCond>& bc = bcs[f];
 
             for (int cmp = 0; cmp < ncomp; cmp++)
                 os << bc[cmp] << ' ';
             os << '\n';
 
-            os << bndryLocs(f,grd) << '\n';
+            os << bdl[f] << '\n';
         }
     }
 
