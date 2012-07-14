@@ -76,6 +76,7 @@ AmrRegion::AmrRegion (Amr&            papa,
             ancestor_regions.set(i, temp_region);
             temp_region = temp_region->parent_region;
         }
+        parent_region->add_child(this);
     }
     else
     {
@@ -1440,7 +1441,8 @@ AmrRegion::estimateWork ()
 void
 AmrRegion::get_descendants (int finest_level, PArray<AmrRegion>& descendants)
 {
-    int num_levels = level-finest_level+1;
+    std::cout << "\tDEBUG: In Desc computation at level " << level << "\n";
+    int num_levels = finest_level - level + 1;
     // If finest level or no children, set only this region.
     if (level == finest_level || child_regions.empty())
     {
@@ -1448,20 +1450,25 @@ AmrRegion::get_descendants (int finest_level, PArray<AmrRegion>& descendants)
     }
     else
     {
+        std::cout << "DEBUG: Setting first\n";
         descendants.set(0,this);
         PArray<RegionList > descendant_list(num_levels-1);
         // recursively get descendants from all children.
+        std::cout << "DEBUG: Gonna iterate\n";
         for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
         {
             PArray<AmrRegion> sub_decs(num_levels-1,PArrayManage);
+            std::cout << "DEBUG: Calling recursively\n";
             (*it)->get_descendants(finest_level, sub_decs);
             for (int j = 0; j < num_levels - 1; j++)
             {
+                std::cout << "DEBUG: adding to list\n";
                 if (sub_decs.defined(j))
                     descendant_list[j].push_back(&sub_decs[j]);
             }
         }
         // Aggregate the descendants at each level.
+        std::cout << "DEBUG: aggregating descs\n";
         for (int i = 1; i < num_levels; i++)
         {
             AmrRegion* a = master->build_blank_region();
@@ -1514,4 +1521,26 @@ AmrRegion::define(RegionList& regions, Amr* papa)
         StateData s(state_source);
         state.set(i,s);
     }
+}
+
+void
+AmrRegion::add_child(AmrRegion * child)
+{
+    BL_ASSERT(level < master->finestLevel());
+    BL_ASSERT(child->Level() == level +1);
+    child_regions.push_back(child);
+}
+
+void 
+AmrRegion::evict_descendants(int base_level,PArray<RegionList> evictees)
+{
+    if (child_regions.empty())
+        return;
+    for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
+    {
+        (*it)->evict_descendants(base_level, evictees);
+        master->getRegions(level).risky_remove(*it);
+        evictees[level + 1 - base_level].push_back(*it);
+    }
+    child_regions.clear();
 }

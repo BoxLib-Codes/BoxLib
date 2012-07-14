@@ -362,6 +362,12 @@ protected:
                  Real time,
                  bool initial = false);
     //
+    // Rebuild grid hierarchy for descendants of base_region.
+    //
+    void regrid (AmrRegion* base_region,
+                 Real time,
+                 bool initial = false);
+    //
     // Define new grid locations (called from regrid) and put into new_grids.
     //
     void grid_places (int               lbase,

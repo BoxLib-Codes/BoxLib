@@ -58,6 +58,14 @@ public:
     // referenced by the pointers in this list.
     //
     void clear ();
+    //
+    // Searches for and removes victim. If the list is managed, delete the victim.
+    //
+    void remove(T* victim);
+    //
+    // Searches for and removes victim. This DOES NOT delete the victim.
+    //
+    void risky_remove(T* victim);
 
 private:
     //
@@ -140,6 +148,42 @@ template <class T>
 PList<T>::~PList ()
 {
     clear();
+}
+
+template<class T>
+void
+PList<T>::remove (T* victim)
+{
+    typename std::list<T*>::iterator it;
+    for(it = this->begin(); it != this->end(); it++)
+    {
+        if ((T*)(*it) == victim)
+        {
+            if (managed)
+                delete (victim);
+            std::list<T*>::remove(victim);
+            std::cout << "DEBUG: Successful PList Remove\n";
+            return;
+        }
+    }
+    std::cout << "\nDEBUG: FAILED PList Remove\n\n";
+}
+
+template<class T>
+void
+PList<T>::risky_remove (T* victim)
+{
+    typename std::list<T*>::iterator it;
+    for(it = this->begin(); it != this->end(); it++)
+    {
+        if ((T*)(*it) == victim)
+        {
+            std::list<T*>::remove(victim);
+            std::cout << "DEBUG: Successful PList Risky-Remove\n";
+            return;
+        }
+    }
+    std::cout << "\nDEBUG: FAILED PList Risky-Remove\n\n";
 }
 
 

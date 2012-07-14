@@ -1905,45 +1905,56 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
-    //AmrRegion& base_region = getLevel(lbase);
+    AmrRegion* base_region = &getLevel(lbase);
+    regrid(base_region, time, initial);
+}
+
+void
+Amr::regrid (AmrRegion* base_region,
+             Real time,
+             bool initial)
+{
+    int lbase = base_region->Level();
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "REGRID: at level lbase = " << lbase << std::endl;
 
     if (record_run_info && ParallelDescriptor::IOProcessor())
         runlog << "REGRID: at level lbase = " << lbase << '\n';
 
+    // This list tracks all regions that need to call post_regrid.
+    RegionList touched_regions;
+    //
+    // Create the level hierarchy with the data we can see.
+    //
+    PArray<AmrRegion> active_levels;
+    active_levels.resize(finest_level);
+    for (int i = 0; i <= lbase; i++)
+    {
+        active_levels.set(i,&(base_region->get_ancestors()[i]));
+        touched_regions.push_back(&(base_region->get_ancestors()[i]));
+    }
+    std::cout << "DEBUG: computing Descendants\n";
+    PArray<AmrRegion> descendants(finest_level - lbase + 1);
+    base_region->get_descendants(finest_level, descendants);
+    for (int i = lbase+1; i < finest_level; i++)
+    {
+        active_levels.set(i,&descendants[i]);
+    }
+
+    std::cout << "DEBUG: Regridding lbase " << lbase << " to finest " << finest_level <<"\n";
+    
     //
     // Compute positions of new grids.
     //
     int             new_finest;
     Array<BoxArray> new_grid_places(max_level+1);
-
-    ///TODO/DEBUG: Evolve this array.
-    PArray<AmrRegion> active_levels;
-    active_levels.resize(finest_level);
-    for (int i = 0; i < finest_level; i++)
-    {
-        active_levels.set(i,&getLevel(i));
-    }
-    
-    std::cout << "DEBUG: Regridding lbase " << lbase << " to finest " << finest_level <<"\n";
     
     if (lbase <= std::min(finest_level,max_level-1))
       grid_places(lbase,active_levels,time,new_finest, new_grid_places);
-
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != amr_level[0].front()->boxArray()) && (!initial);
-
     const int start = regrid_level_zero ? 0 : lbase+1;
     
-    //Debug loop for clustering.
-    for (int i = start; i <= new_finest; i++)
-    {
-        std::list<BoxList> clusters;
-        FOFCluster(0,new_grid_places[i],clusters);
-        std::cout << "DEBUG: Found " << clusters.size() << " Clusters at Level " << i << "\n";
-    }
-
     //
     // If use_efficient_regrid flag is set, then test to see whether we in fact 
     //    have changed the grids at any of the levels through the regridding process.  
@@ -1964,20 +1975,56 @@ Amr::regrid (int  lbase,
             return;
         }
     }
+    
+    //
+    // We now remove the descendants from the hierarchy without deleting them
+    // and put them in evictees.
+    // Note that evictees is doubly managed so that it will delete
+    // all the necessary Regions.
+    //
+    PArray<RegionList> evictees(finest_level - start + 1,PArrayManage);
+    for(int i = 0; i < finest_level - lbase; i++)
+    {
+        RegionList*  rl = new RegionList(PListManage);
+        evictees.set(i,rl);
+    }
+    base_region->evict_descendants(lbase, evictees);
+    if (regrid_level_zero)
+    {
+        AmrRegion* l0 = &getLevel(0);
+        evictees[0].push_back(l0);
+        getRegions(0).risky_remove(l0);
+    }
+    
+    //Debug loop for clustering.
+    for (int i = start; i <= new_finest; i++)
+    {
+        std::list<BoxList> clusters;
+        FOFCluster(0,new_grid_places[i],clusters);
+        std::cout << "DEBUG: Found " << clusters.size() << " Clusters at Level " << i << "\n";
+    }
 
     //
     // Reclaim old-time grid space for all remain levels > lbase.
     //
     ///TODO/DEBUG: upgrade
     for (int lev = start; lev <= finest_level; lev++)
-        amr_level[lev].front()->removeOldData();
+        for (RegionList::iterator it = evictees[lev-start].begin(); it != evictees[lev-start].end(); it++)
+            (*it)->removeOldData();
     //
-    // Reclaim all remaining storage for levels > new_finest.
+    // Reclaim all remaining storage for levels > real_finest 
+    // (where real_finest includes other regions).
     //
-    for (int lev = new_finest+1; lev <= finest_level; lev++)
+    int real_finest = new_finest+1;
+    while(!(amr_level[real_finest].empty()) && real_finest < finest_level)
+    {
+        real_finest++;
+        // the eviction has already removed all regions in this regrid from amr_level.
+    }
+    for (int lev = real_finest+1; lev <= finest_level; lev++)
         amr_level.clear(lev);
 
-    finest_level = new_finest;
+    finest_level = real_finest;
 
     if (lbase == 0)
     {
@@ -1992,6 +2039,7 @@ Amr::regrid (int  lbase,
         for (int lev = start; lev <= new_finest; lev++) 
             amr_level.clear(lev);
     }
+    
     //
     // Define the new grids from level start up to new_finest.
     //
@@ -2016,38 +2064,41 @@ Amr::regrid (int  lbase,
             amr_level.set(lev,ll);
             amr_level[lev].front()->initData();
         }
-        else if (amr_level.defined(lev))
+        else if (active_levels.defined(lev)) /// TODO/DEBUG: Is this correct?
         {
             //
             // Init with data from old structure then remove old structure.
             // NOTE: The init function may use a filPatch from the old level,
             //       which therefore needs remain in the hierarchy during the call.
             //
-            ///TODO/DEBUG: upgrade
-            //Haaaaack. This will need to change when we evolve regridding.
-            amr_level[lev].front()->set_ancestors(lev-1,a->get_ancestors());
-            a->init(*amr_level[lev].front());
-            amr_level.clear(lev);
-            RegionList* ll = new RegionList(PListManage);
-            ll->push_back(a);
-            amr_level.set(lev,ll);
-       }
+            a->init(active_levels[lev]);
+            amr_level[lev].push_back(a);
+        }
+        else if (amr_level.defined(lev))
+        {
+            //
+            // This is a new level of refinement within base_region,
+            // but not new to the simulation as a whole.
+            //
+            a->init();
+            amr_level[lev].push_back(a);
+        }
         else
-        {///TODO/DEBUG: upgrade
+        {
             a->init();
             amr_level.clear(lev);
             RegionList* ll = new RegionList(PListManage);
             ll->push_back(a);
             amr_level.set(lev,ll);
         }
-
+        if (lev > 0)
+            touched_regions.push_back(a);
     }
     //
     // Build any additional data structures at levels start and higher after grid generation.
     //
-    ///TODO/DEBUG: upgrade
-    for (int lev = 0; lev <= new_finest; lev++)
-        amr_level[lev].front()->post_regrid(lbase,new_finest);
+    for (RegionList::iterator it = touched_regions.begin(); it != touched_regions.end(); it++)
+        (*it)->post_regrid(lbase,new_finest);
 
 #ifdef USE_STATIONDATA
     station.findGrid(amr_level,geom);

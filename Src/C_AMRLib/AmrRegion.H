@@ -360,8 +360,23 @@ public:
     //
     void get_descendants(int finest_level, PArray<AmrRegion>& descendants);
     
+    //
+    // Initializes a blank AmrRegion as an aggregate of a list of regions.
+    //
     void define(PList<AmrRegion>& regions, Amr* papa);
     
+    //
+    // Adds a child region.
+    //
+    void add_child(AmrRegion* child);
+    
+    //
+    // Go through all descendents, remove them from the master region list
+    // WITHOUT DELETING THEM. Instead put their pointers in evictees so that
+    // they can be deleted later. Be careful with this method. Evictees is 
+    // assumed to extend from base_level + 1 to the finest level present.
+    //
+    void evict_descendants(int base_level, PArray<RegionList> evictees);
 protected:
     //
     // The constructors -- for derived classes.
@@ -633,5 +648,6 @@ AmrRegion::get_children()
 {
     return child_regions;
 }
+
 
 #endif /*_AmrRegion_H_*/
