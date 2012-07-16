@@ -120,6 +120,7 @@ AmrRegion::restart (Amr&          papa,
 
     is >> level;
     is >> geom;
+    std::cout << "DEBUG: Region Restart\n";
 
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
@@ -147,6 +148,28 @@ AmrRegion::restart (Amr&          papa,
     int ndesc = desc_lst.size();
     BL_ASSERT(nstate == ndesc);
 
+    // set up ancestors
+    if (level > 0)
+    {
+        BoxArray cba = grids;
+        cba.coarsen(master->refRatio(level-1));
+        parent_region = &papa.getParent(level - 1, cba);
+        ancestor_regions.resize(level+1);
+        AmrRegion* temp_region = this;
+        for (int i = level; i >= 0; i--)
+        {
+            ancestor_regions.set(i, temp_region);
+            temp_region = temp_region->parent_region;
+        }
+        parent_region->add_child(this);
+    }
+    else
+    {
+        parent_region = this;
+        ancestor_regions.resize(1);
+        ancestor_regions.set(0,this);
+    }
+    
     state.resize(ndesc);
     for (int i = 0; i < ndesc; i++)
     {
@@ -387,6 +410,7 @@ FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
     BL_ASSERT(ncomp >= 1);
     BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
     BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
+    std::cout << "DEBUG: initing fpi\n";
     Initialize(boxGrow,time,index,scomp,ncomp);
 }
 
@@ -416,6 +440,7 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     BL_ASSERT(ncomp >= 1);
     BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
     BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
+    std::cout << "DEBUG: calling fph init\n";
 
     m_map          = mapper;
     m_time         = time;
@@ -428,19 +453,24 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     const int         MyProc     = ParallelDescriptor::MyProc();
     ///TODO/DEBUG: This non-reference might be a slowdown.
     PArray<AmrRegion>&  amrLevels = m_amrlevel.ancestor_regions;
+    std::cout << "DEBUG: got ancestor Regions\n";
     const AmrRegion&   topLevel   = amrLevels[m_amrlevel.level];
+    std::cout << "DEBUG: got toplevel\n";
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
+    std::cout << "DEBUG: got top domain\n";
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
     const bool        extrap     = AmrRegion::desc_lst[m_index].extrap();
     //
     // Check that the interpolaters are identical.
     //
+    std::cout << "DEBUG: got basics\n";
     BL_ASSERT(AmrRegion::desc_lst[m_index].identicalInterps(scomp,ncomp));
 
     for (int l = 0; l <= m_amrlevel.level; ++l)
     {
         amrLevels[l].state[m_index].RegisterData(m_mfcd, m_mfid[l]);
     }
+    std::cout << "DEBUG: got rd\n";
     for (int i = 0, N = m_ba.size(); i < N; ++i)
     {
         if (m_leveldata.DistributionMap()[i] == MyProc)
@@ -451,10 +481,11 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
             m_crsebox[i].resize(m_amrlevel.level + 1);
         }
     }
+    std::cout << "DEBUG: got dmaps\n";
     m_ba.grow(m_growsize);  // These are the ones we want to fillpatch.
 
     Array<IntVect> pshifts(27);
-
+    std::cout << "DEBUG: shifty\n";
     std::vector<Box> unfilledThisLevel, crse_boxes;
 
     BoxList unfillableThisLevel(boxType), tempUnfillable(boxType);
@@ -632,7 +663,7 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
             }
         }
     }
-
+    std::cout << "DEBUG: did data\n";
     m_mfcd.CollectData();
 
     m_init = true;
@@ -667,6 +698,8 @@ FillPatchIterator::Initialize (int  boxGrow,
     BL_ASSERT(m_leveldata.DistributionMap() == m_fabs.DistributionMap());
 
     FillPatchIteratorHelper* fph = 0;
+    
+    std::cout << "DEBUG: Setting up fph\n";
 
     for (int i = 0, DComp = 0; i < m_range.size(); i++)
     {
@@ -693,6 +726,7 @@ FillPatchIterator::Initialize (int  boxGrow,
     //
     // Call hack to touch up fillPatched data.
     //
+    std::cout << "DEBUG: Setting bndry\n";
     m_amrlevel.set_preferred_boundary_values(m_fabs,
                                              index,
                                              scomp,
@@ -1443,39 +1477,57 @@ AmrRegion::get_descendants (int finest_level, PArray<AmrRegion>& descendants)
 {
     std::cout << "\tDEBUG: In Desc computation at level " << level << "\n";
     int num_levels = finest_level - level + 1;
+    // this gets special treatment so it isn't deleted with descendent list.
+    std::cout << "DEBUG: Setting first\n";
+    RegionList rl;
+    rl.push_back(this);
+    AmrRegion* a = master->build_blank_region();
+    a->define(rl, master);
+    descendants.set(0,a);
     // If finest level or no children, set only this region.
     if (level == finest_level || child_regions.empty())
     {
-        descendants.set(0,this);
+        return;
     }
     else
     {
-        std::cout << "DEBUG: Setting first\n";
-        descendants.set(0,this);
-        PArray<RegionList > descendant_list(num_levels-1);
+        // The lists of descendants at each level. d_l[0] will be blank.
+        PArray<RegionList > descendant_list(num_levels,PArrayManage);
+        for (int j = 0; j < num_levels; j++)
+        {
+            RegionList* rl = new RegionList(PListManage);
+            descendant_list.set(j,rl);
+        }
         // recursively get descendants from all children.
         std::cout << "DEBUG: Gonna iterate\n";
         for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
         {
-            PArray<AmrRegion> sub_decs(num_levels-1,PArrayManage);
+            PArray<AmrRegion> sub_decs(num_levels-1);
             std::cout << "DEBUG: Calling recursively\n";
             (*it)->get_descendants(finest_level, sub_decs);
-            for (int j = 0; j < num_levels - 1; j++)
+            for (int j = 1; j < num_levels; j++)
             {
-                std::cout << "DEBUG: adding to list\n";
-                if (sub_decs.defined(j))
-                    descendant_list[j].push_back(&sub_decs[j]);
+                std::cout << "DEBUG: adding to list " << j << " of " << num_levels << "\n";
+                if (sub_decs.defined(j-1))
+                    descendant_list[j].push_back(&sub_decs[j-1]);
+                std::cout << "DEBUG: added\n";
             }
         }
         // Aggregate the descendants at each level.
-        std::cout << "DEBUG: aggregating descs\n";
+        
         for (int i = 1; i < num_levels; i++)
         {
+            std::cout << "DEBUG: aggregating descs " << i << "/" <<num_levels << "\n";
             AmrRegion* a = master->build_blank_region();
-            a->define(descendant_list[i-1], master);
+            std::cout << "DEBUG: built blank\n";
+            std::cout << "DEBUG: d_l size = " << descendant_list[i].size() <<"\n";
+            std::cout << "DEBUG: d_l [0] grids = " << descendant_list[i].front()->numGrids() <<"\n";
+            a->define(descendant_list[i], master);
+            std::cout << "DEBUG: setting\n";
             descendants.set(i,a);
         }
     }
+    std::cout << "\tDEBUG: Returning from level " << level << "\n";
 }
 
 void
@@ -1483,6 +1535,7 @@ AmrRegion::define(RegionList& regions, Amr* papa)
 {
     std::cout << "DEBUG: Calling AmrRegion define\n";
     int N = regions.size();
+    std::cout << "DEBUG: Got size\n";
     BL_ASSERT(N > 0);
     //
     // We could add consistency checks for all regions
@@ -1492,7 +1545,10 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     level = first->Level();
     geom = first->Geom();
     master = papa;
-
+    // Resize ancestor array. This array is not set in define, it must
+    // be initialized elsewhere TODO/DEBUG: should this change?
+    ancestor_regions.resize(level + 1);
+    std::cout << "DEBUG: got basics\n";
     // Initialize ratios.
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
@@ -1507,19 +1563,26 @@ AmrRegion::define(RegionList& regions, Amr* papa)
         bl.join((*it)->boxArray().boxList());
     grids.define(bl);
     
+    std::cout << "DEBUG: Combining States\n";
     // Combine the state data.
-    PArray<StateData> state_source(N);
+    PArray<StateData> state_source;
     int num_states = first->desc_lst.size();
     state.resize(num_states);
     for (int i = 0; i < num_states; i++)
     {
+        state_source.clear();
+        state_source.resize(N);
+        std::cout << "DEBUG: CS " << i <<"/"<<num_states-1 << "\n";
         int ri = 0;
         for (RegionList::iterator it = regions.begin(); it != regions.end(); it++, ri++)
         {
             state_source.set(ri, &(*it)->get_state_data(ri));
         }
-        StateData s(state_source);
-        state.set(i,s);
+        std::cout << "DEBUG: MS " << i << "\n";
+        StateData* s = new StateData(state_source);
+        std::cout << "DEBUG: SS " << i << "\n";
+        state.set(i,*s);
+        std::cout << "DEBUG: set\n";
     }
 }
 
@@ -1532,15 +1595,20 @@ AmrRegion::add_child(AmrRegion * child)
 }
 
 void 
-AmrRegion::evict_descendants(int base_level,PArray<RegionList> evictees)
+AmrRegion::evict_descendants(int base_level,PArray<RegionList>& evictees)
 {
+    std::cout << "DEBUG: evicting at level " << level << " with grids " << numGrids() <<"\n";
+    std::cout << "DEBUG: I'm at " << this << "\n";
+    
     if (child_regions.empty())
         return;
-    for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
+    for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); ++it)
     {
         (*it)->evict_descendants(base_level, evictees);
-        master->getRegions(level).risky_remove(*it);
-        evictees[level + 1 - base_level].push_back(*it);
+        std::cout << "DEBUG: evicting " << (*it) << "\n";
+        master->getRegions(level+1).risky_remove(*it);
+        // Evictees [0] is base_level + 1
+        evictees[level - base_level].push_back(*it);
     }
     child_regions.clear();
 }

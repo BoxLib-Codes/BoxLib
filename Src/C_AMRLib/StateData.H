@@ -40,7 +40,7 @@ public:
     //
     // Constructs a merged statedata out a list of state datas.
     //
-    StateData (PArray<StateData> sds);
+    StateData (PArray<StateData>& sds);
     //
     // The destructor.
     //

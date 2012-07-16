@@ -23,25 +23,44 @@ StateData::StateData ()
    old_time.stop  = INVALID_TIME;
 }
 
-StateData::StateData (PArray<StateData> sds) 
+StateData::StateData (PArray<StateData>& sds) 
 {
+    std::cout << "DEBUG: Creating merged SD\n";
     int N = sds.size();
     BL_ASSERT(N > 0);
     PArray<MultiFab> mfs(N);
-    
     // Set old data
-    for (int i = 0; i < N;  i++)
+    std::cout << "DEBUG: basic done\n";
+    if (sds[0].hasOldData())
     {
-        mfs.set(i,&sds[i].oldData());
+        for (int i = 0; i < N;  i++)
+        {
+            mfs.set(i,&sds[i].oldData());
+        }
+        old_data = new MultiFab(mfs);
+        mfs.clear();
     }
-    old_data = new MultiFab(mfs);
-    
+    else
+    {
+        old_data = 0;
+    }
     // Set new data
-    for (int i = 0; i < N;  i++)
+    mfs.clear();
+    std::cout << "DEBUG: old done\n";
+    if (sds[0].hasNewData())
     {
-        mfs.set(i,&sds[i].newData());
+        for (int i = 0; i < N;  i++)
+        {
+            mfs.set(i,&sds[i].newData());
+        }
+        std::cout << "DEBUG: making new mf\n";
+        new_data = new MultiFab(mfs);
     }
-    new_data = new MultiFab(mfs);
+    else
+    {
+        new_data = 0;
+    }
+    std::cout << "DEBUG: new done\n";
     
     ///TODO/DEBUG: check these more carefully.
     //
@@ -50,6 +69,7 @@ StateData::StateData (PArray<StateData> sds)
     // state descriptors.
     //
     desc = sds[0].descriptor();
+    domain = sds[0].getDomain();
     
     //
     // Set Times 

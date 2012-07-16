@@ -155,16 +155,17 @@ void
 PList<T>::remove (T* victim)
 {
     typename std::list<T*>::iterator it;
-    for(it = this->begin(); it != this->end(); it++)
+    for(it = this->begin(); it != this->end();)
     {
         if ((T*)(*it) == victim)
         {
             if (managed)
                 delete (victim);
-            std::list<T*>::remove(victim);
+            std::list<T*>::erase(it);
             std::cout << "DEBUG: Successful PList Remove\n";
             return;
         }
+        ++it;
     }
     std::cout << "\nDEBUG: FAILED PList Remove\n\n";
 }
@@ -174,13 +175,17 @@ void
 PList<T>::risky_remove (T* victim)
 {
     typename std::list<T*>::iterator it;
-    for(it = this->begin(); it != this->end(); it++)
+    for(it = this->begin(); it != this->end(); )
     {
-        if ((T*)(*it) == victim)
+        if ((*it) == victim)
         {
-            std::list<T*>::remove(victim);
+            std::list<T*>::erase(it);
             std::cout << "DEBUG: Successful PList Risky-Remove\n";
             return;
+        }
+        else
+        {
+            ++it;
         }
     }
     std::cout << "\nDEBUG: FAILED PList Risky-Remove\n\n";

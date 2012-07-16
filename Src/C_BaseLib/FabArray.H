@@ -507,7 +507,7 @@ public:
     //
     // Define the FabArray based on the merger of the listed arrays,
     //
-    void mergeDefine (PArray<FabArray<FAB> > fab_arrs);
+    void mergeDefine (PArray<FabArray<FAB> >& fab_arrs);
     //
     // Returns true if the FabArray is well-defined.  That is,
     // if FABs are allocated for each Box in the BoxArray and the
@@ -1209,7 +1209,7 @@ FabArray<FAB>::define (const BoxArray&            bxs,
 
 template <class FAB>
 void
-FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> > fab_arrs)
+FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> >& fab_arrs)
 {
     int N = fab_arrs.size();
     BL_ASSERT(N > 0);
@@ -1220,7 +1220,6 @@ FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> > fab_arrs)
     boxarray.define(bl);
     int nboxes = boxarray.size();
     BL_ASSERT(boxarray.isDisjoint());
-    
     // Set other data
     n_grow = fab_arrs[0].nGrow();
     n_comp = fab_arrs[0].nComp();

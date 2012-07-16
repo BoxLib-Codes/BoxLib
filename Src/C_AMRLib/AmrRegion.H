@@ -346,7 +346,7 @@ public:
     // 
     // Sets/Gets the ancester list. Currently only needed for a regridding hack.
     //
-    void set_ancestors(int finest_level, PArray<AmrRegion>& ancs);
+    void set_ancestors(PArray<AmrRegion>& ancs);
     PArray<AmrRegion>& get_ancestors();
     
     // 
@@ -376,7 +376,7 @@ public:
     // they can be deleted later. Be careful with this method. Evictees is 
     // assumed to extend from base_level + 1 to the finest level present.
     //
-    void evict_descendants(int base_level, PArray<RegionList> evictees);
+    void evict_descendants(int base_level, PArray<RegionList>& evictees);
 protected:
     //
     // The constructors -- for derived classes.
@@ -619,9 +619,10 @@ AmrRegion::get_desc_lst ()
 
 inline
 void 
-AmrRegion::set_ancestors(int finest_level, PArray<AmrRegion>& ancs)
+AmrRegion::set_ancestors(PArray<AmrRegion>& ancs)
 {
-    for(int i = 0; i <= finest_level; i++)
+    std::cout << "DEBUG: Setting ancestors\n";
+    for(int i = 0; i <= level; i++)
     {   
         ancestor_regions.clear(i);
         ancestor_regions.set(i,&ancs[i]);

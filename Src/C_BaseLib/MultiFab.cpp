@@ -236,7 +236,7 @@ MultiFab::MultiFab (const BoxArray& bxs,
     if ((check_for_nan || check_for_inf) && alloc == Fab_allocate) setVal(0);
 }
 
-MultiFab::MultiFab (PArray<MultiFab> mfs,
+MultiFab::MultiFab (PArray<MultiFab>& mfs,
                     FabAlloc               mem_mode,
                     FabClear               clear)
 {
