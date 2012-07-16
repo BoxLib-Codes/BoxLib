@@ -25,12 +25,10 @@ StateData::StateData ()
 
 StateData::StateData (PArray<StateData>& sds) 
 {
-    std::cout << "DEBUG: Creating merged SD\n";
     int N = sds.size();
     BL_ASSERT(N > 0);
     PArray<MultiFab> mfs(N);
     // Set old data
-    std::cout << "DEBUG: basic done\n";
     if (sds[0].hasOldData())
     {
         for (int i = 0; i < N;  i++)
@@ -46,21 +44,18 @@ StateData::StateData (PArray<StateData>& sds)
     }
     // Set new data
     mfs.clear();
-    std::cout << "DEBUG: old done\n";
     if (sds[0].hasNewData())
     {
         for (int i = 0; i < N;  i++)
         {
             mfs.set(i,&sds[i].newData());
         }
-        std::cout << "DEBUG: making new mf\n";
         new_data = new MultiFab(mfs);
     }
     else
     {
         new_data = 0;
     }
-    std::cout << "DEBUG: new done\n";
     
     ///TODO/DEBUG: check these more carefully.
     //

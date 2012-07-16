@@ -76,10 +76,11 @@ AmrRegion::AmrRegion (Amr&            papa,
             ancestor_regions.set(i, temp_region);
             temp_region = temp_region->parent_region;
         }
-        parent_region->add_child(this);
+        leaf_id = parent_region->add_child(this);
     }
     else
     {
+        leaf_id = 0;
         parent_region = this;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
@@ -161,10 +162,11 @@ AmrRegion::restart (Amr&          papa,
             ancestor_regions.set(i, temp_region);
             temp_region = temp_region->parent_region;
         }
-        parent_region->add_child(this);
+        leaf_id = parent_region->add_child(this);
     }
     else
     {
+        leaf_id = 0;
         parent_region = this;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
@@ -1576,7 +1578,7 @@ AmrRegion::define(RegionList& regions, Amr* papa)
         int ri = 0;
         for (RegionList::iterator it = regions.begin(); it != regions.end(); it++, ri++)
         {
-            state_source.set(ri, &(*it)->get_state_data(ri));
+            state_source.set(ri, &(*it)->get_state_data(i));
         }
         std::cout << "DEBUG: MS " << i << "\n";
         StateData* s = new StateData(state_source);
@@ -1586,12 +1588,13 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     }
 }
 
-void
+int
 AmrRegion::add_child(AmrRegion * child)
 {
     BL_ASSERT(level < master->finestLevel());
     BL_ASSERT(child->Level() == level +1);
     child_regions.push_back(child);
+    return child_regions.size()-1;
 }
 
 void 
@@ -1611,4 +1614,28 @@ AmrRegion::evict_descendants(int base_level,PArray<RegionList>& evictees)
         evictees[level - base_level].push_back(*it);
     }
     child_regions.clear();
+}
+
+Array<int>
+AmrRegion::getId()
+{
+    Array<int> id(level+1);
+    for (int i = 0; i <= level; ++i)
+    {
+        id[i] = ancestor_regions[i].get_leaf_id();
+    }
+    return id;
+}
+
+std::string
+AmrRegion::getIdString()
+{
+    std::ostringstream convert;
+    convert << ancestor_regions[0].get_leaf_id();
+    for (int i = 1; i <= level; ++i)
+    {
+        convert << "_";
+        convert << ancestor_regions[i].get_leaf_id();
+    }
+    return convert.str();
 }

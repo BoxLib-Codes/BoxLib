@@ -366,9 +366,9 @@ public:
     void define(PList<AmrRegion>& regions, Amr* papa);
     
     //
-    // Adds a child region.
+    // Adds a child region and returns an integer id for that child.
     //
-    void add_child(AmrRegion* child);
+    int add_child(AmrRegion* child);
     
     //
     // Go through all descendents, remove them from the master region list
@@ -377,6 +377,16 @@ public:
     // assumed to extend from base_level + 1 to the finest level present.
     //
     void evict_descendants(int base_level, PArray<RegionList>& evictees);
+    
+    //
+    // Creates/Returns the full id of this region.
+    //
+    Array<int> getId();
+    std::string getIdString();
+    //
+    // Returns the node id of this region.
+    //
+    int get_leaf_id();
 protected:
     //
     // The constructors -- for derived classes.
@@ -406,7 +416,9 @@ protected:
     static DescriptorList desc_lst;     // List of state variables.
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
-    PList<AmrRegion>     child_regions;
+    PList<AmrRegion>      child_regions;
+    int                   leaf_id;         // The node region_id specifying the region's id 
+                                        // relative to its parent
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.
 #endif
@@ -648,6 +660,13 @@ PList<AmrRegion>&
 AmrRegion::get_children()
 {
     return child_regions;
+}
+
+inline
+int 
+AmrRegion::get_leaf_id()
+{
+    return leaf_id;
 }
 
 

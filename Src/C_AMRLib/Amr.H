@@ -313,9 +313,11 @@ public:
     // to identify clusters in boxes. Distance is computed as the minimum '
     // distance between cells in the 2 boxes.
     // 
-    static void FOFCluster(int d, BoxArray boxes, std::list<BoxList>& clusters);
+    static void FOFCluster(int d, BoxArray boxes, Array<BoxArray>& clusters);
     
     AmrRegion* build_blank_region();
+    
+    AmrRegion& coarseRegion();
                                          
 protected:
     //
@@ -376,9 +378,9 @@ protected:
                       int&              new_finest,
                       Array<BoxArray>&  new_grids);
     //
-    // Do a single timestep on level L.
+    // Do a single timestep on the base region.
     //
-    void timeStep (int  level,
+    void timeStep (AmrRegion& base_region,
                    Real dt,
                    int  iter,
                    int  ncycle,
@@ -647,6 +649,14 @@ const std::string&
 Amr::theRestartFile () const
 {
     return restart_file;
+}
+
+inline
+AmrRegion&
+Amr::coarseRegion()
+{
+    BL_ASSERT(amr_level[0].size()==1);
+    return *amr_level[0].front();
 }
 
 #endif /*_Amr_H_*/
