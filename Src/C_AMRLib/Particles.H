@@ -259,7 +259,7 @@ public:
     //
     // Returns # of particles at specified the level.
     //
-    // I "only_valid" is true it only counts valid particles.
+    // If "only_valid" is true it only counts valid particles.
     //
     long NumberOfParticlesAtLevel (int level, bool only_valid = true) const;
 

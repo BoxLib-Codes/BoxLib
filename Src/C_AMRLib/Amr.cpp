@@ -248,6 +248,7 @@ Amr::Amr ()
     record_grid_info       = false;
     file_name_digits       = 5;
     record_run_info_terse  = false;
+    multi_region           = false;
 
     int i;
     for (i = 0; i < BL_SPACEDIM; i++)
@@ -316,6 +317,10 @@ Amr::Amr ()
     // Restart or run from scratch?
     //
     pp.query("restart", restart_file);
+    //
+    // Allow multiple regions per level?
+    //
+    pp.query("multi_region", multi_region);
     //
     // Read max_level and alloc memory for container objects.
     //
@@ -2080,7 +2085,15 @@ Amr::regrid (AmrRegion* base_region,
         std::cout << "\t\tDEBUG:  Looping " << lev << "/" << new_finest<<"\n";
         std::cout << "DEBUG: Clustering\n";
         Array<BoxArray> clusters;
-        FOFCluster(0,new_grid_places[lev],clusters);
+        if (multi_region)
+        {
+            FOFCluster(0,new_grid_places[lev],clusters);
+        }
+        else
+        {
+            clusters.resize(1);
+            clusters.set(0,new_grid_places[lev]);
+        }
         int num_regions = clusters.size();
         std::cout << "DEBUG: Creating " << num_regions << " Regions at Level " << lev << "\n";
         //

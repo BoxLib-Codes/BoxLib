@@ -10,6 +10,7 @@
 #include <Array.H>
 #include <PArray.H>
 #include <PList.H>
+#include <PTree.H>
 #include <ParmParse.H>
 #ifdef USE_STATIONDATA
 #include <StationData.H>
@@ -454,6 +455,7 @@ protected:
     std::string      restart_file;
     std::string      probin_file;
     LevelBld*        levelbld;
+    bool             multi_region;
     //
     // The static data ...
     //
