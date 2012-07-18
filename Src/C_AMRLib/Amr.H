@@ -226,7 +226,7 @@ public:
     //
     // List of grids at each level.
     //
-    const BoxArray& boxArray (int lev) const;
+    BoxArray boxArray (int lev) const;
     //
     // AmrRegion lev.
     //
@@ -237,13 +237,9 @@ public:
     //
     AmrRegion&  getParent (int lev, const BoxArray& ba);
     //
-    // PArray of AmrRegions.
+    // PTree of all the AmrRegions.
     //
-    PArray<RegionList>& getAmrRegions ();
-    //
-    // PArray of AmrRegions.
-    //
-    RegionList& getRegions (int level);
+    PTree<AmrRegion>& getAmrRegions ();
     //
     // Total number of cells.
     //
@@ -277,7 +273,7 @@ public:
     //
     virtual void coarseTimeStep (Real stop_time);
     //
-    // Retrieve derived data. User is responsible for deleting pointer.
+    // Retrieve derived data FOR THE ENTIRE LEVEL. User is responsible for deleting pointer.
     //
     MultiFab* derive (const std::string& name,
                       Real           time,
@@ -317,6 +313,8 @@ public:
     static void FOFCluster(int d, BoxArray boxes, Array<BoxArray>& clusters);
     
     AmrRegion* build_blank_region();
+    
+    void aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates);
     
     AmrRegion& coarseRegion();
                                          
@@ -415,7 +413,8 @@ protected:
     int              max_level;    // Maximum allowed level.
     int              finest_level; // Current finest level.
     Array<IntVect>   ref_ratio;    // Refinement ratios [0:finest_level-1]
-    PArray<RegionList> amr_level;    // Array of list of Regions
+    //PArray<RegionList> amr_level;    // Array of list of Regions
+    PTree<AmrRegion> amr_regions;
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Array<Real>      dt_level;     // Timestep at this level.
@@ -456,12 +455,14 @@ protected:
     std::string      probin_file;
     LevelBld*        levelbld;
     bool             multi_region;
+    Array<int>             root_id; // The constant tree id for the root node. Pulled out for convenience.
     //
     // The static data ...
     //
     static std::list<std::string> state_plot_vars;  // State Vars to dump to plotfile 
     static std::list<std::string> derive_plot_vars; // Derived Vars to dump to plotfile 
     static bool                   first_plotfile;
+    
 
 private:
     //
@@ -657,8 +658,7 @@ inline
 AmrRegion&
 Amr::coarseRegion()
 {
-    BL_ASSERT(amr_level[0].size()==1);
-    return *amr_level[0].front();
+    return *(amr_regions.getRoot());
 }
 
 #endif /*_Amr_H_*/

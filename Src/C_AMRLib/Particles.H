@@ -2064,10 +2064,11 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
     {
         finest_level = m_amr->finestLevel();
     }
-    while (!m_amr->getAmrRegions().defined(finest_level))
-    {
-        finest_level--;
-    }
+    ///TODO/DEBUG: This may need to upgrade
+    //while (!m_amr->getAmrRegions().defined(finest_level))
+    //{
+        //finest_level--;
+    //}
     //
     // The size of the returned multifab is limited by lev_min and 
     // finest_level. In the following code, lev is the real level, 
@@ -4260,9 +4261,13 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     // with a given finestLevel() where that AmrRegion has yet to be defined.
     //
     int theEffectiveFinestLevel = m_amr->finestLevel();
+    std::cout << "DEBUG: pre finest = " << theEffectiveFinestLevel << "\n";
 
-    while (!m_amr->getAmrRegions().defined(theEffectiveFinestLevel))
-        theEffectiveFinestLevel--;
+    ///TODO/DEBUG: This may need to upgrade
+    //while (!m_amr->getAmrRegions().defined(theEffectiveFinestLevel))
+        //theEffectiveFinestLevel--;
+    theEffectiveFinestLevel = m_amr->getAmrRegions().DeprecatedGetFinestLevel();
+    std::cout << "DEBUG: post finest = " << theEffectiveFinestLevel << "\n";
 
     if (m_particles.size() < theEffectiveFinestLevel+1)
     {
@@ -4284,6 +4289,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
     for (int lev = lev_min; lev < m_particles.size(); lev++)
     {
+        std::cout << "DEBUG: Particle Redistribute loop " << lev << "\n";
         PMap& pmap = m_particles[lev];
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
@@ -4296,9 +4302,11 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             while (!pbox.empty() && pbox.front().m_id <= 0)
                 pbox.pop_front();
 
+            std::cout << "DEBUG: PMAP iteration\n";
             for (typename PBox::iterator it = pbox.begin(), End = pbox.end(); it != End; )
             {
                 ParticleType& p = *it;
+                std::cout << "DEBUG: PBox iteration\n";
 
                 if (p.m_id > 0)
                 {
@@ -4332,12 +4340,13 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
                             }
                         }
                     }
+                    std::cout << "DEBUG: Found the particle\n";
                     //
                     // The owner of the particle is the CPU owning the finest grid
                     // in state data that contains the particle.
                     //
                     const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
-
+                    std::cout << "DEBUG: I know who\n";
                     if (who == MyProc)
                     {
                         if (p.m_lev != lev || p.m_grid != grid)

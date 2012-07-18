@@ -319,7 +319,7 @@ StationData::findGrid (const PArray<std::list<AmrRegion>>& levels,
         if (levels.defined(level))
         {
             //TODO/DEBUG: Check that this breaks properly and gives the right data.
-            for (RegionList::iterator it = amr_level[k].begin(); it != amr_level[k].end(); it++)
+            for (RegionList::iterator it = levels[k].begin(); it != levels[k].end(); it++)
             {
                 AmrRegion region = *it;
                 Array<RealBox> boxes(region.boxArray().size());

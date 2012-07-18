@@ -349,16 +349,10 @@ public:
     void set_ancestors(PArray<AmrRegion>& ancs);
     PArray<AmrRegion>& get_ancestors();
     
-    // 
-    // Sets/Gets the children. May need to evolve.
-    //
-    void set_children(PList<AmrRegion>& kids);
-    PList<AmrRegion>& get_children();
-    
-    //
-    // Gets the aggregated ancestors of this region.
-    //
-    void get_descendants(int finest_level, PArray<AmrRegion>& descendants);
+    ////
+    //// Gets the aggregated ancestors of this region.
+    ////
+    //void get_descendants(int finest_level, PArray<AmrRegion>& descendants);
     
     //
     // Initializes a blank AmrRegion as an aggregate of a list of regions.
@@ -366,27 +360,17 @@ public:
     void define(PList<AmrRegion>& regions, Amr* papa);
     
     //
-    // Adds a child region and returns an integer id for that child.
-    //
-    int add_child(AmrRegion* child);
-    
-    //
-    // Go through all descendents, remove them from the master region list
-    // WITHOUT DELETING THEM. Instead put their pointers in evictees so that
-    // they can be deleted later. Be careful with this method. Evictees is 
-    // assumed to extend from base_level + 1 to the finest level present.
-    //
-    void evict_descendants(int base_level, PArray<RegionList>& evictees);
-    
-    //
     // Creates/Returns the full id of this region.
     //
-    Array<int> getId();
-    std::string getIdString();
+    Array<int> getID();
+    std::string getIDString();
+    
     //
-    // Returns the node id of this region.
+    // Sets the full id for this region.
     //
-    int get_leaf_id();
+    void setID(const Array<int> id);
+    
+    AmrRegion* Parent();
 protected:
     //
     // The constructors -- for derived classes.
@@ -416,8 +400,7 @@ protected:
     static DescriptorList desc_lst;     // List of state variables.
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
-    PList<AmrRegion>      child_regions;
-    int                   leaf_id;         // The node region_id specifying the region's id 
+    Array<int>            m_id;         // The node region_id specifying the region's id 
                                         // relative to its parent
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.
@@ -649,24 +632,10 @@ AmrRegion::get_ancestors()
 }
 
 inline
-void 
-AmrRegion::set_children(PList<AmrRegion>& kids)
+AmrRegion*
+AmrRegion::Parent()
 {
-    child_regions = kids;
-}
-
-inline
-PList<AmrRegion>&
-AmrRegion::get_children()
-{
-    return child_regions;
-}
-
-inline
-int 
-AmrRegion::get_leaf_id()
-{
-    return leaf_id;
+    return parent_region;
 }
 
 

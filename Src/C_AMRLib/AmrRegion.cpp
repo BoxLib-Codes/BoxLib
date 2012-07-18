@@ -68,6 +68,8 @@ AmrRegion::AmrRegion (Amr&            papa,
     {
         BoxArray cba = ba;
         cba.coarsen(master->refRatio(level-1));
+        // Note that having a region finding its own parent
+        // is a bit silly, but necessary for backwards compatibility.
         parent_region = &papa.getParent(level - 1, cba);
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
@@ -76,11 +78,9 @@ AmrRegion::AmrRegion (Amr&            papa,
             ancestor_regions.set(i, temp_region);
             temp_region = temp_region->parent_region;
         }
-        leaf_id = parent_region->add_child(this);
     }
     else
     {
-        leaf_id = 0;
         parent_region = this;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
@@ -162,11 +162,9 @@ AmrRegion::restart (Amr&          papa,
             ancestor_regions.set(i, temp_region);
             temp_region = temp_region->parent_region;
         }
-        leaf_id = parent_region->add_child(this);
     }
     else
     {
-        leaf_id = 0;
         parent_region = this;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
@@ -1474,63 +1472,6 @@ AmrRegion::estimateWork ()
     return 1.0*countCells();
 }
 
-void
-AmrRegion::get_descendants (int finest_level, PArray<AmrRegion>& descendants)
-{
-    std::cout << "\tDEBUG: In Desc computation at level " << level << "\n";
-    int num_levels = finest_level - level + 1;
-    // this gets special treatment so it isn't deleted with descendent list.
-    std::cout << "DEBUG: Setting first\n";
-    RegionList rl;
-    rl.push_back(this);
-    AmrRegion* a = master->build_blank_region();
-    a->define(rl, master);
-    descendants.set(0,a);
-    // If finest level or no children, set only this region.
-    if (level == finest_level || child_regions.empty())
-    {
-        return;
-    }
-    else
-    {
-        // The lists of descendants at each level. d_l[0] will be blank.
-        PArray<RegionList > descendant_list(num_levels,PArrayManage);
-        for (int j = 0; j < num_levels; j++)
-        {
-            RegionList* rl = new RegionList(PListManage);
-            descendant_list.set(j,rl);
-        }
-        // recursively get descendants from all children.
-        std::cout << "DEBUG: Gonna iterate\n";
-        for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); it++)
-        {
-            PArray<AmrRegion> sub_decs(num_levels-1);
-            std::cout << "DEBUG: Calling recursively\n";
-            (*it)->get_descendants(finest_level, sub_decs);
-            for (int j = 1; j < num_levels; j++)
-            {
-                std::cout << "DEBUG: adding to list " << j << " of " << num_levels << "\n";
-                if (sub_decs.defined(j-1))
-                    descendant_list[j].push_back(&sub_decs[j-1]);
-                std::cout << "DEBUG: added\n";
-            }
-        }
-        // Aggregate the descendants at each level.
-        
-        for (int i = 1; i < num_levels; i++)
-        {
-            std::cout << "DEBUG: aggregating descs " << i << "/" <<num_levels << "\n";
-            AmrRegion* a = master->build_blank_region();
-            std::cout << "DEBUG: built blank\n";
-            std::cout << "DEBUG: d_l size = " << descendant_list[i].size() <<"\n";
-            std::cout << "DEBUG: d_l [0] grids = " << descendant_list[i].front()->numGrids() <<"\n";
-            a->define(descendant_list[i], master);
-            std::cout << "DEBUG: setting\n";
-            descendants.set(i,a);
-        }
-    }
-    std::cout << "\tDEBUG: Returning from level " << level << "\n";
-}
 
 void
 AmrRegion::define(RegionList& regions, Amr* papa)
@@ -1588,54 +1529,28 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     }
 }
 
-int
-AmrRegion::add_child(AmrRegion * child)
-{
-    BL_ASSERT(level < master->finestLevel());
-    BL_ASSERT(child->Level() == level +1);
-    child_regions.push_back(child);
-    return child_regions.size()-1;
-}
-
-void 
-AmrRegion::evict_descendants(int base_level,PArray<RegionList>& evictees)
-{
-    std::cout << "DEBUG: evicting at level " << level << " with grids " << numGrids() <<"\n";
-    std::cout << "DEBUG: I'm at " << this << "\n";
-    
-    if (child_regions.empty())
-        return;
-    for(RegionList::iterator it = child_regions.begin(); it != child_regions.end(); ++it)
-    {
-        (*it)->evict_descendants(base_level, evictees);
-        std::cout << "DEBUG: evicting " << (*it) << "\n";
-        master->getRegions(level+1).risky_remove(*it);
-        // Evictees [0] is base_level + 1
-        evictees[level - base_level].push_back(*it);
-    }
-    child_regions.clear();
-}
 
 Array<int>
-AmrRegion::getId()
+AmrRegion::getID()
 {
-    Array<int> id(level+1);
-    for (int i = 0; i <= level; ++i)
-    {
-        id[i] = ancestor_regions[i].get_leaf_id();
-    }
-    return id;
+    return m_id;
+}
+
+void
+AmrRegion::setID(const Array<int> id)
+{
+    m_id = id;
 }
 
 std::string
-AmrRegion::getIdString()
+AmrRegion::getIDString()
 {
     std::ostringstream convert;
-    convert << ancestor_regions[0].get_leaf_id();
+    convert << m_id[0];
     for (int i = 1; i <= level; ++i)
     {
         convert << "_";
-        convert << ancestor_regions[i].get_leaf_id();
+        convert << m_id[i];
     }
     return convert.str();
 }
