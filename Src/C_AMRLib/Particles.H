@@ -13,6 +13,8 @@
 #include <REAL.H>
 #include <IntVect.H>
 #include <Array.H>
+#include <PTree.H>
+#include <PList.H>
 #include <Amr.H>
 #include <AmrRegion.H>
 #include <Utility.H>
@@ -53,21 +55,21 @@ struct ParticleBase
     // Checks/sets a particles location on levels lev_min and higher.
     // Returns false if the particle does not exist on that level.
     //
-    static bool Where (ParticleBase& prt, const Amr* amr, bool update = false, int lev_min = 0, int finest_level = -1);
+    static bool Where (ParticleBase& prt, const Amr* amr, bool update = false, Array<int>* base_region_ptr = 0);
     //
     // Checks/sets whether the particle has crossed a periodic boundary in such a way
     // that it is on levels lev_min and higher.
     //
-    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, int lev_min = 0, int finest_level = -1);
+    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, Array<int> base_region);
     //
     // Checks/sets whether a particle is within its grid (including grow cells).
     //
-    static bool RestrictedWhere (ParticleBase& p, const Amr* amr, int ngrow);
+    static bool RestrictedWhere (ParticleBase& p, const Amr* amr, Array<int> base_region, int ngrow);
     //
     // Checks/sets a particle's location on a specific level.
     // (Yes this is distict from the functionality provided above)
     //
-    static bool SingleLevelWhere (ParticleBase& p, const Amr* amr, int level);
+    static bool SingleRegionWhere (ParticleBase& p, const Amr* amr, Array<int> region_id);
     //
     // Updates a particle's location (Where), tries to periodic shift any particles
     // that have left the domain. May need work (see inline comments)
@@ -213,7 +215,7 @@ public:
 
     ParticleContainer (Amr* amr)
         :
-        m_verbose(1), m_amr(amr) { BL_ASSERT(amr != 0); }
+        m_verbose(1), m_amr(amr) { BL_ASSERT(amr != 0); root_id.resize(1); root_id[0] = 0;}
 
     void InitFromAsciiFile (const std::string& file, int extradata, const IntVect* Nrep = 0);
 
@@ -224,28 +226,28 @@ public:
     void InitCosmo  (MultiFab& mf, const Real vel_fac[], const Array<int> n_part, const Real particleMass, const Real shift[]);
     void InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const Real particleMass);
 
-    Real sumParticleMass (const MultiFab& mf, int level) const;
-    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom) const;
+    Real sumParticleMass (const MultiFab& mf, int level, Array<int>* base_region_ptr = 0) const;
+    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, Array<int>* base_region_ptr = 0) const;
 
-    void Increment (MultiFab& mf, int level);
+    void Increment (MultiFab& mf, int level, Array<int>* base_region_ptr = 0);
 
-    long IncrementWithTotal (MultiFab& mf, int level);
+    long IncrementWithTotal (MultiFab& mf, int level, Array<int>* base_region_ptr = 0);
 
-    void AssignDensitySingleLevel (MultiFab& mf, int level, int ncomp=1, int particle_lvl_offset = 0) const;
+    void AssignDensitySingleRegion (MultiFab& mf, Array<int> region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
-    void AssignDensity (PArray<MultiFab>& mf, int lev_min = 0, int ncomp = 1, int finest_level = -1) const;
+    void AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0, int ncomp = 1, int finest_level = -1) const;
 
-    void AssignDensityAndVels (PArray<MultiFab>& mf, int lev_min = 0) const;
+    void AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0) const;
 
-    void AssignDensityDoit (PArray<MultiFab>& mf, PBox& data, int ncomp, int lev_min = 0) const;
+    void AssignDensityDoit (PArray<MultiFab>& mf, PBox& data, int ncomp,  int lev_min) const;
 
     void MultiplyParticleMass (int lev, Real mult);
  
-    Real estTimestep (const MultiFab& grav_vector, Real a, int level, Real cfl) const;
+    Real estTimestep (const MultiFab& grav_vector, Real a, Array<int> region_id, Real cfl) const;
 
     void Redistribute (bool where_already_called = false,
                        bool full_where           = false,
-                       int  lev_min              = 0, 
+                       Array<int>* base_region_ptr = 0, 
                        int  nGrow                = 0);
                        
     void RedistributePBox(PBox& pbox, 
@@ -253,10 +255,9 @@ public:
                           PBox& notowned, 
                           std::deque<int>& owner,
                           int lev, 
-                          int finest_level,
                           bool where_already_called,
                           bool full_where,
-                          int  lev_min,
+                          Array<int> base_region,
                           int  nGrow);
     //
     // OK checks that all particles are in the right places (for some value of right)
@@ -264,7 +265,7 @@ public:
     // These flags are used to do proper checking for subcycling particles
     // the default values are fine for non-subcycling methods
     //
-    bool OK (bool full_where = false, int lev_min = 0 , int ngrow = 0, int finest_level = -1) const;
+    bool OK (bool full_where = false,  Array<int>* base_region_ptr = 0 , int ngrow = 0) const;
 
     void ByteSpread () const;
     //
@@ -276,7 +277,7 @@ public:
 
     void MoveRandom ();
 
-    void MoveRandom (int level);
+    void MoveRandom (int lev, PMap& pmap);
 
     // **********************************************************************************
     // Nyx Specifc Methods
@@ -289,22 +290,22 @@ public:
     // The following two functions form a PREDICTOR CORRECTOR scheme for integrating the motion of the particles
     // BE CAREFUL: This one uses a NGP interpolation, which is not consistent with the density assignment scheme!
     //
-    void movePredict (const MultiFab& grav_vector, int level, Real timestep);
-    void moveCorrect (const MultiFab& grav_vector_old, const MultiFab& grav_vector, int level, Real timestep);
+    void movePredict (const MultiFab& grav_vector,  Array<int> region_id, Real timestep);
+    void moveCorrect (const MultiFab& grav_vector_old, const MultiFab& grav_vector,  Array<int> region_id, Real timestep);
     //
     // TODO: the methods should return a constraint on the timestep...
     //
     // The following two functions form a KICK DRIFT KICK scheme for integrating the motion of the particles in
     //   comoving coordinates -- these rely on CELL-BASED gravity component
     //
-    void moveKickDrift (const MultiFab& grav_vector, int level, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
-    void moveKick      (const MultiFab& grav_vector, int level, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
+    void moveKickDrift (const MultiFab& grav_vector,  Array<int> region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
+    void moveKick      (const MultiFab& grav_vector,  Array<int> region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
     //
     // The following two functions form a KICK DRIFT KICK scheme for integrating the motion of the particles in
     //   comoving coordinates -- these rely on EDGE-BASED gravity component
     //
-    void moveKickDrift (PArray<MultiFab>& grav_vector, int level, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
-    void moveKick      (PArray<MultiFab>& grav_vector, int level, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
+    void moveKickDrift (PArray<MultiFab>& grav_vector,  Array<int> region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
+    void moveKick      (PArray<MultiFab>& grav_vector,  Array<int> region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
     //
     // after the moveKickDrift step the positions of the particles are advanced for a full timestep,
     // so this scheme should work in the overall algorithm...
@@ -314,44 +315,44 @@ public:
     //
     // Removes all particles at a given level
     //
-    void RemoveParticlesAtLevel (int level);
+    void RemoveParticlesInRegion ( Array<int> region_id);
     //
-    // Creates virtual particles for a given level that represent
-    // in some capacity all particles at finer levels
+    // Creates virtual particles for a given region that represent
+    // in some capacity all particles at finer regions
     //
-    void CreateVirtualParticles (int level, PBox& virts) const;
+    void CreateVirtualParticles ( Array<int> region_id, PBox& virts) const;
     // 
-    // Create ghost particles for a given level that are copies of particles
+    // Create ghost particles for a given region that are copies of particles
     // near coarse->fine boundaries in level-1
     //
-    void CreateGhostParticles (int level, int ngrow, PBox& ghosts) const;
+    void CreateGhostParticles ( Array<int> region_id, int ngrow, PBox& ghosts) const;
     //
     // Add particles from a pbox to the grid at this level
     //
-    void AddParticlesAtLevel (int level, PBox& virts, bool where_already_called = false);
+    void AddParticlesToRegion ( Array<int> region_id, PBox& virts, bool where_already_called = false);
     // **************************************************************************************************************** 
 
-    void AdvectWithUmac (const MultiFab* umac, int level, Real dt, const int vcomp = 0);
-
-    void RemoveParticlesNotAtFinestLevel ();
+    void AdvectWithUmac (const MultiFab* umac,  Array<int> region_id, Real dt, const int vcomp = 0);
 
     void Checkpoint (const std::string& dir, const std::string& name) const;
 
     void Restart (const std::string& dir, const std::string& file);
 
-    void Timestamp (const std::string& file, const MultiFab& mf, int lev, Real time, const std::vector<int>& idx, const int vcomp = 0);
+    void Timestamp (const std::string& file, const MultiFab& mf,  Array<int> region_id, Real time, const std::vector<int>& idx, const int vcomp = 0);
+    
+    void Restructure(Array<int> base_region, std::list<int> new_structure);
 
     void WriteAsciiFile (const std::string& file);
 
     int Verbose () { return m_verbose; }
 
     void SetVerbose (int verbose) { m_verbose = verbose; }
-
+    
 protected:
     //
     // Helper function for Checkpoint().
     //
-    void WriteParticles (int            level,
+    void WriteParticles ( Array<int> region_id,
                          std::ofstream& ofs,
                          int            fnum,
                          Array<int>&    which,
@@ -372,7 +373,9 @@ protected:
     //
     int         m_verbose;
     Amr*        m_amr;
-    Array<PMap> m_particles;
+    PTree<PMap> m_particles;
+    PList<PMap> orphan_particles;
+    Array<int> root_id;
 };
 
 template <int N>
@@ -381,30 +384,33 @@ ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
                                                 bool only_valid) const
 {
     long nparticles = 0;
-
-    if (lev >= 0 && lev < m_particles.size())
+    if (lev >= 0 && lev > m_amr->finestLevel())
     {
-        const PMap& pmap = m_particles[lev];
-
-        for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end();
-             pmap_it != End;
-             ++pmap_it)
+        PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot(lev);
+        for( ; !ptree_it.is_finished(); ++ptree_it)
         {
-            const PBox& pbox = pmap_it->second;
+            const PMap& pmap = **ptree_it;
 
-            if (only_valid)
+            for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end();
+                 pmap_it != End;
+                 ++pmap_it)
             {
-                for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end();
-                     it != pboxEnd;
-                     ++it)
+                const PBox& pbox = pmap_it->second;
+
+                if (only_valid)
                 {
-                    if (it->m_id > 0)
-                        nparticles++;
+                    for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end();
+                         it != pboxEnd;
+                         ++it)
+                    {
+                        if (it->m_id > 0)
+                            nparticles++;
+                    }
                 }
-            }
-            else
-            {
-                nparticles += pbox.size();
+                else
+                {
+                    nparticles += pbox.size();
+                }
             }
         }
     }
@@ -424,9 +430,10 @@ ParticleContainer<N>::ByteSpread () const
 {
     long cnt = 0;
 
-    for (int lev = 0; lev < m_particles.size(); lev++)
-    {
-        const PMap& pmap = m_particles[lev];
+    PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot();
+        for( ; !ptree_it.is_finished(); ++ptree_it)
+        {
+        const PMap& pmap = **ptree_it;
 
         for (typename PMap::const_iterator it = pmap.begin(), End = pmap.end(); it != End; ++it)
         {
@@ -492,10 +499,9 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
        NReaders = std::max(NReaders,512);
        NRedist = 48;
     }
-
-    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-    m_particles.resize(m_amr->finestLevel()+1);
+    
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     IntVect lNrep(D_DECL(1,1,1));
 
@@ -695,7 +701,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
                 {
                     ParticleType& p = nparticles.front();
     
-                    m_particles[p.m_lev][p.m_grid].push_back(p);
+                    (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
     
                     nparticles.pop_front();
                 }
@@ -725,7 +731,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
             {
                 ParticleType& p = nparticles.front();
 
-                m_particles[p.m_lev][p.m_grid].push_back(p);
+                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
 
                 nparticles.pop_front();
             }
@@ -851,9 +857,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
        std::cout << "Redist  with " << NRedist   << " cores   " << std::endl;
     }
 
-    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-    m_particles.resize(m_amr->finestLevel()+1);
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     long howmany_read = 0;
     //
@@ -1027,7 +1032,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
                 {
                     ParticleType& p = nparticles.front();
     
-                    m_particles[p.m_lev][p.m_grid].push_back(p);
+                    (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
     
                     nparticles.pop_front();
                 }
@@ -1061,7 +1066,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
             {
                 ParticleType& p = nparticles.front();
 
-                m_particles[p.m_lev][p.m_grid].push_back(p);
+                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
 
                 nparticles.pop_front();
             }
@@ -1113,14 +1118,8 @@ ParticleContainer<N>::InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const R
     const Geometry& geom     = m_amr->Geom(0);
     const Real*     dx       = geom.CellSize();
 
-    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-    m_particles.resize(m_amr->finestLevel()+1);
-
-    for (int lev = 0; lev < m_particles.size(); lev++)
-    {
-        BL_ASSERT(m_particles[lev].empty());
-    }
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     ParticleType p;
     Real         disp[BL_SPACEDIM];
@@ -1179,7 +1178,7 @@ ParticleContainer<N>::InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const R
 	            //
 	            // Add it to the appropriate PBox at the appropriate level.
 	            //
-	            m_particles[p.m_lev][p.m_grid].push_back(p);
+	            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
                 }
             }
         }
@@ -1203,14 +1202,8 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
     const Real      strttime = ParallelDescriptor::second();
     const Geometry& geom     = m_amr->Geom(0);
 
-    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-    m_particles.resize(m_amr->finestLevel()+1);
-
-    for (int lev = 0; lev < m_particles.size(); lev++)
-    {
-        BL_ASSERT(m_particles[lev].empty());
-    }
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     const Real len[BL_SPACEDIM] = { geom.ProbLength(0),geom.ProbLength(1),geom.ProbLength(2) };
     //
@@ -1308,7 +1301,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
 	                //
 	                // Add it to the appropriate PBox at the appropriate level.
 	                //
-	                m_particles[p.m_lev][p.m_grid].push_back(p);
+	                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
 		    }
 	        }
 	    }
@@ -1334,9 +1327,9 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
     //
     // FIXME: Will we ever need initial particles in grids deeper than 0?!
     //
-    PMap& pmap = m_particles[0];
+    PMap& pmap = *m_particles.getData(root_id);
     //
-    // Make sure, that mf and m_amr.boxArray(0) are based on the same boxarray.
+    // Make sure, that mf and m_amr->boxArray(0) are based on the same boxarray.
     //
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -1428,15 +1421,9 @@ ParticleContainer<N>::InitRandom (long          icount,
     Real r, len[BL_SPACEDIM] = { geom.ProbLength(0), geom.ProbLength(1), geom.ProbLength(2) };
 
     BoxLib::InitRandom(iseed+MyProc);
-
-    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-    m_particles.resize(m_amr->finestLevel()+1);
-
-    for (int lev = 0; lev < m_particles.size(); lev++)
-    {
-        BL_ASSERT(m_particles[lev].empty());
-    }
+    
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     if (serialize)
     {
@@ -1511,7 +1498,7 @@ ParticleContainer<N>::InitRandom (long          icount,
                 p.m_id  = ParticleBase::NextID();
                 p.m_cpu = MyProc;
 
-                m_particles[p.m_lev][p.m_grid].push_back(p);
+                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
 
                 cnt++;
             }
@@ -1575,7 +1562,7 @@ ParticleContainer<N>::InitRandom (long          icount,
             //
             // Add it to the appropriate PBox at the appropriate level.
             //
-            m_particles[p.m_lev][p.m_grid].push_back(p);
+            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p); 
         }
         //
         // Let Redistribute() sort out where the particles belong.
@@ -1603,15 +1590,16 @@ ParticleContainer<N>::MoveRandom ()
     //
     // Move particles randomly at all levels
     //
-    for (int lev = 0; lev < m_particles.size(); lev++)
+    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtRoot();
+    for( ; !ptree_it.is_finished(); ++ptree_it)
     {
-       MoveRandom(lev);
+        MoveRandom(ptree_it.getLevel(), **ptree_it);
     }
 }
 
 template <int N>
 void
-ParticleContainer<N>::MoveRandom (int lev)
+ParticleContainer<N>::MoveRandom (int lev, PMap& pmap)
 {
     BL_ASSERT(OK());
     BL_ASSERT(m_amr != 0);
@@ -1648,7 +1636,6 @@ ParticleContainer<N>::MoveRandom (int lev)
         }
     }
 
-    PMap&       pmap              = m_particles[lev];
     const Real* dx                = m_amr->Geom(lev).CellSize();
     const Real  dist[BL_SPACEDIM] = { D_DECL(FRAC*dx[0], FRAC*dx[1], FRAC*dx[2]) };
 
@@ -1686,40 +1673,54 @@ ParticleContainer<N>::MoveRandom (int lev)
 template <int N>
 void
 ParticleContainer<N>::Increment (MultiFab& mf,
-                                 int       lev) 
+                                 int       lev,
+                                 Array<int>* base_region_ptr) 
 {
-    IncrementWithTotal(mf,lev);
+    IncrementWithTotal(mf,lev, base_region_ptr);
 }
 
 template <int N>
 long
 ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
-                                          int       lev)
+                                          int       lev,
+                                          Array<int>* base_region_ptr)
 {
     BL_ASSERT(OK());
-
-    if (m_particles.empty()) return 0;
-
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
-
-    const PMap& pmap = m_particles[lev];
-  
-    long num_particles_in_domain = 0;
-
-    for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
+    Array<int> base_region;
+    if (base_region_ptr == 0)
     {
-        const int   grid = pmap_it->first;
-        const PBox& pbox = pmap_it->second;
-        FArrayBox&  fab  = mf[grid];
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
 
-        for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+
+    long num_particles_in_domain = 0;
+    std::vector< std::pair<int,Box> > scratch_space;
+    
+    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtRoot(lev);
+    for( ; !ptree_it.is_finished(); ++ptree_it)
+    {
+        PMap& pmap = **ptree_it;
+      
+        for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
-            if (it->m_id > 0)
-            {
-                BL_ASSERT(it->m_grid == grid);
+            const int   grid = pmap_it->first;
+            const PBox& pbox = pmap_it->second;
 
-                fab(it->m_cell) += 1;
-                num_particles_in_domain += 1;
+            for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
+            {
+                if (it->m_id > 0)
+                {
+                    BL_ASSERT(it->m_grid == grid);
+                    FArrayBox&  fab  = mf[mf.MFIndexOf(it->m_cell, scratch_space)];
+
+                    fab(it->m_cell) += 1;
+                    num_particles_in_domain += 1;
+                }
             }
         }
     }
@@ -1733,18 +1734,19 @@ template <int N>
 Real
 ParticleContainer<N>::estTimestep (const MultiFab& gv,
                                    Real            a,
-                                   int             lev,
+                                   Array<int>      region_id,
                                    Real            cfl) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real      strttime         = ParallelDescriptor::second();
     const Geometry& geom             = m_amr->Geom(lev);
     const Real*     dx               = geom.CellSize();
     const Real      adx[BL_SPACEDIM] = { D_DECL(a*dx[0],a*dx[1],a*dx[2]) };
     Real            dt               = 1e50;
-    const PMap&     pmap             = m_particles[lev];
+    const PMap&     pmap             = *m_particles.getData(region_id);
     int             tnum             = 1;
 
 #ifdef _OPENMP
@@ -1840,24 +1842,39 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
 template <int N>
 Real
 ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
-                                       int             lev) const
+                                       int             lev,
+                                       Array<int>* base_region_ptr) const
 {
     BL_ASSERT(N >= 1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    Array<int> base_region;
+    if (base_region_ptr == 0)
+    {
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
 
     Real msum = 0;
 
-    const PMap& pmap = m_particles[lev];
-
-    for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
+    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region, lev);
+    for( ; !ptree_it.is_finished(); ++ptree_it)
     {
-        const PBox& pbox = pmap_it->second;
 
-        for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
+        const PMap& pmap = **ptree_it;
+
+        for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
-            if (it->m_id > 0)
+            const PBox& pbox = pmap_it->second;
+
+            for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
             {
-                msum += it->m_data[0];
+                if (it->m_id > 0)
+                {
+                    msum += it->m_data[0];
+                }
             }
         }
     }
@@ -1876,38 +1893,54 @@ template <int N>
 void
 ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
                                            int             lev,
-                                           Real*           mom) const
+                                           Real*           mom,
+                                           Array<int>* base_region_ptr) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
-
-    const PMap& pmap = m_particles[lev];
-
-    D_TERM(mom[0] = 0;, mom[1] = 0;, mom[2] = 0;);
-
-    for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    
+    Array<int> base_region;
+    if (base_region_ptr == 0)
     {
-        const PBox& pbox = pmap_it->second;
-        const int   n    = pbox.size();
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
+    
+    D_TERM(mom[0] = 0;, mom[1] = 0;, mom[2] = 0;);
+    
+    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region, lev);
+    for( ; !ptree_it.is_finished(); ++ptree_it)
+    {
 
-        Real mom_0 = 0, mom_1 = 0, mom_2 = 0;
+        const PMap& pmap = **ptree_it;
 
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+:mom_0,mom_1,mom_2)
-#endif
-        for (int i = 0; i < n; i++)
+        for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
-            const ParticleType& p = pbox[i];
+            const PBox& pbox = pmap_it->second;
+            const int   n    = pbox.size();
 
-            if (p.m_id > 0)
+            Real mom_0 = 0, mom_1 = 0, mom_2 = 0;
+
+    #ifdef _OPENMP
+    #pragma omp parallel for reduction(+:mom_0,mom_1,mom_2)
+    #endif
+            for (int i = 0; i < n; i++)
             {
-                D_TERM(mom_0 += p.m_data[0] * p.m_data[1];,
-                       mom_1 += p.m_data[0] * p.m_data[2];,
-                       mom_2 += p.m_data[0] * p.m_data[3];);
+                const ParticleType& p = pbox[i];
+
+                if (p.m_id > 0)
+                {
+                    D_TERM(mom_0 += p.m_data[0] * p.m_data[1];,
+                           mom_1 += p.m_data[0] * p.m_data[2];,
+                           mom_2 += p.m_data[0] * p.m_data[3];);
+                }
             }
+            
+            D_TERM(mom[0] += mom_0;, mom[1] += mom_1;, mom[2] += mom_2;);
         }
-        
-        D_TERM(mom[0] += mom_0;, mom[1] += mom_1;, mom[2] += mom_2;);
     }
 
     ParallelDescriptor::ReduceRealSum(mom,BL_SPACEDIM);
@@ -1919,27 +1952,23 @@ ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensitySingleLevel (MultiFab& mf,
-                                                int       lev,
+ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
+                                                Array<int> region_id,
                                                 int       ncomp,
                                                 int       particle_lvl_offset) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
-    BL_ASSERT(mf.boxArray() == m_amr->boxArray(lev));
+    int lev = region_id.size() - 1;
+    BL_ASSERT(mf.boxArray() == m_amr->getRegion(region_id).boxArray());
 
-    if (lev >= m_particles.size())
-        //
-        // Don't do anything if there are no particles at this level.
-        //
-        return;
 
     const Real      strttime    = ParallelDescriptor::second();
     const Geometry& gm          = m_amr->Geom(lev);
     const Real*     plo         = gm.ProbLo();
     const Real*     dx_particle = m_amr->Geom(lev + particle_lvl_offset).CellSize();
     const Real*     dx          = gm.CellSize();
-    const PMap&     pmap        = m_particles[lev];
+    const PMap&     pmap        = *m_particles.getData(region_id);
     const int       n           = pmap.size();
 
     if (gm.isAnyPeriodic() && !gm.isAllPeriodic())
@@ -2058,19 +2087,29 @@ ParticleContainer<N>::AssignDensitySingleLevel (MultiFab& mf,
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, int lev_min) const
+ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* base_region_ptr) const
 {
-    AssignDensity(mf, lev_min, BL_SPACEDIM+1);
+    AssignDensity(mf, base_region_ptr, BL_SPACEDIM+1);
 }
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncomp, int finest_level) const
+ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr, int ncomp, int finest_level) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(N >= ncomp);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
 
+    Array<int> base_region;
+    if (base_region_ptr == 0)
+    {
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
+    
     if (finest_level == -1)
     {
         finest_level = m_amr->finestLevel();
@@ -2085,6 +2124,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
     // finest_level. In the following code, lev is the real level, 
     // lev_index is the corresponding index for mf.
     //
+    int lev_min = base_region.size() - 1;
     mf.resize(finest_level+1-lev_min, PArrayManage);
 
     for (int lev = lev_min; lev <= finest_level; lev++)
@@ -2101,7 +2141,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
         //
         // Just use the far simpler single-level version.
         //
-        AssignDensitySingleLevel(mf[0],0,ncomp);
+        AssignDensitySingleRegion(mf[0],base_region,ncomp);
         return;
     }
     
@@ -2297,231 +2337,71 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
         //
         const bool GridsCoverDomain = fvalid.contains(m_amr->Geom(lev).Domain());
         
-        for (typename PMap::const_iterator pmap_it = m_particles[lev].begin(),
-                 pmapEnd = m_particles[lev].end();
-             pmap_it != pmapEnd;
-             ++pmap_it)
+        PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region,lev);
+        for( ; !ptree_it.is_finished(); ++ptree_it)
         {
-            const PBox& pbx = pmap_it->second;
-            FArrayBox&  fab = mf[lev_index][pmap_it->first];
 
-            for (typename PBox::const_iterator it = pbx.begin(), End = pbx.end();
-                 it != End;
-                 ++it)
+            const PMap& pmap = **ptree_it;
+            for (typename PMap::const_iterator pmap_it = pmap.begin(),
+                     pmapEnd = pmap.end();
+                 pmap_it != pmapEnd;
+                 ++pmap_it)
             {
-                const ParticleType& p = *it;
+                const PBox& pbx = pmap_it->second;
+                FArrayBox&  fab = mf[lev_index][pmap_it->first];
 
-                if (p.m_id <= 0) continue;
-                //
-                // Get "fracs" and "cells" for the particle "p" at this level.
-                //
-                const int M = ParticleBase::CIC_Cells_Fracs(p, plo, dx, fracs, cells);
-                //
-                // If this is not fully periodic then we have to be careful that no
-                // particle's support leaves the domain. We test this by checking the low
-                // and high corners respectively.
-                //
-                if (!gm.isAllPeriodic())
-                    if (!gm.Domain().contains(cells[0]) || !gm.Domain().contains(cells[M-1]))
-                        BoxLib::Error("AssignDensity: if not periodic, all particles must stay away from the domain boundary");
-                //
-                // This section differs based on whether we subcycle.
-                // Without subcycling we use the "stretchy" support for particles.
-                // With subcycling a particles support is strictly defined 
-                // by its resident level.
-                //
-                if (sub_cycle)
+                for (typename PBox::const_iterator it = pbx.begin(), End = pbx.end();
+                     it != End;
+                     ++it)
                 {
-                    bool isFiner    = false;
-                    bool isBoundary = false;
+                    const ParticleType& p = *it;
+
+                    if (p.m_id <= 0) continue;
                     //
-                    // First sum the mass in the valid region
+                    // Get "fracs" and "cells" for the particle "p" at this level.
                     //
-                    for (int i = 0; i < M; i++)
+                    const int M = ParticleBase::CIC_Cells_Fracs(p, plo, dx, fracs, cells);
+                    //
+                    // If this is not fully periodic then we have to be careful that no
+                    // particle's support leaves the domain. We test this by checking the low
+                    // and high corners respectively.
+                    //
+                    if (!gm.isAllPeriodic())
+                        if (!gm.Domain().contains(cells[0]) || !gm.Domain().contains(cells[M-1]))
+                            BoxLib::Error("AssignDensity: if not periodic, all particles must stay away from the domain boundary");
+                    //
+                    // This section differs based on whether we subcycle.
+                    // Without subcycling we use the "stretchy" support for particles.
+                    // With subcycling a particles support is strictly defined 
+                    // by its resident level.
+                    //
+                    if (sub_cycle)
                     {
-                        if (cfvalid.contains(cells[i]))
-                        {
-                            //
-                            // Some part of the particle's mass lies in a 
-                            // finer region; we'll deal with it shortly.
-                            //
-                            isFiner    = true;
-                            isBoundary = true;
-                            continue;
-                        }
-                        if (!fvalid.contains(cells[i]))
-                        {
-                            //
-                            // We're out of the valid region.
-                            //
-                            isBoundary = true;
-                            continue;
-                        }
+                        bool isFiner    = false;
+                        bool isBoundary = false;
                         //
-                        // Sum up mass in first component.
-                        //
-                        fab(cells[i],0) += p.m_data[0] * fracs[i];
-                        //
-                        // Sum up momenta in next components.
-                        //
-                        for (int n = 1; n < ncomp; n++)
-                            fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
-                    }
-                    //
-                    // Deal with mass that doesn't belong at this level.
-                    // Here we assume proper nesting so that only one special case can
-                    // be true for a given particle.
-                    //
-                    if (isBoundary)
-                    {
-                        if (isFiner)
-                        {
-                            BL_ASSERT(lev < finest_level);
-                            //
-                            // We're at a coarse->fine interface
-                            //
-                            // get fine cells/fracs
-                            //
-                            const int MF = ParticleBase::CIC_Cells_Fracs(p, plo, dx_fine ,dx, ffracs, fcells);
-
-                            for (int j = 0; j < MF; j++)
-                            {
-                                //
-                                // Make sure this fine cell is valid. Check for periodicity.
-                                //
-                                const Box bx(fcells[j],fcells[j]);
-                                gm_fine.periodicShift(bx, gm_fine.Domain(), pshifts);
-                                if (!pshifts.empty())
-                                {
-                                    BL_ASSERT(pshifts.size() == 1);
-                                    fcells[j] = fcells[j] - pshifts[0];
-                                }
-                                mf[lev_index + 1].boxArray().intersections(Box(fcells[j],fcells[j]),isects);
-                                if (isects.size() == 0)
-                                    continue;
-                                const int grid = isects[0].first; 
-                                if (mf[lev_index+1].DistributionMap()[grid] == ParallelDescriptor::MyProc())
-                                {
-                                    //
-                                    // Sum up mass in first component.
-                                    //
-                                    mf[lev_index+1][grid](fcells[j],0) += p.m_data[0] * ffracs[j];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        mf[lev_index+1][grid](fcells[j],n) += p.m_data[n] * p.m_data[0] * ffracs[j];
-                                }
-                                else
-                                {
-                                    pb.m_lev  = lev+1;
-                                    pb.m_grid = grid;
-                                    pb.m_cell = fcells[j];
-                                    //
-                                    // Sum up mass in first component.
-                                    //
-                                    pb.m_data[0] = p.m_data[0] *  ffracs[j];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        pb.m_data[n] = p.m_data[n] * p.m_data[0] * ffracs[j];
-
-                                    data.push_back(pb);
-                                }
-                            }
-                        }
-                        else if (lev_index > 0)
-                        {
-                            //
-                            // We must be at a fine->coarse interface.
-                            //
-                            const int MC = ParticleBase::CIC_Cells_Fracs(p, plo, dx_coarse, dx, cfracs, ccells);
-                            for (int j = 0; j < MC; j++)
-                            {
-                                //
-                                // Make sure this coarse cell isn't in this level's valid region.
-                                // This may not matter.
-                                //
-                                if (cba.contains(ccells[j]))
-                                    continue;
-                                //
-                                // Check for periodicity.
-                                //
-                                const Box bx(ccells[j],ccells[j]);
-                                gm_coarse.periodicShift(bx, gm_coarse.Domain(), pshifts);
-
-                                if (!pshifts.empty())
-                                {
-                                    BL_ASSERT(pshifts.size() == 1);
-                                    ccells[j] = ccells[j] - pshifts[0];
-                                }
-                                //
-                                // Find its resident grid.
-                                //
-                                mf[lev_index - 1].boxArray().intersections(Box(ccells[j],ccells[j]),isects);
-                                if (isects.size() == 0)
-                                    continue;
-                                const int grid = isects[0].first; 
-                                if (mf[lev_index-1].DistributionMap()[grid] == ParallelDescriptor::MyProc())
-                                {
-                                    //
-                                    // Sum up mass in first component.
-                                    //
-                                    mf[lev_index-1][grid](ccells[j],0) += p.m_data[0] * cfracs[j];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        mf[lev_index-1][grid](ccells[j],n) += p.m_data[n] * p.m_data[0] * cfracs[j];
-                                }
-                                else
-                                {
-                                    pb.m_lev  = lev-1;
-                                    pb.m_grid = grid;
-                                    pb.m_cell = ccells[j];
-                                    //
-                                    // Sum up mass in first component.
-                                    //
-                                    pb.m_data[0] = p.m_data[0] * cfracs[j];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        pb.m_data[n] = p.m_data[n] * p.m_data[0] * cfracs[j];
-
-                                    data.push_back(pb);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // The mass is below levels we care about. Ignore it.
-                        }
-                    }
-                }
-                else 
-                {
-                    bool AnyCrseToFine = false;
-                    if (lev < finest_level)
-                        AnyCrseToFine = ParticleBase::CrseToFine(cfba,cells,cfshifts,gm,cwhich,pshifts);
-                    //
-                    // lev_index > 0 means that we don't do F->C for lower levels
-                    // This may mean that the mass fraction is off.
-                    //
-                    bool AnyFineToCrse = false;
-                    if (lev_index > 0 && !GridsCoverDomain)
-                        AnyFineToCrse = ParticleBase::FineToCrse(p,lev,m_amr,cells,fvalid,compfvalid_grown,ccells,cfracs,fwhich,cgrid,pshifts,isects);
-
-                    BL_ASSERT(!(AnyCrseToFine && AnyFineToCrse));
-
-                    if (!AnyCrseToFine && !AnyFineToCrse)
-                    {
-                        //
-                        // By far the most common case.  Just do it!
+                        // First sum the mass in the valid region
                         //
                         for (int i = 0; i < M; i++)
                         {
+                            if (cfvalid.contains(cells[i]))
+                            {
+                                //
+                                // Some part of the particle's mass lies in a 
+                                // finer region; we'll deal with it shortly.
+                                //
+                                isFiner    = true;
+                                isBoundary = true;
+                                continue;
+                            }
+                            if (!fvalid.contains(cells[i]))
+                            {
+                                //
+                                // We're out of the valid region.
+                                //
+                                isBoundary = true;
+                                continue;
+                            }
                             //
                             // Sum up mass in first component.
                             //
@@ -2532,206 +2412,372 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, int lev_min, int ncom
                             for (int n = 1; n < ncomp; n++)
                                 fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
                         }
-                    }
-                    else if (AnyFineToCrse)
-                    {
-                        Real sum_crse = 0, sum_fine = 0;
-
-                        for (int i = 0; i < M; i++)
+                        //
+                        // Deal with mass that doesn't belong at this level.
+                        // Here we assume proper nesting so that only one special case can
+                        // be true for a given particle.
+                        //
+                        if (isBoundary)
                         {
-                            if (fwhich[i])
+                            if (isFiner)
                             {
+                                BL_ASSERT(lev < finest_level);
                                 //
-                                // We're at a Fine->Crse boundary.
+                                // We're at a coarse->fine interface
                                 //
-                                BL_ASSERT(cgrid[i] >= 0);
-                                BL_ASSERT(cgrid[i] < mf[lev_index-1].size());
+                                // get fine cells/fracs
                                 //
-                                // Here we need to update the crse region.  The coarse
-                                // region is always going to be updated if we have a
-                                // particle in a cell bordering a Fine->Crse boundary.
-                                //
-                                if (mf[lev_index-1].DistributionMap()[cgrid[i]] == ParallelDescriptor::MyProc())
+                                const int MF = ParticleBase::CIC_Cells_Fracs(p, plo, dx_fine ,dx, ffracs, fcells);
+
+                                for (int j = 0; j < MF; j++)
                                 {
-                                    if (!mf[lev_index-1][cgrid[i]].box().contains(ccells[i])) continue;
                                     //
-                                    // Sum up mass in first component.
+                                    // Make sure this fine cell is valid. Check for periodicity.
                                     //
-                                    mf[lev_index-1][cgrid[i]](ccells[i],0) += p.m_data[0] * cfracs[i];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        mf[lev_index-1][cgrid[i]](ccells[i],n) += p.m_data[n] * p.m_data[0] * cfracs[i];
-                                }
-                                else
-                                {
-                                    pb.m_lev  = lev-1;
-                                    pb.m_grid = cgrid[i];
-                                    pb.m_cell = ccells[i];
-                                    //
-                                    // Sum up mass in first component.
-                                    //
-                                    pb.m_data[0] = p.m_data[0] * cfracs[i];
-                                    //
-                                    // Sum up momenta in next components.
-                                    //
-                                    for (int n = 1; n < ncomp; n++)
-                                        pb.m_data[n] = p.m_data[n] * p.m_data[0] * cfracs[i];
-
-                                    data.push_back(pb);
-                                }
-
-                                sum_crse += cfracs[i];
-                            }
-                        }
-                        //
-                        // We've updated the Crse cells.  Now we have to update the fine
-                        // cells in such a way that the total amount of mass we move
-                        // around is precisely p.m_data[0]. In other words, the fractions
-                        // we use at crse and fine have to sum to zero.  In the fine
-                        // case, we have to account for the case where one or more of the
-                        // cell indices is not in the valid region of the box containing 
-                        // the particle.
-                        //
-                        sum_fine = 0;
-                        for (int i = 0; i < M; i++) 
-                        {
-                            //
-                            // Reusing "fwhich" to indicate fine cells that need massaging.
-                            //
-                            fwhich[i] = true;
-
-                            if (!compfvalid_grown.contains(cells[i]))
-                            {
-                                //
-                                // Go ahead and add the full correct amount to these cells.
-                                // They can't touch a Fine->Crse boundary.
-                                //
-                                sum_fine += fracs[i];
-                                //
-                                // Sum up mass in first component.
-                                //
-                                fab(cells[i],0) += p.m_data[0] * fracs[i];
-                                //
-                                // Sum up momenta in next components.
-                                //
-                                for (int n = 1; n < ncomp; n++)
-                                    fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
-
-                                fwhich[i] = false;
-                            }
-                            else if (compfvalid.contains(cells[i]))
-                            {
-                                fwhich[i] = false;
-                            }
-                        }
-
-                        const Real sum_so_far = sum_crse + sum_fine; 
-
-                        BL_ASSERT(sum_so_far > 0);
-                        BL_ASSERT(sum_so_far < 1);
-
-                        sum_fine = 0;
-                        for (int i = 0; i < M; i++) 
-                        {       
-                            if (fwhich[i])
-                                //
-                                // Got to weight cells in this direction differently.
-                                //
-                                sum_fine += fracs[i];
-                        }
-
-                        const Real mult = (1 - sum_so_far) / sum_fine;
-                        //
-                        // Now add the weighted amount to the fine cells touching the c-f interface.
-                        //
-                        sum_fine = 0;
-                        for (int i = 0; i < M; i++)
-                        {
-                            if (fwhich[i])
-                            {
-                                //
-                                // Sum up mass in first component.
-                                //
-                                fab(cells[i],0) += p.m_data[0] * fracs[i] * mult;
-                                //
-                                // Sum up momenta in next components.
-                                //
-                                for (int n = 1; n < ncomp; n++)
-                                    fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i] * mult;
-
-                                sum_fine += fracs[i] * mult;
-                            }
-                        }
-
-                        BL_ASSERT(std::abs(1-(sum_fine+sum_so_far)) < 1.e-9);
-                    }
-                    else if (AnyCrseToFine)
-                    {
-                        Real sum = 0;
-
-                        for (int i = 0; i < M; i++)
-                        {
-                            if (!cwhich[i])
-                            {
-                                //
-                                // Sum up mass in first component.
-                                //
-                                fab(cells[i],0) += p.m_data[0] * fracs[i];
-                                //
-                                // Sum up momenta in next components.
-                                //
-                                for (int n = 1; n < ncomp; n++)
-                                    fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
-
-                                sum += fracs[i];
-                            }
-                            else
-                            {
-                                //
-                                // We're at a Crse->Fine boundary.
-                                //
-                                ParticleBase::FineCellsToUpdateFromCrse(p,lev,m_amr,cells[i],cfshifts[i],fgrid,ffracs,fcells,isects);
-
-                                for (int j = 0; j < fcells.size(); j++)
-                                {
-                                    if (mf[lev_index+1].DistributionMap()[fgrid[j]] == ParallelDescriptor::MyProc())
+                                    const Box bx(fcells[j],fcells[j]);
+                                    gm_fine.periodicShift(bx, gm_fine.Domain(), pshifts);
+                                    if (!pshifts.empty())
+                                    {
+                                        BL_ASSERT(pshifts.size() == 1);
+                                        fcells[j] = fcells[j] - pshifts[0];
+                                    }
+                                    mf[lev_index + 1].boxArray().intersections(Box(fcells[j],fcells[j]),isects);
+                                    if (isects.size() == 0)
+                                        continue;
+                                    const int grid = isects[0].first; 
+                                    if (mf[lev_index+1].DistributionMap()[grid] == ParallelDescriptor::MyProc())
                                     {
                                         //
                                         // Sum up mass in first component.
                                         //
-                                        mf[lev_index+1][fgrid[j]](fcells[j],0) += p.m_data[0] * fracs[i] * ffracs[j];
+                                        mf[lev_index+1][grid](fcells[j],0) += p.m_data[0] * ffracs[j];
                                         //
                                         // Sum up momenta in next components.
                                         //
                                         for (int n = 1; n < ncomp; n++)
-                                            mf[lev_index+1][fgrid[j]](fcells[j],n) += p.m_data[n] * p.m_data[0] * fracs[i] * ffracs[j];
+                                            mf[lev_index+1][grid](fcells[j],n) += p.m_data[n] * p.m_data[0] * ffracs[j];
                                     }
                                     else
                                     {
                                         pb.m_lev  = lev+1;
-                                        pb.m_grid = fgrid[j];
+                                        pb.m_grid = grid;
                                         pb.m_cell = fcells[j];
                                         //
                                         // Sum up mass in first component.
                                         //
-                                        pb.m_data[0] = p.m_data[0] * fracs[i] * ffracs[j];
+                                        pb.m_data[0] = p.m_data[0] *  ffracs[j];
                                         //
                                         // Sum up momenta in next components.
                                         //
                                         for (int n = 1; n < ncomp; n++)
-                                            pb.m_data[n] = p.m_data[n] * p.m_data[0] * fracs[i] * ffracs[j];
+                                            pb.m_data[n] = p.m_data[n] * p.m_data[0] * ffracs[j];
+
+                                        data.push_back(pb);
+                                    }
+                                }
+                            }
+                            else if (lev_index > 0)
+                            {
+                                //
+                                // We must be at a fine->coarse interface.
+                                //
+                                const int MC = ParticleBase::CIC_Cells_Fracs(p, plo, dx_coarse, dx, cfracs, ccells);
+                                for (int j = 0; j < MC; j++)
+                                {
+                                    //
+                                    // Make sure this coarse cell isn't in this level's valid region.
+                                    // This may not matter.
+                                    //
+                                    if (cba.contains(ccells[j]))
+                                        continue;
+                                    //
+                                    // Check for periodicity.
+                                    //
+                                    const Box bx(ccells[j],ccells[j]);
+                                    gm_coarse.periodicShift(bx, gm_coarse.Domain(), pshifts);
+
+                                    if (!pshifts.empty())
+                                    {
+                                        BL_ASSERT(pshifts.size() == 1);
+                                        ccells[j] = ccells[j] - pshifts[0];
+                                    }
+                                    //
+                                    // Find its resident grid.
+                                    //
+                                    mf[lev_index - 1].boxArray().intersections(Box(ccells[j],ccells[j]),isects);
+                                    if (isects.size() == 0)
+                                        continue;
+                                    const int grid = isects[0].first; 
+                                    if (mf[lev_index-1].DistributionMap()[grid] == ParallelDescriptor::MyProc())
+                                    {
+                                        //
+                                        // Sum up mass in first component.
+                                        //
+                                        mf[lev_index-1][grid](ccells[j],0) += p.m_data[0] * cfracs[j];
+                                        //
+                                        // Sum up momenta in next components.
+                                        //
+                                        for (int n = 1; n < ncomp; n++)
+                                            mf[lev_index-1][grid](ccells[j],n) += p.m_data[n] * p.m_data[0] * cfracs[j];
+                                    }
+                                    else
+                                    {
+                                        pb.m_lev  = lev-1;
+                                        pb.m_grid = grid;
+                                        pb.m_cell = ccells[j];
+                                        //
+                                        // Sum up mass in first component.
+                                        //
+                                        pb.m_data[0] = p.m_data[0] * cfracs[j];
+                                        //
+                                        // Sum up momenta in next components.
+                                        //
+                                        for (int n = 1; n < ncomp; n++)
+                                            pb.m_data[n] = p.m_data[n] * p.m_data[0] * cfracs[j];
+
+                                        data.push_back(pb);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // The mass is below levels we care about. Ignore it.
+                            }
+                        }
+                    }
+                    else 
+                    {
+                        bool AnyCrseToFine = false;
+                        if (lev < finest_level)
+                            AnyCrseToFine = ParticleBase::CrseToFine(cfba,cells,cfshifts,gm,cwhich,pshifts);
+                        //
+                        // lev_index > 0 means that we don't do F->C for lower levels
+                        // This may mean that the mass fraction is off.
+                        //
+                        bool AnyFineToCrse = false;
+                        if (lev_index > 0 && !GridsCoverDomain)
+                            AnyFineToCrse = ParticleBase::FineToCrse(p,lev,m_amr,cells,fvalid,compfvalid_grown,ccells,cfracs,fwhich,cgrid,pshifts,isects);
+
+                        BL_ASSERT(!(AnyCrseToFine && AnyFineToCrse));
+
+                        if (!AnyCrseToFine && !AnyFineToCrse)
+                        {
+                            //
+                            // By far the most common case.  Just do it!
+                            //
+                            for (int i = 0; i < M; i++)
+                            {
+                                //
+                                // Sum up mass in first component.
+                                //
+                                fab(cells[i],0) += p.m_data[0] * fracs[i];
+                                //
+                                // Sum up momenta in next components.
+                                //
+                                for (int n = 1; n < ncomp; n++)
+                                    fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
+                            }
+                        }
+                        else if (AnyFineToCrse)
+                        {
+                            Real sum_crse = 0, sum_fine = 0;
+
+                            for (int i = 0; i < M; i++)
+                            {
+                                if (fwhich[i])
+                                {
+                                    //
+                                    // We're at a Fine->Crse boundary.
+                                    //
+                                    BL_ASSERT(cgrid[i] >= 0);
+                                    BL_ASSERT(cgrid[i] < mf[lev_index-1].size());
+                                    //
+                                    // Here we need to update the crse region.  The coarse
+                                    // region is always going to be updated if we have a
+                                    // particle in a cell bordering a Fine->Crse boundary.
+                                    //
+                                    if (mf[lev_index-1].DistributionMap()[cgrid[i]] == ParallelDescriptor::MyProc())
+                                    {
+                                        if (!mf[lev_index-1][cgrid[i]].box().contains(ccells[i])) continue;
+                                        //
+                                        // Sum up mass in first component.
+                                        //
+                                        mf[lev_index-1][cgrid[i]](ccells[i],0) += p.m_data[0] * cfracs[i];
+                                        //
+                                        // Sum up momenta in next components.
+                                        //
+                                        for (int n = 1; n < ncomp; n++)
+                                            mf[lev_index-1][cgrid[i]](ccells[i],n) += p.m_data[n] * p.m_data[0] * cfracs[i];
+                                    }
+                                    else
+                                    {
+                                        pb.m_lev  = lev-1;
+                                        pb.m_grid = cgrid[i];
+                                        pb.m_cell = ccells[i];
+                                        //
+                                        // Sum up mass in first component.
+                                        //
+                                        pb.m_data[0] = p.m_data[0] * cfracs[i];
+                                        //
+                                        // Sum up momenta in next components.
+                                        //
+                                        for (int n = 1; n < ncomp; n++)
+                                            pb.m_data[n] = p.m_data[n] * p.m_data[0] * cfracs[i];
 
                                         data.push_back(pb);
                                     }
 
-                                    sum += fracs[i] * ffracs[j];
+                                    sum_crse += cfracs[i];
                                 }
                             }
-                        }
+                            //
+                            // We've updated the Crse cells.  Now we have to update the fine
+                            // cells in such a way that the total amount of mass we move
+                            // around is precisely p.m_data[0]. In other words, the fractions
+                            // we use at crse and fine have to sum to zero.  In the fine
+                            // case, we have to account for the case where one or more of the
+                            // cell indices is not in the valid region of the box containing 
+                            // the particle.
+                            //
+                            sum_fine = 0;
+                            for (int i = 0; i < M; i++) 
+                            {
+                                //
+                                // Reusing "fwhich" to indicate fine cells that need massaging.
+                                //
+                                fwhich[i] = true;
 
-                        BL_ASSERT(std::abs(1-sum) < 1.e-9);
+                                if (!compfvalid_grown.contains(cells[i]))
+                                {
+                                    //
+                                    // Go ahead and add the full correct amount to these cells.
+                                    // They can't touch a Fine->Crse boundary.
+                                    //
+                                    sum_fine += fracs[i];
+                                    //
+                                    // Sum up mass in first component.
+                                    //
+                                    fab(cells[i],0) += p.m_data[0] * fracs[i];
+                                    //
+                                    // Sum up momenta in next components.
+                                    //
+                                    for (int n = 1; n < ncomp; n++)
+                                        fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
+
+                                    fwhich[i] = false;
+                                }
+                                else if (compfvalid.contains(cells[i]))
+                                {
+                                    fwhich[i] = false;
+                                }
+                            }
+
+                            const Real sum_so_far = sum_crse + sum_fine; 
+
+                            BL_ASSERT(sum_so_far > 0);
+                            BL_ASSERT(sum_so_far < 1);
+
+                            sum_fine = 0;
+                            for (int i = 0; i < M; i++) 
+                            {       
+                                if (fwhich[i])
+                                    //
+                                    // Got to weight cells in this direction differently.
+                                    //
+                                    sum_fine += fracs[i];
+                            }
+
+                            const Real mult = (1 - sum_so_far) / sum_fine;
+                            //
+                            // Now add the weighted amount to the fine cells touching the c-f interface.
+                            //
+                            sum_fine = 0;
+                            for (int i = 0; i < M; i++)
+                            {
+                                if (fwhich[i])
+                                {
+                                    //
+                                    // Sum up mass in first component.
+                                    //
+                                    fab(cells[i],0) += p.m_data[0] * fracs[i] * mult;
+                                    //
+                                    // Sum up momenta in next components.
+                                    //
+                                    for (int n = 1; n < ncomp; n++)
+                                        fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i] * mult;
+
+                                    sum_fine += fracs[i] * mult;
+                                }
+                            }
+
+                            BL_ASSERT(std::abs(1-(sum_fine+sum_so_far)) < 1.e-9);
+                        }
+                        else if (AnyCrseToFine)
+                        {
+                            Real sum = 0;
+
+                            for (int i = 0; i < M; i++)
+                            {
+                                if (!cwhich[i])
+                                {
+                                    //
+                                    // Sum up mass in first component.
+                                    //
+                                    fab(cells[i],0) += p.m_data[0] * fracs[i];
+                                    //
+                                    // Sum up momenta in next components.
+                                    //
+                                    for (int n = 1; n < ncomp; n++)
+                                        fab(cells[i],n) += p.m_data[n] * p.m_data[0] * fracs[i];
+
+                                    sum += fracs[i];
+                                }
+                                else
+                                {
+                                    //
+                                    // We're at a Crse->Fine boundary.
+                                    //
+                                    ParticleBase::FineCellsToUpdateFromCrse(p,lev,m_amr,cells[i],cfshifts[i],fgrid,ffracs,fcells,isects);
+
+                                    for (int j = 0; j < fcells.size(); j++)
+                                    {
+                                        if (mf[lev_index+1].DistributionMap()[fgrid[j]] == ParallelDescriptor::MyProc())
+                                        {
+                                            //
+                                            // Sum up mass in first component.
+                                            //
+                                            mf[lev_index+1][fgrid[j]](fcells[j],0) += p.m_data[0] * fracs[i] * ffracs[j];
+                                            //
+                                            // Sum up momenta in next components.
+                                            //
+                                            for (int n = 1; n < ncomp; n++)
+                                                mf[lev_index+1][fgrid[j]](fcells[j],n) += p.m_data[n] * p.m_data[0] * fracs[i] * ffracs[j];
+                                        }
+                                        else
+                                        {
+                                            pb.m_lev  = lev+1;
+                                            pb.m_grid = fgrid[j];
+                                            pb.m_cell = fcells[j];
+                                            //
+                                            // Sum up mass in first component.
+                                            //
+                                            pb.m_data[0] = p.m_data[0] * fracs[i] * ffracs[j];
+                                            //
+                                            // Sum up momenta in next components.
+                                            //
+                                            for (int n = 1; n < ncomp; n++)
+                                                pb.m_data[n] = p.m_data[n] * p.m_data[0] * fracs[i] * ffracs[j];
+
+                                            data.push_back(pb);
+                                        }
+
+                                        sum += fracs[i] * ffracs[j];
+                                    }
+                                }
+                            }
+
+                            BL_ASSERT(std::abs(1-sum) < 1.e-9);
+                        }
                     }
                 }
             }
@@ -3015,7 +3061,7 @@ ParticleContainer<N>::MultiplyParticleMass (int lev, Real mult)
 {
    BL_ASSERT(lev == 0);
 
-   PMap& pmap = m_particles[lev];
+   PMap& pmap = *m_particles.getRoot();
 
    for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
    {
@@ -3042,16 +3088,17 @@ ParticleContainer<N>::MultiplyParticleMass (int lev, Real mult)
 template <int N>
 void
 ParticleContainer<N>::movePredict (const MultiFab& gv,
-                                   int             lev,
+                                   Array<int>      region_id,
                                    Real            dt)
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real strttime = ParallelDescriptor::second();
 
-    PMap& pmap = m_particles[lev];
+    PMap& pmap = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3105,16 +3152,17 @@ template <int N>
 void
 ParticleContainer<N>::moveCorrect (const MultiFab& gv_old,
                                    const MultiFab& gv,
-                                   int             lev,
+                                   Array<int>      region_id,
                                    Real            dt)
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real strttime = ParallelDescriptor::second();
 
-    PMap& pmap = m_particles[lev];
+    PMap& pmap = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3177,22 +3225,20 @@ ParticleContainer<N>::moveCorrect (const MultiFab& gv_old,
 template <int N>
 void
 ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
-                                     int             lev,
+                                     Array<int>      region_id,
                                      Real            dt,
                                      Real            a_old,
                                      Real            a_half) 
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
+    int lev = region_id.size() - 1;
     BL_ASSERT(lev >= 0);
-    //If there are no particles at this level
-    if (lev >= m_particles.size())
-        return;
 
     const Real strttime      = ParallelDescriptor::second();
     const Real half_dt       = 0.5 * dt;
     const Real a_half_inv    = 1 / a_half;
     const Real dt_a_half_inv = dt * a_half_inv;
-    PMap&      pmap          = m_particles[lev];
+    PMap&      pmap          = *m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3241,7 +3287,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
                    p.m_pos[2] += dt_a_half_inv * p.m_data[3];);
 
             // Move the particle to the proper ghost cell. 
-            if (m_amr->subCycle() && !ParticleBase::RestrictedWhere(p,m_amr, grav_vector.nGrow() -2))
+            if (m_amr->subCycle() && !ParticleBase::RestrictedWhere(p,m_amr, region_id, grav_vector.nGrow() -2))
             {
                 // The particle is no longer in relevant ghost cells for this grid; 
                 // invaldate it.
@@ -3274,18 +3320,19 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
-                                int             lev,
+                                Array<int>      region_id,
                                 Real            dt,
                                 Real            a_new,
                                 Real            a_half) 
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real strttime  = ParallelDescriptor::second();
     const Real half_dt   = 0.5 * dt;
     const Real a_new_inv = 1 / a_new;
-    PMap&      pmap      = m_particles[lev];
+    PMap&      pmap      = *m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3351,14 +3398,15 @@ ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
-                                     int             lev,
+                                     Array<int>      region_id,
                                      Real            dt,
                                      Real            a_old,
                                      Real            a_half) 
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real      strttime      = ParallelDescriptor::second();
     const Geometry& geom          = m_amr->Geom(lev);
@@ -3367,7 +3415,7 @@ ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
     const Real      half_dt       = 0.5 * dt;
     const Real      a_half_inv    = 1 / a_half;
     const Real      dt_a_half_inv = dt * a_half_inv;
-    PMap&           pmap          = m_particles[lev];
+    PMap&           pmap          = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3455,14 +3503,15 @@ ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
-                                int               lev,
+                                Array<int>        region_id,
                                 Real              dt,
                                 Real              a_new,
                                 Real              a_half) 
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    int lev = region_id.size() - 1;
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real      strttime  = ParallelDescriptor::second();
     const Geometry& geom      = m_amr->Geom(lev);
@@ -3470,7 +3519,7 @@ ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
     const Real*     plo       = geom.ProbLo();
     const Real      half_dt   = 0.5 * dt;
     const Real      a_new_inv = 1 / a_new;
-    PMap&           pmap      = m_particles[lev];
+    PMap&           pmap      = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3542,92 +3591,19 @@ ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
 
 template <int N>
 void
-ParticleContainer<N>::RemoveParticlesNotAtFinestLevel ()
+ParticleContainer<N>::RemoveParticlesInRegion (Array<int> region_id)
 {
-    BL_ASSERT(m_amr->finestLevel()+1 == m_particles.size());
-
-    int cnt = 0;
-
-    for (int lev = 0; lev < m_amr->finestLevel(); lev++)
-    {
-        PMap& pmap = m_particles[lev];
-
-        if (!pmap.empty())
-        {
-            for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
-                 pmap_it != pmapEnd;
-                 ++pmap_it)
-            {
-                cnt += pmap_it->second.size();
-            }
-
-            PMap().swap(pmap);
-
-            BL_ASSERT(pmap.empty());
-        }
-    }
-    //
-    // Print how many particles removed on each processor if any were removed.
-    //
-    if (m_verbose > 1)
-    {
-        int maxcnt = cnt;
-
-        ParallelDescriptor::ReduceIntMax(maxcnt);
-
-        if (maxcnt > 0)
-        {
-            for (int i = 0; i < ParallelDescriptor::NProcs(); i++)
-            {
-                if (ParallelDescriptor::MyProc() == i)
-                {
-                    if (cnt > 0)
-                    {
-                        std::cout << "Processor "
-                                  << i
-                                  << " removed "
-                                  << cnt
-                                  << " particles not in finest level" << std::endl;
-                    }
-                }
-                ParallelDescriptor::Barrier();
-            }
-        }
-    }
+    PMap().swap(*m_particles.getData(region_id));
 }
 
 template <int N>
 void
-ParticleContainer<N>::RemoveParticlesAtLevel (int level)
-{
-    if (level >= m_particles.size())
-        return;
-
-    if (!m_particles[level].empty())
-    {
-        PMap().swap(m_particles[level]);
-    }
-
-    BL_ASSERT(m_particles[level].empty());
-}
-
-template <int N>
-void
-ParticleContainer<N>::AddParticlesAtLevel (int   level,
+ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
                                            PBox& virts,
                                            bool  where_already_called)
 {
-    if (m_particles.size() < level+1)
-    {
-        if (ParallelDescriptor::IOProcessor())
-            std::cout << "ParticleContainer<N>::AddParticlesAtLevel resizing m_particles from "
-                      << m_particles.size()
-                      << " to "
-                      << level+1 << '\n';
-        m_particles.resize(level + 1);
-    }
-
     const int MyProc = ParallelDescriptor::MyProc();
+    int level = region_id.size() - 1;
     //
     // The valid particles that we don't own.
     //
@@ -3651,7 +3627,7 @@ ParticleContainer<N>::AddParticlesAtLevel (int   level,
             {
                 //Put the particle in this level
                 p.m_lev = level;
-                if (!ParticleBase::SingleLevelWhere(p, m_amr, level)) //Virtuals shouldn't be in Ghost cells
+                if (!ParticleBase::SingleRegionWhere(p, m_amr, region_id)) //Virtuals shouldn't be in Ghost cells
                     BoxLib::Abort("ParticleContainer<N>::AddParticlesAtLevel(): Can't add outside of domain\n");
             } else {
                 BL_ASSERT(p.m_lev == level);
@@ -3659,7 +3635,7 @@ ParticleContainer<N>::AddParticlesAtLevel (int   level,
             const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
             if (who == MyProc)
             {
-                m_particles[p.m_lev][p.m_grid].push_back(p);
+                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
                 //
                 // Invalidate the particle so we can reclaim its space.
                 // may be unneeded
@@ -3928,7 +3904,7 @@ ParticleContainer<N>::AddParticlesAtLevel (int   level,
 
             rcvp += N;
 
-            m_particles[p.m_lev][p.m_grid].push_back(p);
+            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
 
             nparticles.pop_front();
         }
@@ -3938,14 +3914,13 @@ ParticleContainer<N>::AddParticlesAtLevel (int   level,
 
 template <int N>
 void
-ParticleContainer<N>::CreateVirtualParticles (int   level,
+ParticleContainer<N>::CreateVirtualParticles (Array<int>   region_id,
                                               PBox& virts) const
 {
+    int level = region_id.size() - 1;
     BL_ASSERT(level > 0);
     BL_ASSERT(virts.empty());
 
-    if (level >= m_particles.size()) //this level could exist and simply have no particles
-        return;
     //
     // Read these from the parm file if we haven't done so yet.
     //
@@ -3964,7 +3939,7 @@ ParticleContainer<N>::CreateVirtualParticles (int   level,
 
     buffer = buffer.grow(aggregation_buffer);
 
-    const PMap& pmap = m_particles[level];
+    const PMap& pmap = *m_particles.getData(region_id);
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
          pmap_it != pmapEnd;
@@ -4065,25 +4040,25 @@ ParticleContainer<N>::CreateVirtualParticles (int   level,
 
 template <int N>
 void
-ParticleContainer<N>::CreateGhostParticles (int   level,
+ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
                                             int   ngrow,
                                             PBox& ghosts) const
 {
     BL_ASSERT(ghosts.empty());
+    int level = region_id.size() - 1;
     BL_ASSERT(level < m_amr->finestLevel());
 
-    if (level >= m_particles.size()) //this level could exist and simply have no particles
-        return;
     //
     // Copy and grow the box array for the finer level.
     //
-    BoxArray fine_grown = m_amr->boxArray(level + 1);
+    BoxArray fine_grown = m_amr->boxArray(region_id);
 
     fine_grown.grow(ngrow);
     
     std::vector< std::pair<int,Box> > isects;
 
-    const PMap& pmap = m_particles[level];
+    Array<int> parent_id = m_amr->getRegion(region_id).Parent()->getID();
+    const PMap& pmap = *m_particles.getData(parent_id);
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
          pmap_it != pmapEnd;
@@ -4120,7 +4095,7 @@ ParticleContainer<N>::CreateGhostParticles (int   level,
                 // Set its position.
                 //
                 p.m_lev  = level + 1;
-                p.m_grid = isects[i].first;
+                p.m_grid = 0; // m_grid is unreliable--it will be set during the call.
                 p.m_cell = iv;
                 //
                 // Store it in the PBox.
@@ -4138,14 +4113,15 @@ ParticleContainer<N>::CreateGhostParticles (int   level,
 template <int N>
 void
 ParticleContainer<N>::AdvectWithUmac (const MultiFab* umac,
-                                      int             lev,
+                                      Array<int>      region_id,
                                       Real            dt,
                                       const int       vcomp)
 {
+    int lev = region_id.size() - 1;
     BL_ASSERT(OK(true, lev, umac[0].nGrow()-1));
     BL_ASSERT(vcomp >= 0);
     BL_ASSERT(N >= vcomp + 2*BL_SPACEDIM);
-    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     D_TERM(BL_ASSERT(umac[0].nGrow() >= 2);,
            BL_ASSERT(umac[1].nGrow() >= 2);,
@@ -4162,7 +4138,7 @@ ParticleContainer<N>::AdvectWithUmac (const MultiFab* umac,
 
     for (int ipass = 0; ipass < 2; ipass++)
     {
-        PMap& pmap = m_particles[lev];
+        PMap& pmap = m_particles.getData(region_id);
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
@@ -4265,13 +4241,13 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                                        PBox& notowned, 
                                        std::deque<int>& owner, 
                                        int lev,
-                                       int finest_level,
                                        bool where_already_called,
                                        bool full_where,
-                                       int  lev_min,
+                                       Array<int> base_region,
                                        int  nGrow)
 {
     const int MyProc   = ParallelDescriptor::MyProc();
+    int lev_min = base_region.size() - 1;
     //
     // Remove any invalid particles from front of container.
     //
@@ -4279,6 +4255,7 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
         pbox.pop_front();
 
     std::cout << "DEBUG: PMAP iteration\n";
+    Array<int> region_id;
     for (typename PBox::iterator it = pbox.begin(), End = pbox.end(); it != End; )
     {
         ParticleType& p = *it;
@@ -4288,15 +4265,15 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
         {
             if (!where_already_called)
             {
-                if (!ParticleBase::Where(p,m_amr, false, lev_min, finest_level))
+                if (!ParticleBase::Where(p,m_amr, false, &base_region))
                 {                                
                     if (full_where) // Lengthier checks for subcycling.
                     {
-                        if (!ParticleBase::PeriodicWhere(p, m_amr, lev_min, finest_level))
+                        if (!ParticleBase::PeriodicWhere(p, m_amr, base_region))
                         {
                             if (lev_min != 0) // RestrictedWhere should be unnecessary at top level.
                             {
-                                if (!ParticleBase::RestrictedWhere(p, m_amr, nGrow))
+                                if (!ParticleBase::RestrictedWhere(p, m_amr, base_region, nGrow))
                                     BoxLib::Abort("ParticleContainer<N>::Redistribute(): invalid particle at non-coarse step");
                             }
                             else
@@ -4321,16 +4298,18 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
             // The owner of the particle is the CPU owning the finest grid
             // in state data that contains the particle.
             //
-            const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
+            region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
+            const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
             std::cout << "DEBUG: I know who\n";
             if (who == MyProc)
             {
+                //This test should still be OK due to nesting.
                 if (p.m_lev != lev || p.m_grid != grid)
-                {
+                { 
                     //
                     // We own it but must shift it to another place.
                     //
-                    m_particles[p.m_lev][p.m_grid].push_back(p);
+                    (*(m_particles.getData(region_id)))[p.m_grid].push_back(p);
                     //
                     // Invalidate the particle so we can reclaim its space.
                     //
@@ -4373,33 +4352,22 @@ template <int N>
 void
 ParticleContainer<N>::Redistribute (bool where_already_called,
                                     bool full_where,
-                                    int  lev_min,
+                                    Array<int>* base_region_ptr,
                                     int  nGrow)
 {
     const int MyProc   = ParallelDescriptor::MyProc();
     Real      strttime = ParallelDescriptor::second();
-    //
-    // On startup there are cases where Redistribute() could be called
-    // with a given finestLevel() where that AmrRegion has yet to be defined.
-    //
-    int theEffectiveFinestLevel = m_amr->finestLevel();
-    std::cout << "DEBUG: pre finest = " << theEffectiveFinestLevel << "\n";
-
-    ///TODO/DEBUG: This may need to upgrade
-    //while (!m_amr->getAmrRegions().defined(theEffectiveFinestLevel))
-        //theEffectiveFinestLevel--;
-    theEffectiveFinestLevel = m_amr->getAmrRegions().DeprecatedGetFinestLevel();
-    std::cout << "DEBUG: post finest = " << theEffectiveFinestLevel << "\n";
-
-    if (m_particles.size() < theEffectiveFinestLevel+1)
+    
+    Array<int> base_region;
+    if (base_region_ptr == 0)
     {
-        if (ParallelDescriptor::IOProcessor())
-            std::cout << "ParticleContainer<N>::Redistribute() resizing m_particles from "
-                      << m_particles.size()
-                      << " to "
-                      << theEffectiveFinestLevel+1 << '\n';
-        m_particles.resize(theEffectiveFinestLevel+1);
+        base_region = root_id;
     }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
+
     //
     // The valid particles that we don't own.
     //
@@ -4409,16 +4377,18 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     //
     std::deque<int> owner;
 
-    for (int lev = lev_min; lev < m_particles.size(); lev++)
+    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region);
+    for( ; !ptree_it.is_finished(); ++ptree_it)
     {
+        int lev = ptree_it.getLevel();
         std::cout << "DEBUG: Particle Redistribute loop " << lev << "\n";
-        PMap& pmap = m_particles[lev];
+        PMap& pmap = **ptree_it;
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
             int   grid = pmap_it->first;
             PBox& pbox = pmap_it->second;
-            RedistributePBox(pbox, grid, notowned, owner, lev, theEffectiveFinestLevel, where_already_called, full_where, lev_min, nGrow);
+            RedistributePBox(pbox, grid, notowned, owner, lev,  where_already_called, full_where, base_region, nGrow);
         }
         //
         // Remove any map entries for which the particle container is now empty.
@@ -4431,30 +4401,32 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
                 ++pmap_it;
         }
     }
-
-    if (m_particles.size() > theEffectiveFinestLevel+1)
+    
+    //
+    // Also redistribute all particles orphaned by structure changes.
+    //
+    std::cout << "DEBUG: Redistributing Orphans\n";
+    typename PList<PMap>::iterator it = orphan_particles.begin();
+    for ( ; it != orphan_particles.end(); ++it)
     {
-        //
-        // Looks like we lost an AmrRegion on a regrid.
-        //
-        if (ParallelDescriptor::IOProcessor())
-            std::cout << "ParticleContainer<N>::Redistribute() resizing m_particles from "
-                      << m_particles.size()
-                      << " to "
-                      << theEffectiveFinestLevel+1 << '\n';
+        int lev = -1;
+        PMap& pmap = **it;
 
-        BL_ASSERT(m_particles.size() >= 2);
-
-        BL_ASSERT(m_particles[m_particles.size()-1].empty());
-
-        m_particles.resize(theEffectiveFinestLevel+1);
+        for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
+        {
+            int   grid = pmap_it->first;
+            PBox& pbox = pmap_it->second;
+            // These guys should be in real positions
+            RedistributePBox(pbox, grid, notowned, owner, lev, false, false, base_region, 0);
+        }
     }
+    orphan_particles.clear();
 
     const int NProcs = ParallelDescriptor::NProcs();
 
     if (NProcs == 1)
     {
-        BL_ASSERT(OK(full_where, lev_min, nGrow, theEffectiveFinestLevel));
+        BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
         BL_ASSERT(notowned.empty());
 
         if (m_verbose > 1)
@@ -4493,13 +4465,14 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         maxsendcount += Snds[i];
     ParallelDescriptor::ReduceLongMax(maxsendcount);
 
+    Array<int> region_id;
     if (maxsendcount == 0)
     {
         //
         // There's no parallel work to do.
         //
 //        BL_ASSERT(OK());
-        BL_ASSERT(OK(full_where, lev_min, nGrow, theEffectiveFinestLevel));
+        BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
         return;
     }
 
@@ -4700,13 +4673,14 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
             rcvp += N;
 
-            m_particles[p.m_lev][p.m_grid].push_back(p);
+            region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
+            (*(m_particles.getData(region_id)))[p.m_grid].push_back(p);
 
             nparticles.pop_front();
         }
     }
 
-    BL_ASSERT(OK(full_where, lev_min, nGrow, theEffectiveFinestLevel));
+    BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
 
     if (m_verbose > 1)
     {
@@ -4725,14 +4699,18 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 template <int N>
 bool
 ParticleContainer<N>::OK (bool full_where,
-                          int  lev_min,
-                          int  ngrow,
-                          int  finest_level) const
+                          Array<int>* base_region_ptr,
+                          int  ngrow) const
 {
-    if (finest_level == -1)
-        finest_level = m_amr->finestLevel();
-
-    BL_ASSERT(finest_level <= m_amr->finestLevel());
+    Array<int> base_region;
+    if (base_region_ptr == 0)
+    {
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
     //
     // Check that the integer data in each valid particle is what it should be.
     // This includes checking that particles are in the proper place in the particle
@@ -4740,9 +4718,11 @@ ParticleContainer<N>::OK (bool full_where,
     //
     // Particles are copied to avoid accidentally moving them with where.
     //
-    for (int lev = lev_min; lev < m_particles.size(); lev++)
+    PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region);
+    for( ; !ptree_it.is_finished(); ++ptree_it)
     {
-        const PMap& pmap = m_particles[lev];
+        const PMap& pmap = **ptree_it;
+        int lev = ptree_it.getLevel();
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
@@ -4762,13 +4742,13 @@ ParticleContainer<N>::OK (bool full_where,
                     const int     lgrid = p.m_grid;
                     const IntVect cell  = p.m_cell;
 
-                    if (!ParticleBase::Where(p,m_amr, false, lev_min, finest_level))
+                    if (!ParticleBase::Where(p,m_amr, false, &base_region))
                     {
                         if (full_where)
                         {
-                            if (!ParticleBase::PeriodicWhere(p, m_amr, lev_min, finest_level)) 
+                            if (!ParticleBase::PeriodicWhere(p, m_amr, base_region)) 
                             {
-                                if (!ParticleBase::RestrictedWhere(p, m_amr, ngrow))
+                                if (!ParticleBase::RestrictedWhere(p, m_amr, base_region, ngrow))
                                     return false;
                             }
                         }
@@ -4844,9 +4824,10 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
 
     long nparticles = 0;
 
-    for (int lev = 0; lev < m_particles.size(); lev++)
+    PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot();
+    for( ; !ptree_it.is_finished(); ++ptree_it)
     {
-        const PMap& pmap = m_particles[lev];
+        const PMap& pmap = **ptree_it;
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -4945,6 +4926,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
             ParallelDescriptor::Barrier();
         }
 
+        ///TODO/DEBUG: Upgrade
         const MultiFab& state = m_amr->getLevel(lev).get_new_data(0);
         //
         // We eventually want to write out the file name and the offset
@@ -5002,7 +4984,10 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                     // Do it grid block by grid block remembering the seek offset
                     // for the start of writing of each block of data.
                     //
-                    WriteParticles(lev, ParticleFile, FileNumber, which, count, where);
+                    ///TODO/DEBUG: FIX THIS WHOLE THING
+                    Array<int> root_id(1);
+                    root_id[0] = 0;
+                    WriteParticles(root_id, ParticleFile, FileNumber, which, count, where);
 
                     ParticleFile.flush();
 
@@ -5096,15 +5081,19 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
 
 template <int N>
 void
-ParticleContainer<N>::WriteParticles (int            lev,
+ParticleContainer<N>::WriteParticles (Array<int>     region_id,
                                       std::ofstream& ofs,
                                       int            fnum,
                                       Array<int>&    which,
                                       Array<int>&    count,
                                       Array<long>&   where) const
 {
-    const PMap&     pmap  = m_particles[lev];
-    const MultiFab& state = m_amr->getLevel(lev).get_new_data(0);
+    const PMap&     pmap  = *m_particles.getData(region_id);
+    int lev = region_id.size() - 1;
+    ///TODO/DEBUG: Upgrade this.
+    const MultiFab& state = m_amr->getRegions().getData(region_id)->get_new_data(0);
+    
+    ///TODO/DEBUG: Upgrade this.
 
     for (MFIter mfi(state); mfi.isValid(); ++mfi)
     {
@@ -5285,6 +5274,16 @@ ParticleContainer<N>::Restart (const std::string& dir,
 
 template <int N>
 void
+ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_structure)
+{
+    //There should probably be some asserts here.
+    BL_ASSERT(orphan_particles.isEmpty());
+    m_particles.extractChildrenOfNode(base_region, orphan_particles);
+    m_particles.buildFromStructure(base_region, new_structure);
+}
+
+template <int N>
+void
 ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
                                           std::ifstream&     HdrFile)
 {
@@ -5365,6 +5364,9 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
     Array<int> ngrids(finest_level+1);
 
     BL_ASSERT(finest_level == m_amr->finestLevel());
+    
+    // Sets the structure of m_particles to match the region hierarchy.
+    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
 
     if (ParallelDescriptor::IOProcessor())
     {
@@ -5386,6 +5388,7 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
     //
     // We rebuild the filename from which and level.
     //
+    
     for (int lev = 0; lev <= finest_level; lev++)
     {
         //
@@ -5406,9 +5409,6 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
         ParallelDescriptor::Bcast(count.dataPtr(), count.size(), IOProc);
         ParallelDescriptor::Bcast(where.dataPtr(), where.size(), IOProc);
 
-        m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-
-        m_particles.resize(m_amr->finestLevel()+1);
 
         const MultiFab& state = m_amr->getLevel(lev).get_new_data(0);
 
@@ -5460,7 +5460,6 @@ ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
                                                 std::ifstream& ifs)
 {
     BL_ASSERT(cnt > 0);
-    BL_ASSERT(lev < m_particles.size());
     BL_ASSERT(lev >= 0 && lev <= m_amr->finestLevel());
     BL_ASSERT(grd >= 0 && grd < m_amr->boxArray(lev).size());
     //
@@ -5486,7 +5485,8 @@ ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
     //
     int*         iptr = istuff.dataPtr();
     Real*        rptr = rstuff.dataPtr();
-    PBox&        pbox = m_particles[lev][grd];
+    ///TODO/DEBUG: upgrade -- this in no way works
+    PBox&        pbox = (*m_particles.getData(root_id ))[grd];
     ParticleType p;
 
     for (int i = 0; i < cnt; i++)
@@ -5524,7 +5524,7 @@ template <int N>
 void
 ParticleContainer<N>::Timestamp (const std::string&      basename,
                                  const MultiFab&         mf,
-                                 int                     lev,
+                                 Array<int>              region_id,
                                  Real                    time,
                                  const std::vector<int>& indices,
                                  const int               vcomp)
@@ -5537,6 +5537,7 @@ ParticleContainer<N>::Timestamp (const std::string&      basename,
     // indices  -> indices into mf that we output
     // vcomp    -> the offset of velocity terms in the particle metadata
     //
+    int lev = region_id.size() - 1;
     BL_ASSERT(lev >= 0);
     BL_ASSERT(time >= 0);
     BL_ASSERT(vcomp >= 0);
@@ -5568,7 +5569,7 @@ ParticleContainer<N>::Timestamp (const std::string&      basename,
             //
             bool gotwork = false;
 
-            const PMap& pmap = m_particles[lev];
+            const PMap& pmap = m_particles.getData(region_id);
 
             for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
                  pmap_it != pmapEnd && !gotwork;
@@ -5712,9 +5713,11 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     //
     long nparticles = 0;
 
-    for (int lev = 0; lev < m_particles.size(); lev++)
+    ///TODO/DEBUG: Upgrade -- this in no way works
+    for (int lev = 0; lev < m_amr->finestLevel(); lev++)
     {
-        const PMap& pmap = m_particles[lev];
+        ///TODO/DEBUG: Upgrade -- this in no way works
+        const PMap& pmap = *m_particles.getData(root_id);
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -5781,9 +5784,10 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
             if (!File.good())
                 BoxLib::FileOpenFailed(filename);
             
-            for (int lev = 0; lev < m_particles.size(); lev++)
+            for (int lev = 0; lev < m_amr->finestLevel(); lev++)
             {
-                const PMap& pmap = m_particles[lev];
+                ///TODO/DEBUG: Upgrade -- this in no way works
+                const PMap& pmap = *m_particles.getData(root_id);
 
                 for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
                 {

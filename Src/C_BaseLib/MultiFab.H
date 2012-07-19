@@ -456,6 +456,8 @@ public:
 
     static void Initialize ();
     static void Finalize ();
+    
+    int MFIndexOf(IntVect iv, std::vector< std::pair<int,Box> >& scratch_space);
 
 private:
     //

@@ -92,7 +92,7 @@ public:
                                    int                   sub_cycle,
                                    Array<int>&           n_cycle,
                                    const Array<IntVect>& ref_ratio,
-                                   Array<Real>&          dt_level,
+                                   PTree<Real>&          dt_region,
                                    Real                  stop_time) = 0;
     //
     // Compute the next time step.  This is a pure virtual function
@@ -102,8 +102,8 @@ public:
                                int                   sub_cycle,
                                Array<int>&           n_cycle,
                                const Array<IntVect>& ref_ratio,
-                               Array<Real>&          dt_min,
-                               Array<Real>&          dt_level,
+                               PTree<Real>&          dt_reg_min,
+                               PTree<Real>&          dt_region,
                                Real                  stop_time,
                                int                   post_regrid_flag) = 0;
     //
@@ -136,7 +136,7 @@ public:
     // This is a pure virtual function and hence MUST be
     // implemented by derived classes.
     //
-    virtual  void post_regrid (int lbase,
+    virtual  void post_regrid (Array<int> base_region,
                                int new_finest) = 0;
     //
     // Operations to be done after initialization.

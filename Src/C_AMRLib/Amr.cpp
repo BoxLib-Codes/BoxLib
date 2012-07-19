@@ -154,6 +154,25 @@ Amr::boxArray (int lev) const
     return ba;
 }
 
+BoxArray
+Amr::boxArray (Array<int> base_region, int lev) const
+{
+    BoxList bl;
+    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(base_region, lev);
+    for ( ; !it.is_finished(); ++it)
+    {
+        bl.join((*it)->boxArray().boxList());
+    }
+    const BoxArray ba(bl);
+    return ba;
+}
+
+BoxArray
+Amr::boxArray (Array<int> region_id) const
+{
+    return amr_regions.getData(region_id).boxArray();
+}
+
 void
 Amr::setDtMin (const Array<Real>& dt_min_in)
 {
@@ -1084,7 +1103,7 @@ Amr::initialInit (Real strt_time,
         getLevel(lev).setTimeLevel(strt_time,dt_level[lev],dt_level[lev]);
 
     for (int lev = 0; lev <= finest_level; lev++)
-        getLevel(lev).post_regrid(0,finest_level);
+        getLevel(lev).post_regrid(root_id,finest_level);
     //
     // Perform any special post_initialization operations.
     //
@@ -1589,7 +1608,7 @@ Amr::timeStep (AmrRegion& base_region,
             ///TODO/DEBUG: Update parent pointers in regions.
             BL_ASSERT(false);
 
-            coarseRegion().post_regrid(0,0);
+            coarseRegion().post_regrid(root_id,0);
 
             if (ParallelDescriptor::IOProcessor())
             {
@@ -2142,7 +2161,7 @@ Amr::regrid (AmrRegion* base_region,
     //
     std::cout << "DEBUG: calling post regrid\n";
     for (RegionList::iterator it = touched_regions.begin(); it != touched_regions.end(); it++)
-        (*it)->post_regrid(lbase,new_finest);
+        (*it)->post_regrid(base_region.getID(),new_finest);
 
 #ifdef USE_STATIONDATA
     /// TODO/DEBUG: Upgrade
@@ -2189,6 +2208,15 @@ Amr::regrid (AmrRegion* base_region,
            printGridSummary(std::cout,start,finest_level);
         }
     }
+    
+    ///TODO/DEBUG: Remove this stuff.
+    std::cout << "DEBUG: New Structure: ";
+    std::list<int> structure = amr_regions.getStructure(root_id);
+    for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); it++)
+    {
+        std::cout << *it << " ";
+    }
+    std::cout << "\n";
 }
 
 void
@@ -2952,40 +2980,60 @@ Amr::okToRegrid (int level)
 }
 
 Real
-Amr::computeOptimalSubcycling (int n, int* best, Real* dt_max, Real* est_work, int* cycle_max)
+Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real>& est_work, PTree<int>& cycle_max)
 {
-    BL_ASSERT(cycle_max[0] == 1);
+    //BL_ASSERT(cycle_max[0] == 1);
+    ///YES, I know that its stupid to use pointer trees instead of actual trees. 
+    ///I'll fix that if I have time to make real trees.
+    BL_ASSERT(best.getStructure(root_id) == cycle_max.getStructure(root_it));
     // internally these represent the total number of steps at a level, 
     // not the number of cycles
-    int cycles[n];
+    PTree<int> cycles;
+    cycles.buildFromStructure(root_id, best.getStructure(root_id));
+    cycles.setData(root_id,&1);
     Real best_ratio = 1e200;
     Real best_dt = 0;
     Real ratio;
     Real dt;
     Real work;
     int limit = 1;
+    Array<int> id;
+    Array<int> parent_id;
     // This provides a memory efficient way to test all candidates
-    for (int i = 1; i < n; i++)
-        limit *= cycle_max[i];
+    PTreeConstIterator<int> ptic = cycle_max.getConstIteratorAtRoot();
+    for (; !ptic.is_finished(); ++ptic)
+        limit *= **ptic;
+    PTreeIterator<int> pti;
     for (int candidate = 0; candidate < limit; candidate++)
     {
         int temp_cand = candidate;
-        cycles[0] = 1;
-        dt = dt_max[0];
-        work = est_work[0];
-        for (int i  = 1; i < n; i++)
+        cycles.setData;
+        dt = *dt_max.getRoot();
+        work = *est_work.getRoot();
+        for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.is_finished(); ++pti)
         {
+            //get the id for this node
+            id = pti.getID();
+            //get the parent id by cutting the last digit.
+            parent_id = id;
+            parent_id.resize(parent_id.size()-1);
             // grab the relevant "digit" and shift over.
-            cycles[i] = (1 + temp_cand%cycle_max[i]) * cycles[i-1];
-            temp_cand /= cycle_max[i];
-            dt = std::min(dt, cycles[i]*dt_max[i]);
-            work += cycles[i]*est_work[i];
+            // All this gettin is probably inefficient. It can be streamlined if needed.
+            Real data = 1 + temp_cand%(*cycle_max.getData(id))) * (*cycles.getData(parent_id))
+            cycles.setData(id,&data);
+            temp_cand /= (*cycle_max.getData(id));
+            dt = std::min(dt, (*cycles.getData(id))*(*dt_max.getData(id)));
+            work += (*cycles.getData(id))*(*est_work.getData(id));
         }
         ratio = work/dt;
         if (ratio < best_ratio) 
         {
-            for (int i  = 0; i < n; i++)
-                best[i] = cycles[i];
+            for (pti = cycle_max.getIteratorAtRoot(); !pti.is_finished(); ++pti)
+            {
+                id = pti.getID();
+                int data = cycles.getData(id);
+                best.setData(id,&data);
+            }
             best_ratio = ratio;
             best_dt = dt;
         }
@@ -2993,8 +3041,15 @@ Amr::computeOptimalSubcycling (int n, int* best, Real* dt_max, Real* est_work, i
     //
     // Now we convert best back to n_cycles format
     //
-    for (int i = n-1; i > 0; i--)
-        best[i] /= best[i-1];
+    for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.is_finished(); ++pti)
+    {
+        //get the id for this node
+        id = pti.getID();
+        //get the parent id by cutting the last digit.
+        parent_id = id;
+        parent_id.resize(parent_id.size()-1);
+        int data = best.getData(id)/best.getData(parent_id);
+        best.setData(id,&data);
     return best_dt;
 }
 
@@ -3093,3 +3148,17 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
         aggregates.set(i,a);
     }
 }
+
+Array<int>
+Amr::whichRegion(int level, IntVect cell)
+{
+    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
+    for ( ; !it.is_finished(); ++it)
+    {
+        if (*it)->boxArray().contains(cell)
+            return (*it)->getID();
+    }
+    BoxLib::Abort("Unable to find region containing specified IntVect");
+    return root_id; // to remove compiler warnings.
+}
+

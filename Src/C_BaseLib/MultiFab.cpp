@@ -1114,3 +1114,11 @@ MultiFab::SumBoundary ()
     SumBoundary(0, n_comp);
 }
 
+int MultiFab::MFIndexOf(IntVect iv, std::vector< std::pair<int,Box> >& scratch_space)
+{
+    boxArray().intersections(Box(iv,iv),scratch_space);
+    BL_ASSERT(isects.size() <= 1);
+    if (isects.size() == 0)
+        return -1;
+    return isects[0].first;
+}

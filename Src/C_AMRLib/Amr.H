@@ -228,6 +228,12 @@ public:
     //
     BoxArray boxArray (int lev) const;
     //
+    // List of grids at each level.
+    //
+    BoxArray boxArray (Array<int> base_region, int lev) const;
+    
+    BoxArray boxArray (Array<int> region_id) const;
+    //
     // AmrRegion lev.
     //
     AmrRegion&  getLevel (int lev);
@@ -316,7 +322,22 @@ public:
     
     void aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates);
     
+    //
+    // Returns a reference to the coarse region of the simulation.
+    //
     AmrRegion& coarseRegion();
+    
+    //
+    // Return a reference to the specified region.
+    //
+    AmrRegion& getRegion(const Array<int> id);
+    
+    //
+    // Locate the region that contains the specified cell. Aborts on failure.
+    //
+    Array<int> whichRegion(int level, IntVect cell);
+    
+    PTree<AmrRegion>& getRegions();
                                          
 protected:
     //
@@ -417,7 +438,8 @@ protected:
     PTree<AmrRegion> amr_regions;
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
-    Array<Real>      dt_level;     // Timestep at this level.
+    //Array<Real>      dt_level;     // Timestep at this level.
+    PTree<Real>      dt_region;     // Timestep for this region.
     Array<int>       level_steps;  // Number of time steps at this level.
     Array<int>       level_count;
     Array<int>       n_cycle;
@@ -659,6 +681,20 @@ AmrRegion&
 Amr::coarseRegion()
 {
     return *(amr_regions.getRoot());
+}
+
+inline
+AmrRegion&
+Amr::getRegion(const Array<int> id)
+{
+    return *(amr_regions.getData(id));
+}
+
+inline
+PTree<AmrRegion>&
+Amr::getRegions()
+{
+    return amr_regions;
 }
 
 #endif /*_Amr_H_*/

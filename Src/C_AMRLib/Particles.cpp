@@ -513,16 +513,20 @@ bool
 ParticleBase::Where (ParticleBase& p,
                      const Amr*    amr,
                      bool          update,
-                     int           lev_min,
-                     int           finest_level)
+                     Array<int>*    base_region_ptr)
 {
     BL_ASSERT(amr != 0);
 
-    if (finest_level == -1)
-        finest_level = amr->finestLevel();
-
-    BL_ASSERT(finest_level <= amr->finestLevel());
-
+    Array<int> base_region;
+    if (base_region_ptr == 0)
+    {
+        base_region = root_id;
+    }
+    else
+    {
+        base_region = *base_region_ptr;
+    }
+    int lev_min = base_region.size() - 1;
     if (update)
     {
         //
@@ -542,29 +546,32 @@ ParticleBase::Where (ParticleBase& p,
 
         if (p.m_lev == amr->finestLevel())
         {
-            //
-            // If the particle is at the true finest level, we check if it has
-            // moved to a different point in the same grid.  This doesn't work
-            // for coarser levels, since coarse grids can be partially covered by
-            // finer grids.
-            //
-            p.m_cell = iv;
+            // This code no longer works due to grid silliness. It could be repaired later.
+            ////
+            //// If the particle is at the true finest level, we check if it has
+            //// moved to a different point in the same grid.  This doesn't work
+            //// for coarser levels, since coarse grids can be partially covered by
+            //// finer grids.
+            ////
+            //p.m_cell = iv;
 
-            if (amr->boxArray(p.m_lev)[p.m_grid].contains(p.m_cell))
-                //
-                // It has left its cell but is still in the same grid.
-                //
-                return true;
+            //if (amr->boxArray(p.m_lev)[p.m_grid].contains(p.m_cell))
+                ////
+                //// It has left its cell but is still in the same grid.
+                ////
+                //return true;
         }
     }
 
     std::vector< std::pair<int,Box> > isects;
 
-    for (int lev = finest_level; lev >= lev_min; lev--)
+    PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region);
+    for ( ; !it.is_finished(); ++it)
     {
+        lev = it.getLevel();
         const IntVect iv = ParticleBase::Index(p,lev,amr);
 
-        amr->boxArray(lev).intersections(Box(iv,iv),isects);
+        amr->boxArray((*it).getID()).intersections(Box(iv,iv),isects);
 
         if (!isects.empty())
         {
@@ -583,15 +590,11 @@ ParticleBase::Where (ParticleBase& p,
 bool
 ParticleBase::PeriodicWhere (ParticleBase& p,
                              const Amr*    amr,
-                             int           lev_min,
-                             int           finest_level)
+                             Array<int>    base_region)
 {
     BL_ASSERT(amr != 0);
+    int lev_min = region_id.size() - 1;
 
-    if (finest_level == -1)
-        finest_level = amr->finestLevel();
-
-    BL_ASSERT(finest_level <= amr->finestLevel());
     //
     // Create a copy "dummy" particle to check for periodic outs.
     //
@@ -614,11 +617,13 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
     {
         std::vector< std::pair<int,Box> > isects;
 
-        for (int lev = finest_level; lev >= lev_min; lev--)
+        PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region);
+        for ( ; !it.is_finished(); ++it)
         {
-            const IntVect iv = ParticleBase::Index(p_prime,lev,amr);
+            lev = it.getLevel();
+            const IntVect iv = ParticleBase::Index(p,lev,amr);
 
-            amr->boxArray(lev).intersections(Box(iv,iv),isects);
+            amr->boxArray((*it).getID()).intersections(Box(iv,iv),isects);
 
             if (!isects.empty())
             {
@@ -643,14 +648,21 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
 bool
 ParticleBase::RestrictedWhere (ParticleBase& p,
                                const Amr*    amr,
+                               Array<int>    base_region,
                                int           ngrow)
 {
     BL_ASSERT(amr != 0);
 
     const IntVect iv = ParticleBase::Index(p,p.m_lev,amr);
 
-    if (BoxLib::grow(amr->boxArray(p.m_lev)[p.m_grid], ngrow).contains(iv))
+    if (BoxLib::grow(amr->boxArray(base_region, p.m_lev), ngrow).contains(iv))
     {
+        // Technically we're checking all subgrids at this level for the particle
+        // However, we can assume that the cores of these grids were already checked
+        // and that the particle is therefore in fair ghost cells.
+        
+        // This should be updated if we come up with a better way of finding 
+        // the proper region for a particle in ghost cells/tracking particle region.
         p.m_cell = iv;
 
         return true;
@@ -660,9 +672,9 @@ ParticleBase::RestrictedWhere (ParticleBase& p,
 }
 
 bool 
-ParticleBase::SingleLevelWhere (ParticleBase& p, 
+ParticleBase::SingleRegionWhere (ParticleBase& p, 
                                 const Amr*    amr,
-                                int           level)
+                                Array<int> region_id)
 {
     BL_ASSERT(amr != 0);
 
@@ -670,7 +682,7 @@ ParticleBase::SingleLevelWhere (ParticleBase& p,
 
     std::vector< std::pair<int,Box> > isects;
 
-    amr->boxArray(level).intersections(Box(iv,iv),isects);
+    amr->boxArray(region_id).intersections(Box(iv,iv),isects);
 
     if (!isects.empty())
     {
