@@ -1,6 +1,6 @@
 
-#ifndef BL_TREE_H
-#define BL_TREE_H
+#ifndef BL_PTREE_H
+#define BL_PTREE_H
 
 #include <cstddef>
 
@@ -128,11 +128,13 @@ public:
     // The structure is a list giving the number of children in prefix_notation.
     //
     std::list<int> getStructure(const Array<int> id);
+    std::list<int> getStructure();
     
     //
     // Builds an empty subtree beneath the specified node based on the supplied structure list.
     //
     void buildFromStructure(const Array<int> id, std::list<int> structure);
+    void buildFromStructure(std::list<int> structure);
     
     //
     // Returns the number of nodes in the tree
@@ -206,7 +208,7 @@ protected:
   will automatically skip nodes not at the proper level.
    
   Standard usage is looks something like:
-    for (PTreeIterator<T> it = myTree.getIteratorAtNode(id); !it.is_finished(); it++)
+    for (PTreeIterator<T> it = myTree.getIteratorAtNode(id); !it.isFinished(); it++)
     {
         ...
     }
@@ -222,7 +224,7 @@ public:
     void operator ++();
     T* operator *();
     
-    bool is_finished() const ;
+    bool isFinished() const ;
     
     int getLevel() const;
     
@@ -231,6 +233,7 @@ public:
     
 protected:
     void descend();
+    void ascend();
     
     iNode* current_node;
     iNode* base_node;
@@ -250,7 +253,7 @@ public:
     void operator ++();
     const T* operator *();
     
-    bool is_finished() const ;
+    bool isFinished() const ;
     
     int getLevel() const;
     
@@ -259,6 +262,7 @@ public:
     
 protected:
     void descend();
+    void ascend();
     
     iNode const * current_node;
     const iNode* base_node;
@@ -442,7 +446,7 @@ PTree<T>::DeprecatedGetFinestLevel()
 {
     PTreeIterator<T> it = getIteratorAtRoot();
     int flev = 0;
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         if ((*it)->Level() > flev)
             flev = (*it)->Level() ;
@@ -463,10 +467,33 @@ PTree<T>::getStructure(const Array<int> id)
 }
 
 template <class T>
+std::list<int> 
+PTree<T>::getStructure()
+{
+    // Create the list
+    std::list<int> structure;
+    // Recursively fill it
+    root->getStructure(structure);
+    // Return it.
+    return structure;
+}
+
+template <class T>
 void 
 PTree<T>::buildFromStructure(const Array<int> id, std::list<int> structure)
 {
     Node* current_node = getNode(id);
+    BL_ASSERT(current_node->m_children.size() == 0);
+    std::list<int>::iterator it = structure.begin();
+    current_node ->buildFromStructure(structure, it);
+    BL_ASSERT(it == structure.end());
+}
+
+template <class T>
+void 
+PTree<T>::buildFromStructure(std::list<int> structure)
+{
+    Node* current_node = root;
     BL_ASSERT(current_node->m_children.size() == 0);
     std::list<int>::iterator it = structure.begin();
     current_node ->buildFromStructure(structure, it);
@@ -479,7 +506,7 @@ PTree<T>::numElements() const
 {
     PTreeConstIterator<T> ptree_it = getConstIteratorAtRoot();
     int cnt = 0;
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
         cnt++;
     return cnt;
 }
@@ -643,7 +670,7 @@ PTreeIterator<T>::operator *()
 template <class T>
 inline
 bool
-PTreeIterator<T>::is_finished() const
+PTreeIterator<T>::isFinished() const
 {
     return finished;
 }
@@ -652,7 +679,7 @@ template <class T>
 void
 PTreeIterator<T>::operator ++()
 {
-    BL_ASSERT(!is_finished());
+    BL_ASSERT(!isFinished());
     if (current_node == base_node && (m_mode == Postfix || current_index == current_node->m_children.size()))
     {
         finished = true;
@@ -676,7 +703,7 @@ PTreeIterator<T>::operator ++()
         {
             ascend();
             current_index ++;
-            current_node = &current_node.m_children[current_index];
+            current_node = &current_node->m_children[current_index];
         }
     }
 }
@@ -728,7 +755,7 @@ PTreeIterator<T>::getParentID() const
 
 //Const Methods
 template <class T>
-PTreeConstIterator<T>::PTreeConstIterator(const iNode* base, int r_level, IteratorMode)
+PTreeConstIterator<T>::PTreeConstIterator(const iNode* base, int r_level, IteratorMode mode)
     :
     base_node(base)
 {
@@ -754,7 +781,7 @@ PTreeConstIterator<T>::operator *()
 template <class T>
 inline
 bool
-PTreeConstIterator<T>::is_finished() const
+PTreeConstIterator<T>::isFinished() const
 {
     return finished;
 }
@@ -763,7 +790,7 @@ template <class T>
 void
 PTreeConstIterator<T>::operator ++()
 {
-    BL_ASSERT(!is_finished());
+    BL_ASSERT(!isFinished());
     if (current_node == base_node && (m_mode == Postfix || current_index == current_node->m_children.size()))
     {
         finished = true;
@@ -787,7 +814,7 @@ PTreeConstIterator<T>::operator ++()
         {
             ascend();
             current_index ++;
-            current_node = &current_node.m_children[current_index];
+            current_node = &current_node->m_children[current_index];
         }
     }
 }
@@ -836,4 +863,4 @@ PTreeConstIterator<T>::getParentID() const
 {
     return current_node->m_parent->getID();
 }
-#endif /*BL_TREE_H*/
+#endif /*BL_PTREE_H*/

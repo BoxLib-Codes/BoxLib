@@ -4,6 +4,7 @@
 
 #include <winstd.H>
 
+#include <PList.H>
 #include <BLassert.H>
 #include <FArrayBox.H>
 #include <FabArray.H>
@@ -88,6 +89,9 @@ public:
     MultiFab (PArray<MultiFab>& mfs,
               FabAlloc               mem_mode = Fab_noallocate,
               FabClear               clear = Fab_noclear);
+    MultiFab (PList<MultiFab>&   mf_list,
+                      FabAlloc           mem_mode = Fab_noallocate,
+                      FabClear           clear = Fab_noclear);
 
     void operator= (const Real& r);
     //
@@ -409,6 +413,9 @@ public:
                  int                        ngrow,
 		 const DistributionMapping& dm,
                  FabAlloc                   mem_mode);
+    void define (PList<MultiFab>&   mf_list,
+                      FabAlloc           mem_mode = Fab_noallocate,
+                      FabClear           clear = Fab_noclear);
     //
     // Are there any NaNs in the MF?
     // This may return false, even if the MF contains NaNs, if the machine

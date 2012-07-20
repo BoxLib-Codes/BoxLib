@@ -240,6 +240,7 @@ MultiFab::MultiFab (PArray<MultiFab>&  mfs,
                     FabAlloc           mem_mode,
                     FabClear           clear)
 {
+    Initialize ();
     int N = mfs.size();
     BL_ASSERT(N > 0);
     PArray<FabArray<FArrayBox> > fab_arrs(N);
@@ -251,6 +252,14 @@ MultiFab::MultiFab (PArray<MultiFab>&  mfs,
     if (mem_mode == Fab_allocate)
         BoxLib::Abort("Allocating FABS in the mf merge constructor is not yet defined.\n");
     FabArray<FArrayBox>::mergeDefine(fab_arrs);
+}
+
+MultiFab::MultiFab (PList<MultiFab>&   mf_list,
+                  FabAlloc           mem_mode,
+                  FabClear           clear)
+{
+    Initialize ();
+    define(mf_list, mem_mode, clear);
 }
 
 void
@@ -268,6 +277,24 @@ MultiFab::define (const BoxArray& bxs,
     this->FabArray<FArrayBox>::define(bxs,nvar,ngrow,alloc);
 
     if ((check_for_nan || check_for_inf) && alloc == Fab_allocate) setVal(0);
+}
+
+void
+MultiFab::define (PList<MultiFab>&   mf_list,
+                  FabAlloc           mem_mode,
+                  FabClear           clear)
+{
+    int N = mfs.size();
+    PArray<FabArray<FArrayBox> > fab_arrs(N);
+    int i = 0;
+    for(PList<MultiFab>::iterator it = mf_list.begin(); it != mf_list.end(); ++it, i++)
+    {
+        fab_arrs.set(i,dynamic_cast<FabArray<FArrayBox> *>(*it));
+    }
+    clear_mode =clear;
+    if (mem_mode == Fab_allocate)
+        BoxLib::Abort("Allocating FABS in the mf merge constructor is not yet defined.\n");
+    FabArray<FArrayBox>::mergeDefine(fab_arrs);
 }
 
 void

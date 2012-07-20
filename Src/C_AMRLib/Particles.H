@@ -387,7 +387,7 @@ ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
     if (lev >= 0 && lev > m_amr->finestLevel())
     {
         PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot(lev);
-        for( ; !ptree_it.is_finished(); ++ptree_it)
+        for( ; !ptree_it.isFinished(); ++ptree_it)
         {
             const PMap& pmap = **ptree_it;
 
@@ -431,7 +431,7 @@ ParticleContainer<N>::ByteSpread () const
     long cnt = 0;
 
     PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot();
-        for( ; !ptree_it.is_finished(); ++ptree_it)
+        for( ; !ptree_it.isFinished(); ++ptree_it)
         {
         const PMap& pmap = **ptree_it;
 
@@ -1591,7 +1591,7 @@ ParticleContainer<N>::MoveRandom ()
     // Move particles randomly at all levels
     //
     PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtRoot();
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         MoveRandom(ptree_it.getLevel(), **ptree_it);
     }
@@ -1702,7 +1702,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
     std::vector< std::pair<int,Box> > scratch_space;
     
     PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtRoot(lev);
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         PMap& pmap = **ptree_it;
       
@@ -1859,8 +1859,8 @@ ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
 
     Real msum = 0;
 
-    PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region, lev);
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region, lev);
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
 
         const PMap& pmap = **ptree_it;
@@ -1912,7 +1912,7 @@ ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
     D_TERM(mom[0] = 0;, mom[1] = 0;, mom[2] = 0;);
     
     PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region, lev);
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
 
         const PMap& pmap = **ptree_it;
@@ -2130,7 +2130,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int lev_index = lev - lev_min;
-        mf.set(lev_index, new MultiFab(m_amr->boxArray(lev), ncomp, 1));
+        mf.set(lev_index, new MultiFab(m_amr->boxArray(base_region, lev), ncomp, 1));
 
         for (MFIter mfi(mf[lev_index]); mfi.isValid(); ++mfi)
             mf[lev_index][mfi].setVal(0);
@@ -2338,7 +2338,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         const bool GridsCoverDomain = fvalid.contains(m_amr->Geom(lev).Domain());
         
         PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region,lev);
-        for( ; !ptree_it.is_finished(); ++ptree_it)
+        for( ; !ptree_it.isFinished(); ++ptree_it)
         {
 
             const PMap& pmap = **ptree_it;
@@ -4378,7 +4378,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     std::deque<int> owner;
 
     PTreeIterator<PMap> ptree_it = m_particles.getIteratorAtNode(base_region);
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         int lev = ptree_it.getLevel();
         std::cout << "DEBUG: Particle Redistribute loop " << lev << "\n";
@@ -4719,7 +4719,7 @@ ParticleContainer<N>::OK (bool full_where,
     // Particles are copied to avoid accidentally moving them with where.
     //
     PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region);
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         const PMap& pmap = **ptree_it;
         int lev = ptree_it.getLevel();
@@ -4825,7 +4825,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
     long nparticles = 0;
 
     PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtRoot();
-    for( ; !ptree_it.is_finished(); ++ptree_it)
+    for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         const PMap& pmap = **ptree_it;
 
@@ -5277,7 +5277,7 @@ void
 ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_structure)
 {
     //There should probably be some asserts here.
-    BL_ASSERT(orphan_particles.isEmpty());
+    BL_ASSERT(orphan_particles.empty());
     m_particles.extractChildrenOfNode(base_region, orphan_particles);
     m_particles.buildFromStructure(base_region, new_structure);
 }

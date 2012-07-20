@@ -90,9 +90,9 @@ public:
     //
     virtual void computeInitialDt (int                   finest_level,
                                    int                   sub_cycle,
-                                   Array<int>&           n_cycle,
+                                   Tree<int>&           n_cycle,
                                    const Array<IntVect>& ref_ratio,
-                                   PTree<Real>&          dt_region,
+                                   Tree<Real>&          dt_region,
                                    Real                  stop_time) = 0;
     //
     // Compute the next time step.  This is a pure virtual function
@@ -100,10 +100,10 @@ public:
     //
     virtual void computeNewDt (int                   finest_level,
                                int                   sub_cycle,
-                               Array<int>&           n_cycle,
+                               Tree<int>&           n_cycle,
                                const Array<IntVect>& ref_ratio,
-                               PTree<Real>&          dt_reg_min,
-                               PTree<Real>&          dt_region,
+                               Tree<Real>&          dt_reg_min,
+                               Tree<Real>&          dt_region,
                                Real                  stop_time,
                                int                   post_regrid_flag) = 0;
     //

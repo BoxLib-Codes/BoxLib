@@ -144,7 +144,7 @@ AmrRegion&
 Amr::getParent (int lev, const BoxArray& ba)
 {
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         if ((*it)->boxArray().contains(ba))
             return *(*it);
@@ -179,7 +179,7 @@ Amr::boxArray (int lev) const
 {
     BoxList bl;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         bl.join((*it)->boxArray().boxList());
     }
@@ -192,7 +192,7 @@ Amr::boxArray (Array<int> base_region, int lev) const
 {
     BoxList bl;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(base_region, lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         bl.join((*it)->boxArray().boxList());
     }
@@ -231,7 +231,7 @@ Amr::cellCount (int lev)
 {
     int cnt = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->countCells();
     }
@@ -243,7 +243,7 @@ Amr::numGrids (int lev)
 {
     int cnt = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->numGrids();
     }
@@ -259,7 +259,7 @@ Amr::derive (const std::string& name,
     PArray<MultiFab> mfa(PArrayManage);
     int N = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         mfa.resize(N+1);
         mfa.set(N,(*it)->derive(name,time,ngrow));
@@ -412,11 +412,11 @@ Amr::Amr ()
     root_id[0] = 0;
     for (i = 0; i < nlev; i++)
     {
-        dt_region.setData(root_id,1.e200); // Something nonzero so old & new will differ
-        region_steps.setData(root_id,0);
-        region_count.setData(root_id,0);
-        n_cycle.setData(root_id,0);
-        dt_reg_min.setData(root_id,0.0);
+        dt_region.setRoot(1.e200); // Something nonzero so old & new will differ
+        region_steps.setRoot(0);
+        region_count.setRoot(0);
+        n_cycle.setRoot(0);
+        dt_reg_min.setRoot(0.0);
         n_error_buf[i] = 1;
         blocking_factor[i] = 2;
         max_grid_size[i] = (BL_SPACEDIM == 2) ? 128 : 32;
@@ -802,7 +802,7 @@ Amr::cellCount ()
 {
     int cnt = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->countCells();
     }
@@ -814,7 +814,7 @@ Amr::numGrids ()
 {
     int cnt = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->numGrids();
     }
@@ -826,7 +826,7 @@ Amr::okToContinue ()
 {
     int ok = true;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
-    for ( ; ok && !it.is_finished(); ++it)
+    for ( ; ok && !it.isFinished(); ++it)
     {
         ok = ok && (*it)->okToContinue();
     }
@@ -1175,24 +1175,24 @@ Amr::initialInit (Real strt_time,
                                   stop_time);
     Array<int> id;
     PTreeIterator<AmrRegion> prit = amr_regions.getIteratorAtRoot();
-    for (; !prit.is_finished(); ++prit)
+    for (; !prit.isFinished(); ++prit)
     {
         id = prit.getID();
         (*prit)->setTimeLevel(strt_time,dt_region.getData(id),dt_region.getData(id));
     }
     
     prit = amr_regions.getIteratorAtRoot();
-    for (; !prit.is_finished(); ++prit)
+    for (; !prit.isFinished(); ++prit)
         (*prit)->post_regrid(root_id,finest_level);
     //
     // Perform any special post_initialization operations.
     //
     prit = amr_regions.getIteratorAtRoot();
-    for (; !prit.is_finished(); ++prit)
+    for (; !prit.isFinished(); ++prit)
         (*prit)->post_init(stop_time);
 
     TreeIterator<int> iit = region_count.getIteratorAtRoot();
-    for (; !iit.is_finished(); ++iit)
+    for (; !iit.isFinished(); ++iit)
     {
         id = iit.getID();
         region_count.setData(id,0);
@@ -1598,7 +1598,7 @@ Amr::checkPoint ()
 
     ///TODO/DEBUG: Upgrade this along with the restart code.
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         (*it)->checkPoint(ckfile, HeaderFile);
     }
@@ -1696,7 +1696,7 @@ Amr::timeStep (AmrRegion& base_region,
 
             a->init(coarseRegion());
             amr_regions.clearData(root_id);
-            amr_regions.setData(root_id, a);
+            amr_regions.setRoot( a);
             coarseRegion().setID(root_id);
             ///TODO/DEBUG: Update parent pointers in regions.
             BL_ASSERT(false);
@@ -1728,7 +1728,7 @@ Amr::timeStep (AmrRegion& base_region,
     {
         //See if any subregions want to regrid in prefix fashion
         PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region,-1,Prefix);
-        for ( ; !it.is_finished(); ++it)
+        for ( ; !it.isFinished(); ++it)
         {
             const int old_finest = finest_level;
 
@@ -2056,7 +2056,7 @@ Amr::defBaseLevel (Real strt_time)
     //
     // Now build level 0 grids.
     //
-    amr_regions.setData(root_id,(*levelbld)(*this,0,geom[0],lev0,strt_time));
+    amr_regions.setRoot((*levelbld)(*this,0,geom[0],lev0,strt_time));
     coarseRegion().setID(root_id);
 
     lev0.clear();
@@ -2265,7 +2265,7 @@ Amr::regrid (AmrRegion* base_region,
     region_count.buildFromStructure(base_id,structure);
     // Count is now 0
     TreeIterator<int> rit = region_count.getIteratorAtNode(base_id)
-    for (; !rit.is_finished(); ++r_it)
+    for (; !rit.isFinished(); ++r_it)
     {
         region_count.setData(rit.getID(),0);
     }
@@ -2968,7 +2968,7 @@ Amr::initSubcycle (ParmParse * pp)
     {
         sub_cycle = false;
         it = n_cycle.getIteratorAtRoot();
-        for (; !it.is_finished(); ++it)
+        for (; !it.isFinished(); ++it)
         {
             (*it) = 1;
         }
@@ -2988,7 +2988,7 @@ Amr::initSubcycle (ParmParse * pp)
 
             n_cycle.setRoot(1); // coarse level is always 1 cycle
             it = n_cycle.getIteratorAtRoot();
-            for (; !it.is_finished(); ++it)
+            for (; !it.isFinished(); ++it)
             {
                 (*it) = cycles;
             }
@@ -3009,7 +3009,7 @@ Amr::initSubcycle (ParmParse * pp)
             BoxLib::Error("Must provide a valid subcycling_iterations if mode is Manual");
         }
         it = n_cycle.getIteratorAtRoot(-1,Prefix);
-        for (++it; !it.is_finished(); ++it)
+        for (++it; !it.isFinished(); ++it)
         {
             if (*it > MaxRefRatio(it.getLevel()-1))
                 BoxLib::Error("subcycling iterations must always be <= ref_ratio");
@@ -3021,7 +3021,7 @@ Amr::initSubcycle (ParmParse * pp)
     {
         n_cycle.setRoot(1);
         it = n_cycle.getIteratorAtRoot(-1,Prefix);
-        for (++it; !it.is_finished(); ++it)
+        for (++it; !it.isFinished(); ++it)
         {
             (*it) = MaxRefRatio(it.getLevel()-1);
         } 
@@ -3032,7 +3032,7 @@ Amr::initSubcycle (ParmParse * pp)
         // We'll initialize it to be Auto subcycling.
         n_cycle.setRoot(1);
         it = n_cycle.getIteratorAtRoot(-1,Prefix);
-        for (++it; !it.is_finished(); ++it)
+        for (++it; !it.isFinished(); ++it)
         {
             (*it) = MaxRefRatio(it.getLevel()-1);
         }  
@@ -3094,7 +3094,7 @@ Amr::initPltAndChk(ParmParse * pp)
 //{
     //bool ok = true;
     //PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
-    //for ( ; !it.is_finished(); ++it)
+    //for ( ; !it.isFinished(); ++it)
     //{
         //ok = ok && (*it)->okToRegrid();
     //}
@@ -3119,7 +3119,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     // not the number of cycles
     Tree<int> cycles;
     cycles.buildFromStructure(root_id, best.getStructure(root_id));
-    cycles.setData(root_id,1);
+    cycles.setRoot(1);
     Real best_ratio = 1e200;
     Real best_dt = 0;
     Real ratio;
@@ -3130,7 +3130,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     Array<int> parent_id;
     // This provides a memory efficient way to test all candidates
     PTreeConstIterator<int> ptic = cycle_max.getConstIteratorAtRoot();
-    for (; !ptic.is_finished(); ++ptic)
+    for (; !ptic.isFinished(); ++ptic)
         limit *= *ptic;
     PTreeIterator<int> pti;
     for (int candidate = 0; candidate < limit; candidate++)
@@ -3140,7 +3140,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         id[0] = 0;
         dt = dt_max.getRoot();
         work = est_work.getRoot();
-        for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.is_finished(); ++pti)
+        for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.isFinished(); ++pti)
         {
             //get the id for this node
             id = pti.getID();
@@ -3158,7 +3158,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         ratio = work/dt;
         if (ratio < best_ratio) 
         {
-            for (pti = cycle_max.getIteratorAtRoot(); !pti.is_finished(); ++pti)
+            for (pti = cycle_max.getIteratorAtRoot(); !pti.isFinished(); ++pti)
             {
                 id = pti.getID();
                 best.setData(id,cycles.getData(id));
@@ -3170,7 +3170,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     //
     // Now we convert best back to n_cycles format
     //
-    for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.is_finished(); ++pti)
+    for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.isFinished(); ++pti)
     {
         //get the id for this node
         id = pti.getID();
@@ -3190,7 +3190,7 @@ Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
     Array<int> parent_id;
     root_id[0] = 0;
     TreeIterator<Real> dt_it = dt_max.getIteratorAtRoot(-1,Postfix);
-    for (;!dt_it.is_finished(); ++dt_it)
+    for (;!dt_it.isFinished(); ++dt_it)
     {
         id = dt_it.getID();
         if (id.size() > 1) //not at root
@@ -3277,7 +3277,7 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
     std::cout << "DEBUG: Listing\n";
     int max_level = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(id);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         int cur_level = (*it)->Level();
         std::cout << "DEBUG: level: " <<cur_level <<"\n";
@@ -3302,7 +3302,7 @@ Array<int>
 Amr::whichRegion(int level, IntVect cell)
 {
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
-    for ( ; !it.is_finished(); ++it)
+    for ( ; !it.isFinished(); ++it)
     {
         if (*it)->boxArray().contains(cell)
             return (*it)->getID();

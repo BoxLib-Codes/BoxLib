@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <sstream>
 
 #include <BLassert.H>
 #include <BoxLib.H>
@@ -233,11 +234,13 @@ std::string
 Array<T>::toString()
 {
     std::stringstream ss;
-    ss << "[ ";
-    for (int i = 0; i < size(); i++)
+    ss << "[";
+    for (int i = 0; i < size()-1; i++)
     {
-        ss << this->operator[](i) << " ";
+        ss << this->operator[](i) << ",";
     }
+    if (size() > 0)
+        ss << this->operator[](size()-1);
     ss << "]";
     return ss.str();
     
