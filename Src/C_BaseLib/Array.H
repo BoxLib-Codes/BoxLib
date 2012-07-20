@@ -112,6 +112,10 @@ public:
     //
     void set (size_t   i,
               const T& elem);
+    //
+    // Returns a string form of the array, assuming we know what that is.
+    //
+    std::string toString();
 private:
     //
     // This is disallowed.
@@ -222,6 +226,21 @@ Array<T>::Array (const T* vec,
     {
         this->operator[](i) = vec[i];
     }
+}
+
+template <class T>
+std::string
+Array<T>::toString()
+{
+    std::stringstream ss;
+    ss << "[ ";
+    for (int i = 0; i < size(); i++)
+    {
+        ss << this->operator[](i) << " ";
+    }
+    ss << "]";
+    return ss.str();
+    
 }
 
 #endif /*BL_ARRAY_H*/

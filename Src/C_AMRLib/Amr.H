@@ -11,6 +11,7 @@
 #include <PArray.H>
 #include <PList.H>
 #include <PTree.H>
+#include <Tree.H>
 #include <ParmParse.H>
 #ifdef USE_STATIONDATA
 #include <StationData.H>
@@ -97,7 +98,7 @@ public:
     //
     // Array of time steps at all levels.
     //
-    const Array<Real>& dtLevel () const;
+    const Tree<Real>& dtRegion () const;
     //
     // Geometry object.
     //
@@ -105,7 +106,7 @@ public:
     //
     // Number of subcycled time steps.
     //
-    int nCycle (int level) const;
+    int nCycle (int lev) const;
     //
     // Refinement ratio.
     //
@@ -306,10 +307,10 @@ public:
     // values for n_cycles[i]
     //
     static Real computeOptimalSubcycling(int n, 
-                                         int* best,
-                                         Real* dt_max, 
-                                         Real* est_work, 
-                                         int* cycle_max);
+                                         Tree<int>& best,
+                                         Tree<Real>& dt_max, 
+                                         Tree<Real> est_work, 
+                                         Tree<int> cycle_max);
     
     //
     // Uses a friends-of-friends clustering algorithm with min distance d
@@ -338,6 +339,8 @@ public:
     Array<int> whichRegion(int level, IntVect cell);
     
     PTree<AmrRegion>& getRegions();
+    
+    void FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level);
                                          
 protected:
     //
@@ -439,12 +442,15 @@ protected:
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     //Array<Real>      dt_level;     // Timestep at this level.
-    PTree<Real>      dt_region;     // Timestep for this region.
-    Array<int>       level_steps;  // Number of time steps at this level.
-    Array<int>       level_count;
-    Array<int>       n_cycle;
+    Tree<Real>       dt_region;     // Timestep for this region.
+    //Tree<int>        level_steps;  // Number of time steps at this level.
+    //Tree<int>        level_count;
+    Tree<int>        region_steps;  // Number of time steps at this level.
+    Tree<int>        region_count;
+    Tree<int>        n_cycle;
     std::string      subcycling_mode; //Type of subcycling to use.
-    Array<Real>      dt_min;
+    //Tree<Real>       dt_min;
+    Tree<Real>       dt_reg_min; 
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?
     Array<int>       regrid_int;      // Interval between regridding.
     Array<int>       n_error_buf;     // Buffer cells around each tagged cell.
@@ -536,18 +542,12 @@ Amr::refRatio () const
     return ref_ratio;
 }
 
-inline
-Real
-Amr::dtLevel (int level) const
-{
-    return dt_level[level];
-}
 
 inline
-const Array<Real>&
-Amr::dtLevel () const
+const Tree<Real>&
+Amr::dtRegion() const
 {
-    return dt_level;
+    return dt_region;
 }
 
 inline
@@ -597,27 +597,6 @@ const std::list<std::string>&
 Amr::derivePlotVars ()
 {
     return derive_plot_vars;
-}
-
-inline
-int
-Amr::nCycle (int level) const
-{
-    return n_cycle[level];
-}
-
-inline
-int
-Amr::levelSteps (int i) const
-{
-    return level_steps[i];
-}
-
-inline
-int
-Amr::levelCount (int i) const
-{
-    return level_count[i];
 }
 
 inline

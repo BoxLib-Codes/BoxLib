@@ -107,6 +107,39 @@ Amr::getLevel (int lev)
     return *amr_regions.getData(id);
 }
 
+int
+Amr::nCycle (int lev) const
+{
+    if (multi_region)
+        BoxLib::Abort("Called getLevel on multi-region level");
+    Array<int> id(lev+1);
+    for (int i = 0; i <= lev; i++)
+        id[i] = 0;
+    return n_cycle.getData(id);
+}
+
+int
+Amr::levelSteps (int lev) const
+{
+    if (multi_region)
+        BoxLib::Abort("Called getLevel on multi-region level");
+    Array<int> id(lev+1);
+    for (int i = 0; i <= lev; i++)
+        id[i] = 0;
+    return region_steps.getData(id);
+}
+
+int
+Amr::levelCount (int lev) const
+{
+    if (multi_region)
+        BoxLib::Abort("Called getLevel on multi-region level");
+    Array<int> id(lev+1);
+    for (int i = 0; i <= lev; i++)
+        id[i] = 0;
+    return region_count.getData(id);
+}
+
 AmrRegion&  
 Amr::getParent (int lev, const BoxArray& ba)
 {
@@ -173,12 +206,13 @@ Amr::boxArray (Array<int> region_id) const
     return amr_regions.getData(region_id).boxArray();
 }
 
-void
-Amr::setDtMin (const Array<Real>& dt_min_in)
-{
-    for (int i = 0; i <= finest_level; i++)
-        dt_min[i] = dt_min_in[i];
-}
+///TODO/DEBUG: deprecated for the time being. It can be recreated if necessary.
+//void
+//Amr::setDtMin (const Array<Real>& dt_min_in)
+//{
+    //for (int i = 0; i <= finest_level; i++)
+        //dt_min[i] = dt_min_in[i];
+//}
 
 PTree<AmrRegion>&
 Amr::getAmrRegions ()
@@ -364,24 +398,25 @@ Amr::Amr ()
     pp.get("max_level", max_level);
     int nlev     = max_level+1;
     geom.resize(nlev);
-    dt_level.resize(nlev);
-    level_steps.resize(nlev);
-    level_count.resize(nlev);
-    n_cycle.resize(nlev);
-    dt_min.resize(nlev);
+    //level_steps.resize(nlev);
+    //level_count.resize(nlev);
+    //n_cycle.resize(nlev);
+    //dt_min.resize(nlev);
     blocking_factor.resize(nlev);
     max_grid_size.resize(nlev);
     n_error_buf.resize(nlev);
     //
     // Set bogus values.
     //
+    Array<int> root_id(1);
+    root_id[0] = 0;
     for (i = 0; i < nlev; i++)
     {
-        dt_level[i]    = 1.e200; // Something nonzero so old & new will differ
-        level_steps[i] = 0;
-        level_count[i] = 0;
-        n_cycle[i]     = 0;
-        dt_min[i]      = 0.0;
+        dt_region.setData(root_id,1.e200); // Something nonzero so old & new will differ
+        region_steps.setData(root_id,0);
+        region_count.setData(root_id,0);
+        n_cycle.setData(root_id,0);
+        dt_reg_min.setData(root_id,0.0);
         n_error_buf[i] = 1;
         blocking_factor[i] = 2;
         max_grid_size[i] = (BL_SPACEDIM == 2) ? 128 : 32;
@@ -663,11 +698,11 @@ Amr::deleteDerivePlotVar (const std::string& name)
 
 Amr::~Amr ()
 {
-    if (level_steps[0] > last_checkpoint)
+    if (region_steps.getRoot() > last_checkpoint)
         checkPoint();
 
-    if (level_steps[0] > last_plotfile)
-        writePlotFile(plot_file_root,level_steps[0]);
+    if (region_steps.getRoot()> last_plotfile)
+        writePlotFile(plot_file_root,region_steps.getRoot());
     levelbld->variableCleanUp();
     Amr::Finalize();
 }
@@ -724,25 +759,43 @@ Amr::setRecordDataInfo (int i, const std::string& filename)
     ParallelDescriptor::Barrier();
 }
 
-void
-Amr::setDtLevel (const Array<Real>& dt_lev)
-{
-    for (int i = 0; i <= finest_level; i++)
-        dt_level[i] = dt_lev[i];
-}
+///TODO/DEBUG: Deprecated. Can be hacked in if necessary.
+//void
+//Amr::setDtLevel (const Array<Real>& dt_lev)
+//{
+    //for (int i = 0; i <= finest_level; i++)
+        //dt_level[i] = dt_lev[i];
+//}
 
 void
 Amr::setDtLevel (Real dt, int lev)
 {
-    dt_level[lev] = dt;
+    if (multi_region)
+        BoxLib::Abort("Called getLevel on multi-region level");
+    Array<int> id(lev+1);
+    for (int i = 0; i <= lev; i++)
+        id[i] = 0;
+    dt_region.setData(id,dt);
 }
 
-void
-Amr::setNCycle (const Array<int>& ns)
+Real
+Amr::dtLevel (int level) const
 {
-    for (int i = 0; i <= finest_level; i++)
-        n_cycle[i] = ns[i];
+    if (multi_region)
+        BoxLib::Abort("Called getLevel on multi-region level");
+    Array<int> id(lev+1);
+    for (int i = 0; i <= lev; i++)
+        id[i] = 0;
+    return dt_region.getData(id);
 }
+
+///Deprecated for now.
+//void
+//Amr::setNCycle (const Array<int>& ns)
+//{
+    //for (int i = 0; i <= finest_level; i++)
+        //n_cycle[i] = ns[i];
+//}
 
 long
 Amr::cellCount ()
@@ -952,7 +1005,7 @@ Amr::init (Real strt_time,
         initialInit(strt_time,stop_time);
         checkPoint();
         if (plot_int > 0 || plot_per > 0)
-            writePlotFile(plot_file_root,level_steps[0]);
+            writePlotFile(plot_file_root,region_steps.getRoot());
     }
 #ifdef HAS_XGRAPH
     if (first_plotfile)
@@ -1079,41 +1132,71 @@ Amr::initialInit (Real strt_time,
                                   sub_cycle,
                                   n_cycle,
                                   ref_ratio,
-                                  dt_level,
+                                  dt_region,
                                   stop_time);
     //
     // The following was added for multifluid.
     //
-    Real dt0   = dt_level[0];
-    dt_min[0]  = dt_level[0];
-    n_cycle[0] = 1;
+    /// I Don't feel like fixing this atm. Multifluid can use it if they really
+    /// don't want to use the standard computeInitialDt model.
+    //Real dt0   = dt_region.getRoot();
+    //dt_min[0]  = dt_region.getRoot();
+    //n_cycle[0] = 1;
 
-    for (int lev = 1; lev <= max_level; lev++)
-    {
-        dt0           /= n_cycle[lev];
-        dt_level[lev]  = dt0;
-        dt_min[lev]    = dt_level[lev];
-    }
+    //std::list<int> structure = amr_regions.getStructure(root_id);
+    
+    //for (int lev = 1; lev <= max_level; lev++)
+    //{
+        //dt0           /= n_cycle[lev];
+        //dt_level[lev]  = dt0;
+        //dt_min[lev]    = dt_level[lev];
+    //}
 
     if (max_level > 0)
         bldFineLevels(strt_time);
 
-    ///TODO/DEBUG: upgrade this whole bit.
-    for (int lev = 0; lev <= finest_level; lev++)
-        getLevel(lev).setTimeLevel(strt_time,dt_level[lev],dt_level[lev]);
 
-    for (int lev = 0; lev <= finest_level; lev++)
-        getLevel(lev).post_regrid(root_id,finest_level);
+    std::list<int> structure = amr_regions.getStructure(root_id);
+    dt_region.buildFromStructure(root_id, structure);
+    dt_reg_min.buildFromStructure(root_id, structure);
+    n_cycle.buildFromStructure(root_id, structure);
+    region_count.buildFromStructure(root_id, structure);
+    region_steps.buildFromStructure(root_id, structure);
+    
+    ///TODO/DEBUG: This may be a bad thing--re-calling computeInitialDt
+    //
+    // Compute dt and set time levels of all grid data.
+    //
+    coarseRegion().computeInitialDt(finest_level,
+                                  sub_cycle,
+                                  n_cycle,
+                                  ref_ratio,
+                                  dt_region,
+                                  stop_time);
+    Array<int> id;
+    PTreeIterator<AmrRegion> prit = amr_regions.getIteratorAtRoot();
+    for (; !prit.is_finished(); ++prit)
+    {
+        id = prit.getID();
+        (*prit)->setTimeLevel(strt_time,dt_region.getData(id),dt_region.getData(id));
+    }
+    
+    prit = amr_regions.getIteratorAtRoot();
+    for (; !prit.is_finished(); ++prit)
+        (*prit)->post_regrid(root_id,finest_level);
     //
     // Perform any special post_initialization operations.
     //
-    for (int lev = 0; lev <= finest_level; lev++)
-        getLevel(lev).post_init(stop_time);
+    prit = amr_regions.getIteratorAtRoot();
+    for (; !prit.is_finished(); ++prit)
+        (*prit)->post_init(stop_time);
 
-    for (int lev = 0; lev <= finest_level; lev++)
+    TreeIterator<int> iit = region_count.getIteratorAtRoot();
+    for (; !iit.is_finished(); ++iit)
     {
-        level_count[lev] = 0;
-        level_steps[lev] = 0;
+        id = iit.getID();
+        region_count.setData(id,0);
+        region_steps.setData(id,0);
     }
 
     if (ParallelDescriptor::IOProcessor())
@@ -1225,15 +1308,17 @@ Amr::restart (const std::string& filename)
 
        for (i = 0; i <= mx_lev; i++) is >> geom[i];
        for (i = 0; i <  mx_lev; i++) is >> ref_ratio[i];
-       for (i = 0; i <= mx_lev; i++) is >> dt_level[i];
+       ///TODO/DEBUG: Fix when we have chk/restart
+       //for (i = 0; i <= mx_lev; i++) is >> dt_level[i];
 
        if (new_checkpoint_format)
        {
-           for (i = 0; i <= mx_lev; i++) is >> dt_min[i];
+           //for (i = 0; i <= mx_lev; i++) is >> dt_min[i];
        }
        else
        {
-           for (i = 0; i <= mx_lev; i++) dt_min[i] = dt_level[i];
+           ///TODO/DEBUG: Fix when we have chk/restart
+           //for (i = 0; i <= mx_lev; i++) dt_min[i] = dt_level[i];
        }
 
        Array<int>  n_cycle_in;
@@ -1241,52 +1326,55 @@ Amr::restart (const std::string& filename)
        for (i = 0; i <= mx_lev; i++) is >> n_cycle_in[i];
        bool any_changed = false;
 
-       for (i = 0; i <= mx_lev; i++) 
-           if (n_cycle[i] != n_cycle_in[i])
-           {
-               any_changed = true;
-               if (verbose > 0 && ParallelDescriptor::IOProcessor())
-                   std::cout << "Warning: n_cycle has changed at level " << i << 
-                                " from " << n_cycle_in[i] << " to " << n_cycle[i] << std::endl;;
-           }
+        ///TODO/DEBUG: Fix when we have chk/restart
+       //for (i = 0; i <= mx_lev; i++) 
+           //if (n_cycle[i] != n_cycle_in[i])
+           //{
+               //any_changed = true;
+               //if (verbose > 0 && ParallelDescriptor::IOProcessor())
+                   //std::cout << "Warning: n_cycle has changed at level " << i << 
+                                //" from " << n_cycle_in[i] << " to " << n_cycle[i] << std::endl;;
+           //}
 
        // If we change n_cycle then force a full regrid from level 0 up
        if (max_level > 0 && any_changed)
        {
-           level_count[0] = regrid_int[0];
+           region_count.getRoot() = regrid_int[0];
            if ((verbose > 0) && ParallelDescriptor::IOProcessor())
                std::cout << "Warning: This forces a full regrid " << std::endl;
        }
 
 
-       for (i = 0; i <= mx_lev; i++) is >> level_steps[i];
-       for (i = 0; i <= mx_lev; i++) is >> level_count[i];
+    ///TODO/DEBUG: Fix when we have chk/restart
+       //for (i = 0; i <= mx_lev; i++) is >> level_steps[i];
+       //for (i = 0; i <= mx_lev; i++) is >> level_count[i];
 
+        ///TODO/DEBUG: Fix when we have chk/restart
        //
        // Set bndry conditions.
        //
-       if (max_level > mx_lev)
-       {
-           for (i = mx_lev+1; i <= max_level; i++)
-           {
-               dt_level[i]    = dt_level[i-1]/n_cycle[i];
-               level_steps[i] = n_cycle[i]*level_steps[i-1];
-               level_count[i] = 0;
-           }
+       //if (max_level > mx_lev)
+       //{
+           //for (i = mx_lev+1; i <= max_level; i++)
+           //{
+               //dt_level[i]    = dt_level[i-1]/n_cycle[i];
+               //level_steps[i] = n_cycle[i]*level_steps[i-1];
+               //level_count[i] = 0;
+           //}
 
-           // This is just an error check
-           if (!sub_cycle)
-           {
-               for (i = 1; i <= finest_level; i++)
-               {
-                   if (dt_level[i] != dt_level[i-1])
-                      BoxLib::Error("defBaseLevel: must have even number of cells");
-               }
-           }
-       }
+           //// This is just an error check
+           //if (!sub_cycle)
+           //{
+               //for (i = 1; i <= finest_level; i++)
+               //{
+                   //if (dt_level[i] != dt_level[i-1])
+                      //BoxLib::Error("defBaseLevel: must have even number of cells");
+               //}
+           //}
+       //}
        
-       if (regrid_on_restart && max_level > 0)
-           level_count[0] = regrid_int[0];
+       //if (regrid_on_restart && max_level > 0)
+           //region_count.getRoot() = regrid_int[0];
 
        checkInput();
        //
@@ -1332,30 +1420,33 @@ Amr::restart (const std::string& filename)
        for (i = 0        ; i <  max_level; i++) is >> ref_ratio[i];
        for (i = max_level; i <  mx_lev   ; i++) is >> intvect_dummy;
 
-       for (i = 0          ; i <= max_level; i++) is >> dt_level[i];
-       for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
+        ///TODO/DEBUG: Fix when we have chk/restart
+       //for (i = 0          ; i <= max_level; i++) is >> dt_level[i];
+       //for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
 
+        ///TODO/DEBUG: Fix when we have chk/restart
        if (new_checkpoint_format)
        {
-           for (i = 0          ; i <= max_level; i++) is >> dt_min[i];
-           for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
+           //for (i = 0          ; i <= max_level; i++) is >> dt_min[i];
+           //for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
        }
        else
        {
-           for (i = 0; i <= max_level; i++) dt_min[i] = dt_level[i];
+           //for (i = 0; i <= max_level; i++) dt_min[i] = dt_level[i];
        }
 
-       for (i = 0          ; i <= max_level; i++) is >> n_cycle[i];
-       for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+        ///TODO/DEBUG: Fix when we have chk/restart
+       //for (i = 0          ; i <= max_level; i++) is >> n_cycle[i];
+       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
 
-       for (i = 0          ; i <= max_level; i++) is >> level_steps[i];
-       for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+       //for (i = 0          ; i <= max_level; i++) is >> level_steps[i];
+       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
 
-       for (i = 0          ; i <= max_level; i++) is >> level_count[i];
-       for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+       //for (i = 0          ; i <= max_level; i++) is >> level_count[i];
+       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
 
-       if (regrid_on_restart && max_level > 0)
-           level_count[0] = regrid_int[0];
+       //if (regrid_on_restart && max_level > 0)
+           //region_count.getRoot() = regrid_int[0];
 
        checkInput();
 
@@ -1440,7 +1531,7 @@ Amr::checkPoint ()
 
     Real dCheckPointTime0 = ParallelDescriptor::second();
 
-    const std::string ckfile = BoxLib::Concatenate(check_file_root,level_steps[0],file_name_digits);
+    const std::string ckfile = BoxLib::Concatenate(check_file_root,region_steps.getRoot(),file_name_digits);
 
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "CHECKPOINT: file = " << ckfile << std::endl;
@@ -1488,19 +1579,20 @@ Amr::checkPoint ()
         //
         // Write out problem domain.
         //
+        ///TODO/DEBUG: Fix when we have chk/restart
         for (i = 0; i <= max_level; i++) HeaderFile << geom[i]        << ' ';
         HeaderFile << '\n';
         for (i = 0; i < max_level; i++)  HeaderFile << ref_ratio[i]   << ' ';
         HeaderFile << '\n';
-        for (i = 0; i <= max_level; i++) HeaderFile << dt_level[i]    << ' ';
+        //for (i = 0; i <= max_level; i++) HeaderFile << dt_level[i]    << ' ';
         HeaderFile << '\n';
-        for (i = 0; i <= max_level; i++) HeaderFile << dt_min[i]      << ' ';
+        //for (i = 0; i <= max_level; i++) HeaderFile << dt_min[i]      << ' ';
         HeaderFile << '\n';
-        for (i = 0; i <= max_level; i++) HeaderFile << n_cycle[i]     << ' ';
+        //for (i = 0; i <= max_level; i++) HeaderFile << n_cycle[i]     << ' ';
         HeaderFile << '\n';
-        for (i = 0; i <= max_level; i++) HeaderFile << level_steps[i] << ' ';
+        //for (i = 0; i <= max_level; i++) HeaderFile << level_steps[i] << ' ';
         HeaderFile << '\n';
-        for (i = 0; i <= max_level; i++) HeaderFile << level_count[i] << ' ';
+        //for (i = 0; i <= max_level; i++) HeaderFile << level_count[i] << ' ';
         HeaderFile << '\n';
     }
 
@@ -1523,7 +1615,7 @@ Amr::checkPoint ()
     //
     // Dump out any SlabStats MultiFabs.
     //
-    AmrRegion::get_slabstat_lst().checkPoint(getAmrRegions(), level_steps[0]);
+    AmrRegion::get_slabstat_lst().checkPoint(getAmrRegions(), region_steps.getRoot());
 #endif
     //
     // Don't forget to reset FAB format.
@@ -1555,7 +1647,7 @@ Amr::RegridOnly (Real time)
        regrid(i,time);
 
     if (plotfile_on_restart)
-	writePlotFile(plot_file_root,level_steps[0]);
+	writePlotFile(plot_file_root,region_steps.getRoot());
 
     if (checkpoint_on_restart)
        checkPoint();
@@ -1570,6 +1662,7 @@ Amr::timeStep (AmrRegion& base_region,
                Real stop_time)
 {
     int level = base_region.Level();
+    Array<int> base_id = base_region.getID()
     //
     // Allow regridding of level 0 calculation on restart.
     //
@@ -1633,34 +1726,34 @@ Amr::timeStep (AmrRegion& base_region,
     }
     else
     {
-        int lev_top = std::min(finest_level, max_level-1);
-
-        for (int i = level; i <= lev_top; i++)
+        //See if any subregions want to regrid in prefix fashion
+        PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region,-1,Prefix);
+        for ( ; !it.is_finished(); ++it)
         {
             const int old_finest = finest_level;
 
-            if (okToRegrid(i))
+            if (okToRegrid(it.getID())
             {
-                regrid(i,time);
+                regrid(*it,time);
 
                 //
                 // Compute new dt after regrid if at level 0 and compute_new_dt_on_regrid.
                 //
-                if ( compute_new_dt_on_regrid && (i == 0) )
+                if ( compute_new_dt_on_regrid && ((*it).Level() == 0) )
                 {
                     int post_regrid_flag = 1;
                     coarseRegion().computeNewDt(finest_level,
                                               sub_cycle,
                                               n_cycle,
                                               ref_ratio,
-                                              dt_min,
-                                              dt_level,
+                                              dt_reg_min,
+                                              dt_region,
                                               stop_time, 
                                               post_regrid_flag);
                 }
 
-                for (int k = i; k <= finest_level; k++)
-                    level_count[k] = 0;
+                ///TODO/DEBUG: I'm guessing that level steps is useless as
+                /// a tree; we only need it at level 0. This should be double-checked
 
                 if (old_finest < finest_level)
                 {
@@ -1668,14 +1761,13 @@ Amr::timeStep (AmrRegion& base_region,
                     // The new levels will not have valid time steps
                     // and iteration counts.
                     //
-                    for (int k = old_finest+1; k <= finest_level; k++)
-                    {
-                        dt_level[k]    = dt_level[k-1]/n_cycle[k];
-                    }
+                    ///TODO/DEBUG: I'm turning this off for now. We'll see if it is actually a problem.
+                    //for (int k = old_finest+1; k <= finest_level; k++)
+                    //{
+                        //dt_level[k]    = dt_level[k-1]/n_cycle[k];
+                    //}
                 }
             }
-            if (old_finest > finest_level)
-                lev_top = std::min(finest_level, max_level-1);
         }
     }
     //
@@ -1685,7 +1777,7 @@ Amr::timeStep (AmrRegion& base_region,
     if (plotfile_on_restart && !(restart_file.empty()) )
     {
 	plotfile_on_restart = 0;
-	writePlotFile(plot_file_root,level_steps[0]);
+	writePlotFile(plot_file_root,region_steps.getRoot());
     }
     //
     // Advance grids at this level.
@@ -1697,20 +1789,20 @@ Amr::timeStep (AmrRegion& base_region,
                   << " at level "
                   << level
                   << " with dt = "
-                  << dt_level[level]
+                  << dt_region.getData(base_id)
                   << std::endl;
     }
     
     
     ///TODO/DEBUG: upgrade
-    Real my_dt = dt_level[level];
+    Real my_dt = dt_region.getData(base_id);
     
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
 
-    dt_min[level] = iteration == 1 ? dt_new : std::min(dt_min[level],dt_new);
+    dt_reg_min.setData(base_id, iteration == 1 ? dt_new : std::min(dt_reg_min.getData(base_id),dt_new));
 
-    level_steps[level]++;
-    level_count[level]++;
+    region_steps.setData(base_id, region_steps.getData(base_id) + 1);
+    region_count.setData(base_id, region_count.getData(base_id) + 1);
 
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
@@ -1741,15 +1833,16 @@ Amr::timeStep (AmrRegion& base_region,
         std::cout << "DEBUG: Got Children\n";
         for (RegionList::iterator child = children.begin(); child != children.end(); ++child)
         {
+            Array<int> c_id = (*child).getID();
             std::cout << "DEBUG: CHILD " << (*child)->getIDString() << "\n";
             if (sub_cycle)
             {
-                const int ncycle = n_cycle[lev_fine]; /// update this
+                const int ncycle = n_cycle.getData(c_id); /// update this
 
                 for (int i = 1; i <= ncycle; i++)
                 {
                     std::cout << "DEBUG: advancing finer\n";
-                    timeStep(**child,time+(i-1)*dt_level[lev_fine],i,ncycle,stop_time);
+                    timeStep(**child,time+(i-1)*dt_region.getData(c_id),i,ncycle,stop_time);
                 }
             }
             else
@@ -1777,8 +1870,8 @@ Amr::coarseTimeStep (Real stop_time)
                                   sub_cycle,
                                   n_cycle,
                                   ref_ratio,
-                                  dt_min,
-                                  dt_level,
+                                  dt_reg_min,
+                                  dt_region,
                                   stop_time,
                                   post_regrid_flag);
     }
@@ -1788,12 +1881,12 @@ Amr::coarseTimeStep (Real stop_time)
                                       sub_cycle,
                                       n_cycle,
                                       ref_ratio,
-                                      dt_level,
+                                      dt_region,
                                       stop_time);
     }
     timeStep(coarseRegion(),cumtime,1,1,stop_time);
 
-    cumtime += dt_level[0];
+    cumtime += dt_region.getRoot();
 
     coarseRegion().postCoarseTimeStep(cumtime);
 
@@ -1825,32 +1918,32 @@ Amr::coarseTimeStep (Real stop_time)
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
         std::cout << "\nSTEP = "
-                 << level_steps[0]
+                 << region_steps.getRoot()
                   << " TIME = "
                   << cumtime
                   << " DT = "
-                  << dt_level[0]
+                  << dt_region.getRoot()
                   << '\n'
                   << std::endl;
     }
     if (record_run_info && ParallelDescriptor::IOProcessor())
     {
         runlog << "STEP = "
-               << level_steps[0]
+               << region_steps.getRoot()
                << " TIME = "
                << cumtime
                << " DT = "
-               << dt_level[0]
+               << dt_region.getRoot()
                << '\n';
     }
     if (record_run_info_terse && ParallelDescriptor::IOProcessor())
-        runlog_terse << level_steps[0] << " " << cumtime << " " << dt_level[0] << '\n';
+        runlog_terse << region_steps.getRoot() << " " << cumtime << " " << dt_region.getRoot() << '\n';
 
     int check_test = 0;
     if (check_per > 0.0)
     {
       const int num_per_old = cumtime / check_per;
-      const int num_per_new = (cumtime+dt_level[0]) / check_per;
+      const int num_per_new = (cumtime+dt_region.getRoot()) / check_per;
 
       if (num_per_old != num_per_new)
 	{
@@ -1886,10 +1979,10 @@ Amr::coarseTimeStep (Real stop_time)
     ParallelDescriptor::Bcast(&to_checkpoint, 1, ParallelDescriptor::IOProcessorNumber());
     ParallelDescriptor::Bcast(&to_stop,       1, ParallelDescriptor::IOProcessorNumber());
 
-    if ((check_int > 0 && level_steps[0] % check_int == 0) || check_test == 1
+    if ((check_int > 0 && region_steps.getRoot() % check_int == 0) || check_test == 1
 	|| to_checkpoint)
     {
-        last_checkpoint = level_steps[0];
+        last_checkpoint = region_steps.getRoot();
         checkPoint();
     }
 
@@ -1899,9 +1992,9 @@ Amr::coarseTimeStep (Real stop_time)
 #ifdef BL_USE_NEWPLOTPER
       Real rN(0.0);
       Real rR = modf(cumtime/plot_per, &rN);
-      if (rR < (dt_level[0]*0.001))
+      if (rR < (dt_region.getRoot()*0.001))
 #else
-      const int num_per_old = (cumtime-dt_level[0]) / plot_per;
+      const int num_per_old = (cumtime-dt_region.getRoot()) / plot_per;
       const int num_per_new = (cumtime            ) / plot_per;
 
       if (num_per_old != num_per_new)
@@ -1911,11 +2004,11 @@ Amr::coarseTimeStep (Real stop_time)
 	}
     }
 
-    if ((plot_int > 0 && level_steps[0] % plot_int == 0) || plot_test == 1
+    if ((plot_int > 0 && region_steps.getRoot() % plot_int == 0) || plot_test == 1
 	|| to_checkpoint)
     {
-        last_plotfile = level_steps[0];
-        writePlotFile(plot_file_root,level_steps[0]);
+        last_plotfile = region_steps.getRoot();
+        writePlotFile(plot_file_root,region_steps.getRoot());
     }
 
     if (to_stop)
@@ -2098,7 +2191,8 @@ Amr::regrid (AmrRegion* base_region,
     
     //
     // Define the new grids from level start up to new_finest.
-    //
+    // 
+    ///This can possibly be accomplished by a regular tree iterator
     for (int lev = start; lev <= new_finest; lev++) 
     {
         std::cout << "\t\tDEBUG:  Looping " << lev << "/" << new_finest<<"\n";
@@ -2156,6 +2250,27 @@ Amr::regrid (AmrRegion* base_region,
                 touched_regions.push_back(a);
         }
     }
+    
+    //
+    // Update the timestep control data structures.
+    //
+    std::list<int> structure = amr_regions.getStructure(base_id);
+    dt_region.clearChildren(base_id);
+    dt_region.buildFromStructure(base_id,structure);
+    dt_reg_min.clearChildren(base_id);
+    dt_reg_min.buildFromStructure(base_id,structure);
+    n_cycle.clearChildren(base_id);
+    n_cycle.buildFromStructure(base_id,structure);
+    region_count.clearChildren(base_id);
+    region_count.buildFromStructure(base_id,structure);
+    // Count is now 0
+    TreeIterator<int> rit = region_count.getIteratorAtNode(base_id)
+    for (; !rit.is_finished(); ++r_it)
+    {
+        region_count.setData(rit.getID(),0);
+    }
+    
+    
     //
     // Build any additional data structures at levels start and higher after grid generation.
     //
@@ -2178,7 +2293,7 @@ Amr::regrid (AmrRegion* base_region,
     if (record_grid_info && ParallelDescriptor::IOProcessor())
     {
         if (lbase == 0)
-            gridlog << "STEP = " << level_steps[0] << ' ';
+            gridlog << "STEP = " << region_steps.getRoot() << ' ';
 
         gridlog << "TIME = "
                 << time
@@ -2191,7 +2306,7 @@ Amr::regrid (AmrRegion* base_region,
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
         if (lbase == 0)
-            std::cout << "STEP = " << level_steps[0] << ' ';
+            std::cout << "STEP = " << region_steps.getRoot() << ' ';
 
         std::cout << "TIME = "
                   << time
@@ -2826,6 +2941,7 @@ void
 Amr::initSubcycle (ParmParse * pp)
 {
     int i;
+    TreeIterator<int> it;
     sub_cycle = true;
     if (pp->contains("nosub"))
     {
@@ -2851,9 +2967,10 @@ Amr::initSubcycle (ParmParse * pp)
     if (subcycling_mode == "None")
     {
         sub_cycle = false;
-        for (i = 0; i <= max_level; i++)
+        it = n_cycle.getIteratorAtRoot();
+        for (; !it.is_finished(); ++it)
         {
-            n_cycle[i] = 1;
+            (*it) = 1;
         }
     }
     else if (subcycling_mode == "Manual")
@@ -2869,10 +2986,11 @@ Amr::initSubcycle (ParmParse * pp)
 
             pp->get("subcycling_iterations",cycles);
 
-            n_cycle[0] = 1; // coarse level is always 1 cycle
-            for (i = 1; i <= max_level; i++)
+            n_cycle.setRoot(1); // coarse level is always 1 cycle
+            it = n_cycle.getIteratorAtRoot();
+            for (; !it.is_finished(); ++it)
             {
-                n_cycle[i] = cycles;
+                (*it) = cycles;
             }
         }
         else if (cnt > 1)
@@ -2881,7 +2999,7 @@ Amr::initSubcycle (ParmParse * pp)
             // Otherwise we expect a vector of max_grid_size values.
             //
             pp->getarr("subcycling_iterations",n_cycle,0,max_level+1);
-            if (n_cycle[0] != 1)
+            if (n_cycle.getRoot() != 1)
             {
                 BoxLib::Error("First entry of subcycling_iterations must be 1");
             }
@@ -2890,31 +3008,34 @@ Amr::initSubcycle (ParmParse * pp)
         {
             BoxLib::Error("Must provide a valid subcycling_iterations if mode is Manual");
         }
-        for (i = 1; i <= max_level; i++)
+        it = n_cycle.getIteratorAtRoot(-1,Prefix);
+        for (++it; !it.is_finished(); ++it)
         {
-            if (n_cycle[i] > MaxRefRatio(i-1))
+            if (*it > MaxRefRatio(it.getLevel()-1))
                 BoxLib::Error("subcycling iterations must always be <= ref_ratio");
-            if (n_cycle[i] <= 0)
+            if (*it <= 0)
                 BoxLib::Error("subcycling iterations must always be > 0");
         }
     }
     else if (subcycling_mode == "Auto")
     {
-        n_cycle[0] = 1;
-        for (i = 1; i <= max_level; i++)
+        n_cycle.setRoot(1);
+        it = n_cycle.getIteratorAtRoot(-1,Prefix);
+        for (++it; !it.is_finished(); ++it)
         {
-            n_cycle[i] = MaxRefRatio(i-1);
+            (*it) = MaxRefRatio(it.getLevel()-1);
         } 
     }
     else if (subcycling_mode == "Optimal")
     {
         // if subcycling mode is Optimal, n_cycle is set dynamically.
         // We'll initialize it to be Auto subcycling.
-        n_cycle[0] = 1;
-        for (i = 1; i <= max_level; i++)
+        n_cycle.setRoot(1);
+        it = n_cycle.getIteratorAtRoot(-1,Prefix);
+        for (++it; !it.is_finished(); ++it)
         {
-            n_cycle[i] = MaxRefRatio(i-1);
-        } 
+            (*it) = MaxRefRatio(it.getLevel()-1);
+        }  
     }
     else
     {
@@ -2967,30 +3088,38 @@ Amr::initPltAndChk(ParmParse * pp)
 }
 
 
+///Deprecated for now.
+//bool
+//Amr::okToRegrid (int level)
+//{
+    //bool ok = true;
+    //PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
+    //for ( ; !it.is_finished(); ++it)
+    //{
+        //ok = ok && (*it)->okToRegrid();
+    //}
+    //return level_count[level] >= regrid_int[level] && ok;
+//}
+
 bool
-Amr::okToRegrid (int level)
+Amr::okToRegrid (Array<int> region_id)
 {
     bool ok = true;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
-    for ( ; !it.is_finished(); ++it)
-    {
-        ok = ok && (*it)->okToRegrid();
-    }
-    return level_count[level] >= regrid_int[level] && ok;
+    int level = region_id.size() - 1;
+    ok = ok && amr_regions.getData(region_id)->okToRegrid();
+    return region_count.getData(region_id) >= regrid_int[level] && ok;
 }
 
 Real
-Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real>& est_work, PTree<int>& cycle_max)
+Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& est_work, Tree<int>& cycle_max)
 {
     //BL_ASSERT(cycle_max[0] == 1);
-    ///YES, I know that its stupid to use pointer trees instead of actual trees. 
-    ///I'll fix that if I have time to make real trees.
     BL_ASSERT(best.getStructure(root_id) == cycle_max.getStructure(root_it));
     // internally these represent the total number of steps at a level, 
     // not the number of cycles
-    PTree<int> cycles;
+    Tree<int> cycles;
     cycles.buildFromStructure(root_id, best.getStructure(root_id));
-    cycles.setData(root_id,&1);
+    cycles.setData(root_id,1);
     Real best_ratio = 1e200;
     Real best_dt = 0;
     Real ratio;
@@ -3002,14 +3131,15 @@ Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real
     // This provides a memory efficient way to test all candidates
     PTreeConstIterator<int> ptic = cycle_max.getConstIteratorAtRoot();
     for (; !ptic.is_finished(); ++ptic)
-        limit *= **ptic;
+        limit *= *ptic;
     PTreeIterator<int> pti;
     for (int candidate = 0; candidate < limit; candidate++)
     {
         int temp_cand = candidate;
-        cycles.setData;
-        dt = *dt_max.getRoot();
-        work = *est_work.getRoot();
+        id.resize(1);
+        id[0] = 0;
+        dt = dt_max.getRoot();
+        work = est_work.getRoot();
         for (pti = cycle_max.getIteratorAtRoot(-1,Prefix), ++pti; !pti.is_finished(); ++pti)
         {
             //get the id for this node
@@ -3019,11 +3149,11 @@ Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real
             parent_id.resize(parent_id.size()-1);
             // grab the relevant "digit" and shift over.
             // All this gettin is probably inefficient. It can be streamlined if needed.
-            Real data = 1 + temp_cand%(*cycle_max.getData(id))) * (*cycles.getData(parent_id))
-            cycles.setData(id,&data);
-            temp_cand /= (*cycle_max.getData(id));
-            dt = std::min(dt, (*cycles.getData(id))*(*dt_max.getData(id)));
-            work += (*cycles.getData(id))*(*est_work.getData(id));
+            Real data = 
+            cycles.setData(id,1 + temp_cand%cycle_max.getData(id) * cycles.getData(parent_id));
+            temp_cand /= *cycle_max.getData(id);
+            dt = std::min(dt, cycles.getData(id) * dt_max.getData(id));
+            work += cycles.getData(id) * est_work.getData(id);
         }
         ratio = work/dt;
         if (ratio < best_ratio) 
@@ -3031,8 +3161,7 @@ Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real
             for (pti = cycle_max.getIteratorAtRoot(); !pti.is_finished(); ++pti)
             {
                 id = pti.getID();
-                int data = cycles.getData(id);
-                best.setData(id,&data);
+                best.setData(id,cycles.getData(id));
             }
             best_ratio = ratio;
             best_dt = dt;
@@ -3048,9 +3177,29 @@ Amr::computeOptimalSubcycling (PTree<int>& best, PTree<Real>& dt_max, PTree<Real
         //get the parent id by cutting the last digit.
         parent_id = id;
         parent_id.resize(parent_id.size()-1);
-        int data = best.getData(id)/best.getData(parent_id);
-        best.setData(id,&data);
+        best.setData(id,best.getData(id)/best.getData(parent_id));
     return best_dt;
+}
+
+void
+Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
+{
+    Tree<Real> dt_max(dt_level);
+    Array<int> root_id(1);
+    Array<int> id;
+    Array<int> parent_id;
+    root_id[0] = 0;
+    TreeIterator<Real> dt_it = dt_max.getIteratorAtRoot(-1,Postfix);
+    for (;!dt_it.is_finished(); ++dt_it)
+    {
+        id = dt_it.getID();
+        if (id.size() > 1) //not at root
+        {
+            parent_id = dt_it.getParentID();
+            dt_max.setData(parent_id, std::min(parent_id, n_cycle.getData(id)*dt_max.getData(id)));
+        }
+    }
+    dt_0 = std::min(dt_0, dt_max.getRoot());
 }
 
 void

@@ -54,14 +54,19 @@ public:
     //
     Tree();
     //
+    // Creates a copy of the specified tree.
+    //
+    Tree(Tree<T>& old_tree);
+    //
     // Deconstructs the tree, deleting data if managed.
     //
     ~Tree();
     
     //
-    // Returns the root data.
+    // Sets/gets the root data.
     //
     T getRoot();
+    void setRoot(T data);
     
     //
     // Returns the data associated with the specified node
@@ -83,6 +88,11 @@ public:
     // Gets the data from the children of the node -- only direct children, not descendents.
     //
     void getChildrenOfNode(const Array<int> id, PList<T>& children);
+    
+    //
+    // removes the children of the node(and all descendents).
+    //
+    void clearChildrenOfNode(const Array<int> id);
     
     //
     // Returns a TreeIterator to root or the specified node. If restrict_level
@@ -142,7 +152,7 @@ protected:
         //
         // Recursively extracts the data from children of the node and removes the children.
         //
-        void extractChildren(PList<T>& extracted);
+        void clearChildren();
         
         //
         // Recursively adds the structure for this node and its children to the structure list.
@@ -192,13 +202,14 @@ public:
     TreeIterator(iNode* base, int r_level, IteratorMode mode);
     
     void operator ++();
-    T operator *();
+    T& operator *();
     
     bool is_finished() const ;
     
     int getLevel() const;
     
     Array<int> getID() const;
+    Array<int> getParentID() const;
     
 protected:
     void descend();
@@ -212,10 +223,25 @@ protected:
 };
 
 template <class T>
-Tree<T>::Tree(TreePolicy is_managed)
+Tree<T>::Tree()
 {
-    managed=is_managed;
-    root = new Node(managed);
+    root = new Node();
+}
+
+template <class T>
+Tree<T>::Tree(Tree<T>& old_tree)
+{
+    root = new Node();
+    Array<int> root_id = root.getID();
+    Array<int> id;
+    buildFromStructure(root_id, old_tree.getStructure(root_id));
+    // This initialization method is pretty inefficient. We could do better if we want.
+    TreeIterator<T> it = old_tree.getIteratorAtRoot();
+    for ( ; !it.is_finished(); ++it)
+    {
+        id = it.getID();
+        setData(id,old_tree.getData(id));
+    }
 }
 
 template <class T>
@@ -265,6 +291,13 @@ Tree<T>::getRoot() const
 }
 
 template <class T>
+void
+Tree<T>::setRoot(T data) const
+{
+    root->m_data = data;
+}
+
+template <class T>
 T
 Tree<T>::getData(const Array<int> id) const
 {
@@ -301,6 +334,13 @@ Tree<T>::getChildrenOfNode(const Array<int> id, PList<T>& children)
     {
         children.push_back(node->m_children[i].m_data);
     }
+}
+
+template <class T>
+void
+Tree<T>::clearChildrenOfNode(const Array<int> id)
+{
+    getNode(id)->clearChildren();
 }
 
 template <class T>
@@ -451,14 +491,8 @@ Tree<T>::Node::getID()
 
 template <class T>
 void
-Tree<T>::Node::extractChildren(PList<T>& extracted)
+Tree<T>::Node::clearChildren()
 {
-    for (int i = 0; i < m_children.size(); i++)
-    {
-        m_children[i].extractChildren(extracted);
-        extracted.push_back(m_children[i].m_data);
-        m_children[i].m_data = 0;
-    }
     m_children.clear();
     m_children.resize(0);
 }
@@ -591,5 +625,12 @@ Array<int>
 TreeIterator<T>::getID() const
 {
     return current_node->getID();
+}
+
+template <class T>
+Array<int>
+TreeIterator<T>::getParentID() const
+{
+    return current_node->m_parent->getID();
 }
 #endif /*BL_TREE_H*/

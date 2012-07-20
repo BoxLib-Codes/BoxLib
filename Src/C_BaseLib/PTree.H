@@ -65,9 +65,10 @@ public:
     ~PTree();
     
     //
-    // Returns the root data.
+    // Sets/Gets the root data.
     //
     T* getRoot();
+    void setRoot(T* data);
     
     //
     // Returns the data associated with the specified node
@@ -226,6 +227,7 @@ public:
     int getLevel() const;
     
     Array<int> getID() const;
+    Array<int> getParentID() const;
     
 protected:
     void descend();
@@ -253,6 +255,7 @@ public:
     int getLevel() const;
     
     Array<int> getID() const;
+    Array<int> getParentID() const;
     
 protected:
     void descend();
@@ -317,6 +320,13 @@ PTree<T>::getRoot()
 {
     BL_ASSERT(root->m_data != 0);
     return root->m_data;
+}
+
+template <class T>
+void
+PTree<T>::setRoot(T* data)
+{
+    root->m_data = data;
 }
 
 template <class T>
@@ -709,6 +719,13 @@ PTreeIterator<T>::getID() const
     return current_node->getID();
 }
 
+template <class T>
+Array<int>
+PTreeIterator<T>::getParentID() const
+{
+    return current_node->m_parent->getID();
+}
+
 //Const Methods
 template <class T>
 PTreeConstIterator<T>::PTreeConstIterator(const iNode* base, int r_level, IteratorMode)
@@ -811,5 +828,12 @@ Array<int>
 PTreeConstIterator<T>::getID() const
 {
     return current_node->getID();
+}
+
+template <class T>
+Array<int>
+PTreeConstIterator<T>::getParentID() const
+{
+    return current_node->m_parent->getID();
 }
 #endif /*BL_TREE_H*/
