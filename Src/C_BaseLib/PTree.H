@@ -73,8 +73,8 @@ public:
     //
     // Returns the data associated with the specified node
     //
-    T* getData(const Array<int> id);
-    const T* getData(const Array<int> id) const;
+    T& getData(const Array<int> id);
+    const T& getData(const Array<int> id) const;
     
     //
     // 0's the pointer and returns the data associated with the specified node.
@@ -166,7 +166,7 @@ protected:
         //
         // Returns the id for this node.
         //
-        Array<int> getID();
+        Array<int> getID() const ;
         
         //
         // Recursively extracts the data from children of the node and removes the children.
@@ -334,21 +334,21 @@ PTree<T>::setRoot(T* data)
 }
 
 template <class T>
-T*
+T&
 PTree<T>::getData(const Array<int> id)
 {
     T* data = getNode(id)->m_data;
     BL_ASSERT(data != 0);
-    return data;
+    return *data;
 }
 
 template <class T>
-const T*
+const T&
 PTree<T>::getData(const Array<int> id) const
 {
     const T* data = getNode(id)->m_data;
     BL_ASSERT(data != 0);
-    return data;
+    return *data;
 }
 
 template <class T>
@@ -582,10 +582,10 @@ PTree<T>::Node::~Node()
 
 template <class T>
 Array<int>
-PTree<T>::Node::getID()
+PTree<T>::Node::getID() const
 {
     std::list<int> idl;
-    Node* current_node = this;
+    const Node* current_node = this;
     idl.push_front(current_node->m_index);
     while(current_node->m_parent != 0)
     {

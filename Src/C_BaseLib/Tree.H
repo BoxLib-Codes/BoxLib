@@ -456,7 +456,6 @@ Tree<T>::Node::Node()
     m_parent = 0;
     m_index = 0;
     m_level = 0;
-    m_data = 0;
 }
 
 template <class T>
@@ -467,7 +466,6 @@ Tree<T>::Node::Node( Node* parent, int index, int level)
     m_parent = parent;
     m_index = index;
     m_level = level;
-    m_data = 0;
 }
 
 template <class T>

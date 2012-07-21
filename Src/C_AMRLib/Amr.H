@@ -96,9 +96,13 @@ public:
     //
     Real dtLevel (int level) const;
     //
-    // Array of time steps at all levels.
+    // Tree of timesteps at all regions.
     //
     const Tree<Real>& dtRegion () const;
+    //
+    // Timestep at a specific region.
+    //
+    Real dtRegion(Array<int> id) const;
     //
     // Geometry object.
     //
@@ -272,9 +276,9 @@ public:
     //
     void RegridOnly (Real time);
     //
-    // Should we regrid this level?
+    // Should we regrid this region?
     //
-    bool okToRegrid (int level);
+    bool okToRegrid (Array<int> region_id);
     //
     // Do a complete integration cycle.
     //
@@ -306,11 +310,10 @@ public:
     // if ref_ratio[i] = cycle_max[i] = 4, then 1,2,3,4 are all valid 
     // values for n_cycles[i]
     //
-    static Real computeOptimalSubcycling(int n, 
-                                         Tree<int>& best,
+    static Real computeOptimalSubcycling(Tree<int>& best,
                                          Tree<Real>& dt_max, 
-                                         Tree<Real> est_work, 
-                                         Tree<int> cycle_max);
+                                         Tree<Real>& est_work, 
+                                         Tree<int>& cycle_max);
     
     //
     // Uses a friends-of-friends clustering algorithm with min distance d
@@ -339,6 +342,7 @@ public:
     Array<int> whichRegion(int level, IntVect cell);
     
     PTree<AmrRegion>& getRegions();
+    const PTree<AmrRegion>& getRegions() const;
     
     void FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level);
                                          
@@ -551,6 +555,13 @@ Amr::dtRegion() const
 }
 
 inline
+Real
+Amr::dtRegion(Array<int> id) const
+{
+    return dt_region.getData(id);
+}
+
+inline
 const Geometry&
 Amr::Geom (int level) const
 {
@@ -666,12 +677,19 @@ inline
 AmrRegion&
 Amr::getRegion(const Array<int> id)
 {
-    return *(amr_regions.getData(id));
+    return amr_regions.getData(id);
 }
 
 inline
 PTree<AmrRegion>&
 Amr::getRegions()
+{
+    return amr_regions;
+}
+
+inline
+const PTree<AmrRegion>&
+Amr::getRegions() const
 {
     return amr_regions;
 }

@@ -360,10 +360,10 @@ public:
     void define(PList<AmrRegion>& regions, Amr* papa);
     
     //
-    // Creates/Returns the full id of this region.
+    // Returns the full id of this region.
     //
-    Array<int> getID();
-    std::string getIDString();
+    Array<int> getID() const;
+    std::string getIDString() const ;
     
     //
     // Sets the full id for this region.

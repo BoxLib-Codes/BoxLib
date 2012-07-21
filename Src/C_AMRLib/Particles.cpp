@@ -520,13 +520,13 @@ ParticleBase::Where (ParticleBase& p,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region.resize(1);
+        base_region[0] = 0;
     }
     else
     {
         base_region = *base_region_ptr;
     }
-    int lev_min = base_region.size() - 1;
     if (update)
     {
         //
@@ -565,13 +565,13 @@ ParticleBase::Where (ParticleBase& p,
 
     std::vector< std::pair<int,Box> > isects;
 
-    PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region);
-    for ( ; !it.is_finished(); ++it)
+    PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIteratorAtNode(base_region);
+    for ( ; !it.isFinished(); ++it)
     {
-        lev = it.getLevel();
+        int lev = it.getLevel();
         const IntVect iv = ParticleBase::Index(p,lev,amr);
 
-        amr->boxArray((*it).getID()).intersections(Box(iv,iv),isects);
+        amr->boxArray((*it)->getID()).intersections(Box(iv,iv),isects);
 
         if (!isects.empty())
         {
@@ -593,8 +593,6 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
                              Array<int>    base_region)
 {
     BL_ASSERT(amr != 0);
-    int lev_min = region_id.size() - 1;
-
     //
     // Create a copy "dummy" particle to check for periodic outs.
     //
@@ -617,13 +615,13 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
     {
         std::vector< std::pair<int,Box> > isects;
 
-        PTreeIterator<AmrRegion> it = amr->getRegions().getIteratorAtNode(base_region);
-        for ( ; !it.is_finished(); ++it)
+        PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIteratorAtNode(base_region);
+        for ( ; !it.isFinished(); ++it)
         {
-            lev = it.getLevel();
+            int lev = it.getLevel();
             const IntVect iv = ParticleBase::Index(p,lev,amr);
 
-            amr->boxArray((*it).getID()).intersections(Box(iv,iv),isects);
+            amr->boxArray((*it)->getID()).intersections(Box(iv,iv),isects);
 
             if (!isects.empty())
             {
@@ -655,7 +653,7 @@ ParticleBase::RestrictedWhere (ParticleBase& p,
 
     const IntVect iv = ParticleBase::Index(p,p.m_lev,amr);
 
-    if (BoxLib::grow(amr->boxArray(base_region, p.m_lev), ngrow).contains(iv))
+    if (amr->boxArray(base_region, p.m_lev).grow( ngrow).contains(iv))
     {
         // Technically we're checking all subgrids at this level for the particle
         // However, we can assume that the cores of these grids were already checked
@@ -678,6 +676,7 @@ ParticleBase::SingleRegionWhere (ParticleBase& p,
 {
     BL_ASSERT(amr != 0);
 
+    int level = region_id.size() - 1;
     const IntVect iv = ParticleBase::Index(p,level,amr);
 
     std::vector< std::pair<int,Box> > isects;

@@ -284,7 +284,7 @@ MultiFab::define (PList<MultiFab>&   mf_list,
                   FabAlloc           mem_mode,
                   FabClear           clear)
 {
-    int N = mfs.size();
+    int N = mf_list.size();
     PArray<FabArray<FArrayBox> > fab_arrs(N);
     int i = 0;
     for(PList<MultiFab>::iterator it = mf_list.begin(); it != mf_list.end(); ++it, i++)
@@ -1144,8 +1144,8 @@ MultiFab::SumBoundary ()
 int MultiFab::MFIndexOf(IntVect iv, std::vector< std::pair<int,Box> >& scratch_space)
 {
     boxArray().intersections(Box(iv,iv),scratch_space);
-    BL_ASSERT(isects.size() <= 1);
-    if (isects.size() == 0)
+    BL_ASSERT(scratch_space.size() <= 1);
+    if (scratch_space.size() == 0)
         return -1;
-    return isects[0].first;
+    return scratch_space[0].first;
 }

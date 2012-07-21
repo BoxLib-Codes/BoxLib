@@ -1520,7 +1520,7 @@ AmrRegion::define(RegionList& regions, Amr* papa)
 
 
 Array<int>
-AmrRegion::getID()
+AmrRegion::getID() const
 {
     return m_id;
 }
@@ -1532,7 +1532,7 @@ AmrRegion::setID(const Array<int> id)
 }
 
 std::string
-AmrRegion::getIDString()
+AmrRegion::getIDString() const
 {
     std::ostringstream convert;
     convert << m_id[0];

@@ -701,7 +701,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
                 {
                     ParticleType& p = nparticles.front();
     
-                    (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                    m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
     
                     nparticles.pop_front();
                 }
@@ -731,7 +731,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
             {
                 ParticleType& p = nparticles.front();
 
-                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 
                 nparticles.pop_front();
             }
@@ -1032,7 +1032,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
                 {
                     ParticleType& p = nparticles.front();
     
-                    (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                    m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
     
                     nparticles.pop_front();
                 }
@@ -1066,7 +1066,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
             {
                 ParticleType& p = nparticles.front();
 
-                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 
                 nparticles.pop_front();
             }
@@ -1301,7 +1301,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
 	                //
 	                // Add it to the appropriate PBox at the appropriate level.
 	                //
-	                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+	                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 		    }
 	        }
 	    }
@@ -1327,7 +1327,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
     //
     // FIXME: Will we ever need initial particles in grids deeper than 0?!
     //
-    PMap& pmap = *m_particles.getData(root_id);
+    PMap& pmap = m_particles.getData(root_id);
     //
     // Make sure, that mf and m_amr->boxArray(0) are based on the same boxarray.
     //
@@ -1498,7 +1498,7 @@ ParticleContainer<N>::InitRandom (long          icount,
                 p.m_id  = ParticleBase::NextID();
                 p.m_cpu = MyProc;
 
-                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 
                 cnt++;
             }
@@ -1562,7 +1562,7 @@ ParticleContainer<N>::InitRandom (long          icount,
             //
             // Add it to the appropriate PBox at the appropriate level.
             //
-            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p); 
+            m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p); 
         }
         //
         // Let Redistribute() sort out where the particles belong.
@@ -1746,7 +1746,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
     const Real*     dx               = geom.CellSize();
     const Real      adx[BL_SPACEDIM] = { D_DECL(a*dx[0],a*dx[1],a*dx[2]) };
     Real            dt               = 1e50;
-    const PMap&     pmap             = *m_particles.getData(region_id);
+    const PMap&     pmap             = m_particles.getData(region_id);
     int             tnum             = 1;
 
 #ifdef _OPENMP
@@ -1968,7 +1968,7 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
     const Real*     plo         = gm.ProbLo();
     const Real*     dx_particle = m_amr->Geom(lev + particle_lvl_offset).CellSize();
     const Real*     dx          = gm.CellSize();
-    const PMap&     pmap        = *m_particles.getData(region_id);
+    const PMap&     pmap        = m_particles.getData(region_id);
     const int       n           = pmap.size();
 
     if (gm.isAnyPeriodic() && !gm.isAllPeriodic())
@@ -3238,7 +3238,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
     const Real half_dt       = 0.5 * dt;
     const Real a_half_inv    = 1 / a_half;
     const Real dt_a_half_inv = dt * a_half_inv;
-    PMap&      pmap          = *m_particles.getData(region_id);
+    PMap&      pmap          = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3332,7 +3332,7 @@ ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
     const Real strttime  = ParallelDescriptor::second();
     const Real half_dt   = 0.5 * dt;
     const Real a_new_inv = 1 / a_new;
-    PMap&      pmap      = *m_particles.getData(region_id);
+    PMap&      pmap      = m_particles.getData(region_id);
 
     for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -3593,7 +3593,7 @@ template <int N>
 void
 ParticleContainer<N>::RemoveParticlesInRegion (Array<int> region_id)
 {
-    PMap().swap(*m_particles.getData(region_id));
+    PMap().swap(m_particles.getData(region_id));
 }
 
 template <int N>
@@ -3635,7 +3635,7 @@ ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
             const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
             if (who == MyProc)
             {
-                (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
                 //
                 // Invalidate the particle so we can reclaim its space.
                 // may be unneeded
@@ -3904,7 +3904,7 @@ ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
 
             rcvp += N;
 
-            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+            m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 
             nparticles.pop_front();
         }
@@ -3939,7 +3939,7 @@ ParticleContainer<N>::CreateVirtualParticles (Array<int>   region_id,
 
     buffer = buffer.grow(aggregation_buffer);
 
-    const PMap& pmap = *m_particles.getData(region_id);
+    const PMap& pmap = m_particles.getData(region_id);
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
          pmap_it != pmapEnd;
@@ -4058,7 +4058,7 @@ ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
     std::vector< std::pair<int,Box> > isects;
 
     Array<int> parent_id = m_amr->getRegion(region_id).Parent()->getID();
-    const PMap& pmap = *m_particles.getData(parent_id);
+    const PMap& pmap = m_particles.getData(parent_id);
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
          pmap_it != pmapEnd;
@@ -4309,7 +4309,7 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                     //
                     // We own it but must shift it to another place.
                     //
-                    (*(m_particles.getData(region_id)))[p.m_grid].push_back(p);
+                    m_particles.getData(region_id)[p.m_grid].push_back(p);
                     //
                     // Invalidate the particle so we can reclaim its space.
                     //
@@ -4674,7 +4674,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             rcvp += N;
 
             region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
-            (*(m_particles.getData(region_id)))[p.m_grid].push_back(p);
+            m_particles.getData(region_id)[p.m_grid].push_back(p);
 
             nparticles.pop_front();
         }
@@ -5088,10 +5088,10 @@ ParticleContainer<N>::WriteParticles (Array<int>     region_id,
                                       Array<int>&    count,
                                       Array<long>&   where) const
 {
-    const PMap&     pmap  = *m_particles.getData(region_id);
+    const PMap&     pmap  = m_particles.getData(region_id);
     int lev = region_id.size() - 1;
     ///TODO/DEBUG: Upgrade this.
-    const MultiFab& state = m_amr->getRegions().getData(region_id)->get_new_data(0);
+    const MultiFab& state = m_amr->getRegions().getData(region_id).get_new_data(0);
     
     ///TODO/DEBUG: Upgrade this.
 
@@ -5486,7 +5486,7 @@ ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
     int*         iptr = istuff.dataPtr();
     Real*        rptr = rstuff.dataPtr();
     ///TODO/DEBUG: upgrade -- this in no way works
-    PBox&        pbox = (*m_particles.getData(root_id ))[grd];
+    PBox&        pbox = m_particles.getData(root_id )[grd];
     ParticleType p;
 
     for (int i = 0; i < cnt; i++)
@@ -5717,7 +5717,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     for (int lev = 0; lev < m_amr->finestLevel(); lev++)
     {
         ///TODO/DEBUG: Upgrade -- this in no way works
-        const PMap& pmap = *m_particles.getData(root_id);
+        const PMap& pmap = m_particles.getData(root_id);
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -5787,7 +5787,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
             for (int lev = 0; lev < m_amr->finestLevel(); lev++)
             {
                 ///TODO/DEBUG: Upgrade -- this in no way works
-                const PMap& pmap = *m_particles.getData(root_id);
+                const PMap& pmap = m_particles.getData(root_id);
 
                 for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
                 {
