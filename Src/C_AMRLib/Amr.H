@@ -320,7 +320,7 @@ public:
     // to identify clusters in boxes. Distance is computed as the minimum '
     // distance between cells in the 2 boxes.
     // 
-    static void FOFCluster(int d, BoxArray boxes, Array<BoxArray>& clusters);
+    static void FOFCluster(int d, BoxArray boxes, std::list<BoxArray>& cluster_list);
     
     AmrRegion* build_blank_region();
     
@@ -396,6 +396,13 @@ protected:
     void regrid (AmrRegion* base_region,
                  Real time,
                  bool initial = false);
+                 
+    //
+    // Restructures our data trees in preparation for recieving new data
+    // Normally called in regrid.
+    //
+    void restructure(Array<int> base_region, std::list<int> structure);
+    
     //
     // Define new grid locations (called from regrid) and put into new_grids.
     //
@@ -449,6 +456,7 @@ protected:
     Tree<Real>       dt_region;     // Timestep for this region.
     //Tree<int>        level_steps;  // Number of time steps at this level.
     //Tree<int>        level_count;
+    ///region steps is unreliable and deprecated right now (except for the root entry);
     Tree<int>        region_steps;  // Number of time steps at this level.
     Tree<int>        region_count;
     Tree<int>        n_cycle;

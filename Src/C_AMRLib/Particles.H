@@ -213,9 +213,7 @@ public:
     //
     typedef typename std::map<int,PBox> PMap;
 
-    ParticleContainer (Amr* amr)
-        :
-        m_verbose(1), m_amr(amr) { BL_ASSERT(amr != 0); root_id.resize(1); root_id[0] = 0;}
+    ParticleContainer (Amr* amr);
 
     void InitFromAsciiFile (const std::string& file, int extradata, const IntVect* Nrep = 0);
 
@@ -377,6 +375,20 @@ protected:
     PList<PMap> orphan_particles;
     Array<int> root_id;
 };
+
+template <int N>
+ParticleContainer<N>::ParticleContainer(Amr* amr)
+        :
+        m_verbose(1), m_amr(amr),m_particles(PTreeManage)
+{ 
+    BL_ASSERT(amr != 0); 
+    root_id.resize(1); 
+    root_id[0] = 0;
+    m_particles.setRoot(new PMap());
+}
+
+
+
 
 template <int N>
 long
@@ -1696,7 +1708,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
         base_region = *base_region_ptr;
     }
 
-    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    BL_ASSERT(lev >= 0);
 
     long num_particles_in_domain = 0;
     std::vector< std::pair<int,Box> > scratch_space;
@@ -1739,7 +1751,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
     int lev = region_id.size() - 1;
-    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    BL_ASSERT(lev >= 0);
 
     const Real      strttime         = ParallelDescriptor::second();
     const Geometry& geom             = m_amr->Geom(lev);
@@ -1846,7 +1858,8 @@ ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
                                        Array<int>* base_region_ptr) const
 {
     BL_ASSERT(N >= 1);
-    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    BL_ASSERT(lev >= 0);
+    ///TODO/DEBUG: Any other assertions needed?
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
@@ -3327,7 +3340,7 @@ ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
     int lev = region_id.size() - 1;
-    BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
+    BL_ASSERT(lev >= 0);
 
     const Real strttime  = ParallelDescriptor::second();
     const Real half_dt   = 0.5 * dt;
@@ -4046,7 +4059,6 @@ ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
 {
     BL_ASSERT(ghosts.empty());
     int level = region_id.size() - 1;
-    BL_ASSERT(level < m_amr->finestLevel());
 
     //
     // Copy and grow the box array for the finer level.
@@ -4254,12 +4266,10 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
     while (!pbox.empty() && pbox.front().m_id <= 0)
         pbox.pop_front();
 
-    std::cout << "DEBUG: PMAP iteration\n";
     Array<int> region_id;
     for (typename PBox::iterator it = pbox.begin(), End = pbox.end(); it != End; )
     {
         ParticleType& p = *it;
-        std::cout << "DEBUG: PBox iteration\n";
 
         if (p.m_id > 0)
         {
@@ -4293,14 +4303,12 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                     }
                 }
             }
-            std::cout << "DEBUG: Found the particle\n";
             //
             // The owner of the particle is the CPU owning the finest grid
             // in state data that contains the particle.
             //
             region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
             const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
-            std::cout << "DEBUG: I know who\n";
             if (who == MyProc)
             {
                 //This test should still be OK due to nesting.
@@ -4386,6 +4394,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
+            std::cout << "DEBUG: PIteratin \n";
             int   grid = pmap_it->first;
             PBox& pbox = pmap_it->second;
             RedistributePBox(pbox, grid, notowned, owner, lev,  where_already_called, full_where, base_region, nGrow);
@@ -4400,6 +4409,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             else
                 ++pmap_it;
         }
+        std::cout << "DEBUG: Finishing loop " << lev << "\n";
     }
     
     //
@@ -4420,6 +4430,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             RedistributePBox(pbox, grid, notowned, owner, lev, false, false, base_region, 0);
         }
     }
+    std::cout << "DEBUG: Orphans done\n";
     orphan_particles.clear();
 
     const int NProcs = ParallelDescriptor::NProcs();
@@ -5276,10 +5287,25 @@ template <int N>
 void
 ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_structure)
 {
+    std::cout << "DEBUG: Calling Particle Restructure!\n";
+    ///TODO/DEBUG: Figure out an assert to add here so that we don't kill innocent orphans.
     //There should probably be some asserts here.
-    BL_ASSERT(orphan_particles.empty());
+    //BL_ASSERT(orphan_particles.empty());
     m_particles.extractChildrenOfNode(base_region, orphan_particles);
     m_particles.buildFromStructure(base_region, new_structure);
+    std::cout << "DEBUG: Structure size = " <<new_structure.size() <<"\n";
+    std::cout << "DEBUG: kiddies = " <<m_particles.countChildrenOfNode(base_region) <<"\n";
+    std::cout << "DEBUG: built\n";
+    PTreeIterator<PMap> pmit = m_particles.getIteratorAtNode(base_region, -1, Prefix);
+    ++pmit;
+    std::cout << "DEBUG: got iterator\n";
+    for (; !pmit.isFinished(); ++pmit)
+    {
+        std::cout << "DEBUG: begin\n";
+        m_particles.setData(pmit.getID(),new PMap());
+        std::cout << "DEBUG: end\n";
+    }
+    std::cout << "DEBUG: Finished Particle Restructure\n";
 }
 
 template <int N>

@@ -165,6 +165,7 @@ protected:
         PArray<Node>    m_children; // The child nodes.
         Node*           m_parent;   // Pointer to the parent node.
         int             m_level;    // The level of this node w/in the tree (root = 0)
+        Array<int>      m_id;
     };
     
     Node* root;
@@ -432,7 +433,6 @@ Tree<T>::Node::addChild()
 {
     int num_children = m_children.size();
     m_children.resize(num_children+1);
-    std::cout << "DEBUG: New index " << m_children.size()-1 << "\n";
     m_children.set(num_children, new Node(this, num_children, m_level + 1));
     return m_children[num_children].getID();
 }
@@ -443,7 +443,6 @@ Tree<T>::Node::addChild(T data)
 {
     int num_children = m_children.size();
     m_children.resize(num_children+1);
-    std::cout << "DEBUG: New index " << m_children.size()-1 << "\n";
     m_children.set(num_children, new Node(this, num_children, m_level + 1, data));
     return m_children[num_children].getID();
 }
@@ -456,6 +455,8 @@ Tree<T>::Node::Node()
     m_parent = 0;
     m_index = 0;
     m_level = 0;
+    m_id.resize(1);
+    m_id[0] = 0;
 }
 
 template <class T>
@@ -466,6 +467,9 @@ Tree<T>::Node::Node( Node* parent, int index, int level)
     m_parent = parent;
     m_index = index;
     m_level = level;
+    m_id =m_parent->getID();
+    m_id.resize(m_level + 1);
+    m_id[m_level] = m_index;
 }
 
 template <class T>
@@ -477,6 +481,9 @@ Tree<T>::Node::Node( Node* parent, int index, int level, T data)
     m_index = index;
     m_level = level;
     m_data = data;
+    m_id =m_parent->getID();
+    m_id.resize(m_level + 1);
+    m_id[m_level] = m_index;
 }
 
 template <class T>
@@ -488,22 +495,7 @@ template <class T>
 Array<int>
 Tree<T>::Node::getID()
 {
-    std::list<int> idl;
-    Node* current_node = this;
-    idl.push_front(current_node->m_index);
-    while(current_node->m_parent != 0)
-    {
-        current_node = current_node->m_parent;
-        idl.push_front(current_node->m_index);
-    }
-    // This could be cleaned up a bit.
-    Array<int> id(idl.size());
-    int i = 0;
-    for (std::list<int>::iterator it = idl.begin(); it != idl.end(); ++it, ++i)
-    {
-        id[i] = *it;
-    }
-    return id;
+    return m_id;
 }
 
 template <class T>
@@ -578,7 +570,7 @@ void
 TreeIterator<T>::operator ++()
 {
     BL_ASSERT(!isFinished());
-    if (current_node == base_node && (m_mode == Postfix || current_index == current_node->m_children.size()))
+    if (current_node == base_node && (m_mode == Postfix))
     {
         finished = true;
     }
@@ -600,8 +592,10 @@ TreeIterator<T>::operator ++()
         else
         {
             ascend();
-            current_index ++;
-            current_node = &current_node->m_children[current_index];
+            if  (current_node == base_node && current_index == base_node->m_children.size())
+                finished = true;
+            else
+                current_node = &current_node->m_children[current_index];
         }
     }
 }
@@ -622,9 +616,9 @@ template <class T>
 void
 TreeIterator<T>::ascend()
 {
-    if (current_node->m_children.size() == current_index && current_node != base_node)
+    if (current_node != base_node && current_node->m_children.size() == current_index)
     {
-        current_index = current_node->m_index;
+        current_index = current_node->m_index + 1;
         current_node = current_node->m_parent;
         ascend();
     }
@@ -648,6 +642,7 @@ template <class T>
 Array<int>
 TreeIterator<T>::getParentID() const
 {
+    BL_ASSERT(current_node->m_parent != 0);
     return current_node->m_parent->getID();
 }
 #endif /*BL_TREE_H*/

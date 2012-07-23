@@ -51,7 +51,7 @@ public:
     // be implemented by derived classes.
     //
     virtual AmrRegion* operator() (Amr&            papa,
-                                  int             lev,
+                                  Array<int>       id,
                                   const Geometry& geom_lev,
                                   const BoxArray& ba,
                                   Real            time) = 0;

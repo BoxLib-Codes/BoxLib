@@ -103,11 +103,17 @@ public:
     // Gets the data from the children of the node -- only direct children, not descendents.
     //
     void getChildrenOfNode(const Array<int> id, PList<T>& children);
+    int countChildrenOfNode(const Array<int> id);
     
     //
     // Extracts the data from children of the node and removes the children (and all descendents).
     //
     void extractChildrenOfNode(const Array<int> id, PList<T>& extracted);
+    
+    //
+    // removes the children of the node(and all descendents).
+    //
+    void clearChildrenOfNode(const Array<int> id);
     
     //
     // Returns a PTreeIterator to root or the specified node. If restrict_level
@@ -174,6 +180,11 @@ protected:
         void extractChildren(PList<T>& extracted);
         
         //
+        // Deletes the children of this node.
+        //
+        void clearChildren();
+        
+        //
         // Recursively adds the structure for this node and its children to the structure list.
         //
         void getStructure(std::list<int>& structure);
@@ -189,6 +200,7 @@ protected:
         Node*           m_parent;   // Pointer to the parent node.
         PTreePolicy     managed;    // The data memory management policy for the node.
         int             m_level;    // The level of this node w/in the tree (root = 0)
+        Array<int>      m_id;
     };
     
     Node* root;
@@ -405,10 +417,24 @@ PTree<T>::getChildrenOfNode(const Array<int> id, PList<T>& children)
 }
 
 template <class T>
+int
+PTree<T>::countChildrenOfNode(const Array<int> id)
+{
+    return getNode(id)->m_children.size();
+}
+
+template <class T>
 void
 PTree<T>::extractChildrenOfNode(const Array<int> id, PList<T>& extracted)
 {
     getNode(id)->extractChildren(extracted);
+}
+
+template <class T>
+void
+PTree<T>::clearChildrenOfNode(const Array<int> id)
+{
+    getNode(id)->clearChildren();
 }
 
 template <class T>
@@ -518,7 +544,6 @@ PTree<T>::Node::addChild()
 {
     int num_children = m_children.size();
     m_children.resize(num_children+1);
-    std::cout << "DEBUG: New index " << m_children.size()-1 << "\n";
     m_children.set(num_children, new Node(managed, this, num_children, m_level + 1));
     return m_children[num_children].getID();
 }
@@ -529,7 +554,6 @@ PTree<T>::Node::addChild(T* data)
 {
     int num_children = m_children.size();
     m_children.resize(num_children+1);
-    std::cout << "DEBUG: New index " << m_children.size()-1 << "\n";
     m_children.set(num_children, new Node(managed, this, num_children, m_level + 1, data));
     return m_children[num_children].getID();
 }
@@ -544,6 +568,8 @@ PTree<T>::Node::Node(PTreePolicy is_managed)
     m_index = 0;
     m_level = 0;
     m_data = 0;
+    m_id.resize(1);
+    m_id[0] = 0;
 }
 
 template <class T>
@@ -555,6 +581,9 @@ PTree<T>::Node::Node(PTreePolicy is_managed, Node* parent, int index, int level)
     m_parent = parent;
     m_index = index;
     m_level = level;
+    m_id =m_parent->getID();
+    m_id.resize(m_level + 1);
+    m_id[m_level] = m_index;
     m_data = 0;
 }
 
@@ -568,6 +597,9 @@ PTree<T>::Node::Node(PTreePolicy is_managed, Node* parent, int index, int level,
     m_index = index;
     m_level = level;
     m_data = data;
+    m_id =m_parent->getID();
+    m_id.resize(m_level + 1);
+    m_id[m_level] = m_index;
 }
 
 template <class T>
@@ -584,22 +616,7 @@ template <class T>
 Array<int>
 PTree<T>::Node::getID() const
 {
-    std::list<int> idl;
-    const Node* current_node = this;
-    idl.push_front(current_node->m_index);
-    while(current_node->m_parent != 0)
-    {
-        current_node = current_node->m_parent;
-        idl.push_front(current_node->m_index);
-    }
-    // This could be cleaned up a bit.
-    Array<int> id(idl.size());
-    int i = 0;
-    for (std::list<int>::iterator it = idl.begin(); it != idl.end(); ++it, ++i)
-    {
-        id[i] = *it;
-    }
-    return id;
+    return m_id;
 }
 
 template <class T>
@@ -612,6 +629,14 @@ PTree<T>::Node::extractChildren(PList<T>& extracted)
         extracted.push_back(m_children[i].m_data);
         m_children[i].m_data = 0;
     }
+    m_children.clear();
+    m_children.resize(0);
+}
+
+template <class T>
+void
+PTree<T>::Node::clearChildren()
+{
     m_children.clear();
     m_children.resize(0);
 }
@@ -680,7 +705,7 @@ void
 PTreeIterator<T>::operator ++()
 {
     BL_ASSERT(!isFinished());
-    if (current_node == base_node && (m_mode == Postfix || current_index == current_node->m_children.size()))
+    if (current_node == base_node && (m_mode == Postfix))
     {
         finished = true;
     }
@@ -702,8 +727,10 @@ PTreeIterator<T>::operator ++()
         else
         {
             ascend();
-            current_index ++;
-            current_node = &current_node->m_children[current_index];
+            if  (current_node == base_node && current_index == base_node->m_children.size())
+                finished = true;
+            else
+                current_node = &current_node->m_children[current_index];
         }
     }
 }
@@ -726,7 +753,7 @@ PTreeIterator<T>::ascend()
 {
     if (current_node->m_children.size() == current_index && current_node != base_node)
     {
-        current_index = current_node->m_index;
+        current_index = current_node->m_index + 1;
         current_node = current_node->m_parent;
         ascend();
     }
@@ -750,6 +777,7 @@ template <class T>
 Array<int>
 PTreeIterator<T>::getParentID() const
 {
+    BL_ASSERT(current_node->m_parent != 0);
     return current_node->m_parent->getID();
 }
 
@@ -791,7 +819,7 @@ void
 PTreeConstIterator<T>::operator ++()
 {
     BL_ASSERT(!isFinished());
-    if (current_node == base_node && (m_mode == Postfix || current_index == current_node->m_children.size()))
+    if (current_node == base_node && (m_mode == Postfix))
     {
         finished = true;
     }
@@ -813,8 +841,10 @@ PTreeConstIterator<T>::operator ++()
         else
         {
             ascend();
-            current_index ++;
-            current_node = &current_node->m_children[current_index];
+            if  (current_node == base_node && current_index == base_node->m_children.size())
+                finished = true;
+            else
+                current_node = &current_node->m_children[current_index];
         }
     }
 }
@@ -837,7 +867,7 @@ PTreeConstIterator<T>::ascend()
 {
     if (current_node->m_children.size() == current_index && current_node != base_node)
     {
-        current_index = current_node->m_index;
+        current_index = current_node->m_index + 1;
         current_node = current_node->m_parent;
         ascend();
     }
@@ -861,6 +891,7 @@ template <class T>
 Array<int>
 PTreeConstIterator<T>::getParentID() const
 {
+    BL_ASSERT(current_node->m_parent != 0);
     return current_node->m_parent->getID();
 }
 #endif /*BL_PTREE_H*/

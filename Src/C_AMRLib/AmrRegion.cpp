@@ -54,23 +54,23 @@ AmrRegion::AmrRegion ()
 }
 
 AmrRegion::AmrRegion (Amr&            papa,
-                    int             lev,
+                    Array<int>      id,
                     const Geometry& level_geom,
                     const BoxArray& ba,
                     Real            time)
     :
     geom(level_geom),
-    grids(ba)
+    grids(ba),
+    m_id(id)
 {
-    level  = lev;
+    std::cout << "DEBUG: making new AmrRegion\n";
+    level  = m_id.size() - 1;
     master = &papa;
     if (level > 0)
     {
-        BoxArray cba = ba;
-        cba.coarsen(master->refRatio(level-1));
-        // Note that having a region finding its own parent
-        // is a bit silly, but necessary for backwards compatibility.
-        parent_region = &papa.getParent(level - 1, cba);
+        Array<int> parent_id = m_id;
+        parent_id.resize(level);
+        parent_region = &master->getRegion(parent_id);
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
         for (int i = level; i >= 0; i--)
@@ -86,6 +86,7 @@ AmrRegion::AmrRegion (Amr&            papa,
         ancestor_regions.set(0,this);
     }
 
+    std::cout << "DEBUG: made ancestors\n";
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
 
@@ -100,16 +101,18 @@ AmrRegion::AmrRegion (Amr&            papa,
 
     state.resize(desc_lst.size());
 
+    ///TODO/DEBUG: Check use of dt at some point
     for (int i = 0; i < state.size(); i++)
     {
         state[i].define(geom.Domain(),
                         grids,
                         desc_lst[i],
                         time,
-                        master->dtLevel(lev));
+                        master->dtRegion(parent_region->getID()));
     }
 
     finishConstructor();
+    std::cout << "DEBUG: finished\n";
 }
 
 void
@@ -155,6 +158,9 @@ AmrRegion::restart (Amr&          papa,
         BoxArray cba = grids;
         cba.coarsen(master->refRatio(level-1));
         parent_region = &papa.getParent(level - 1, cba);
+        m_id = parent_region->getID();
+        m_id.resize(level+1);
+        m_id[level] = master->getAmrRegions().countChildrenOfNode(parent_region->getID());
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
         for (int i = level; i >= 0; i--)
@@ -166,9 +172,13 @@ AmrRegion::restart (Amr&          papa,
     else
     {
         parent_region = this;
+        m_id.resize(1);
+        m_id[0] = 0;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
     }
+    
+    std::cout << "DEBUG: AMRREGION: My ID is: " << m_id.toString() <<"\n";
     
     state.resize(ndesc);
     for (int i = 0; i < ndesc; i++)
@@ -408,7 +418,6 @@ FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
     BL_ASSERT(ncomp >= 1);
     BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
     BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
-    std::cout << "DEBUG: initing fpi\n";
     Initialize(boxGrow,time,index,scomp,ncomp);
 }
 
@@ -438,7 +447,6 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     BL_ASSERT(ncomp >= 1);
     BL_ASSERT(AmrRegion::desc_lst[index].inRange(scomp,ncomp));
     BL_ASSERT(0 <= index && index < AmrRegion::desc_lst.size());
-    std::cout << "DEBUG: calling fph init\n";
 
     m_map          = mapper;
     m_time         = time;
@@ -451,17 +459,13 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     const int         MyProc     = ParallelDescriptor::MyProc();
     ///TODO/DEBUG: This non-reference might be a slowdown.
     PArray<AmrRegion>&  amrLevels = m_amrlevel.ancestor_regions;
-    std::cout << "DEBUG: got ancestor Regions\n";
     const AmrRegion&   topLevel   = amrLevels[m_amrlevel.level];
-    std::cout << "DEBUG: got toplevel\n";
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
-    std::cout << "DEBUG: got top domain\n";
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
     const bool        extrap     = AmrRegion::desc_lst[m_index].extrap();
     //
     // Check that the interpolaters are identical.
     //
-    std::cout << "DEBUG: got basics\n";
     BL_ASSERT(AmrRegion::desc_lst[m_index].identicalInterps(scomp,ncomp));
 
     for (int l = 0; l <= m_amrlevel.level; ++l)
@@ -486,7 +490,6 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     }
 
     Array<IntVect> pshifts(27);
-    std::cout << "DEBUG: shifty\n";
     std::vector<Box> unfilledThisLevel, crse_boxes;
 
     BoxList unfillableThisLevel(boxType), tempUnfillable(boxType);
@@ -671,7 +674,6 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
             }
         }
     }
-    std::cout << "DEBUG: did data\n";
     m_mfcd.CollectData();
 
     m_init = true;
@@ -703,7 +705,6 @@ FillPatchIterator::Initialize (int  boxGrow,
 
     FillPatchIteratorHelper* fph = 0;
     
-    std::cout << "DEBUG: Setting up fph\n";
 
     for (int i = 0, DComp = 0; i < m_range.size(); i++)
     {
@@ -730,7 +731,6 @@ FillPatchIterator::Initialize (int  boxGrow,
     //
     // Call hack to touch up fillPatched data.
     //
-    std::cout << "DEBUG: Setting bndry\n";
     m_amrlevel.set_preferred_boundary_values(m_fabs,
                                              index,
                                              scomp,
@@ -1525,11 +1525,6 @@ AmrRegion::getID() const
     return m_id;
 }
 
-void
-AmrRegion::setID(const Array<int> id)
-{
-    m_id = id;
-}
 
 std::string
 AmrRegion::getIDString() const
@@ -1542,4 +1537,10 @@ AmrRegion::getIDString() const
         convert << m_id[i];
     }
     return convert.str();
+}
+
+void 
+AmrRegion::restructure(std::list<int> structure)
+{
+    return;
 }

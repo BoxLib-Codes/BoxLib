@@ -1214,12 +1214,14 @@ FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> >& fab_arrs)
     int N = fab_arrs.size();
     BL_ASSERT(N > 0);
     //Create the new BoxArray
-    BoxList bl;
-    for (int i = 0; i < N; i++)
+    BoxList bl = fab_arrs[0].boxArray().boxList();
+    for (int i = 1; i < N; i++)
         bl.join(fab_arrs[i].boxArray().boxList());
     boxarray.define(bl);
     int nboxes = boxarray.size();
-    BL_ASSERT(boxarray.isDisjoint());
+    ///TODO/DEBUG: Improve this
+    BoxArray TBA = boxarray;
+    BL_ASSERT(TBA.enclosedCells().isDisjoint());
     // Set other data
     n_grow = fab_arrs[0].nGrow();
     n_comp = fab_arrs[0].nComp();

@@ -84,6 +84,11 @@ public:
                                 int&               ncomp);
 
     static void FlushFPICache ();
+    
+    //
+    // Restructure any special data structures owned by the simulation.
+    //
+    virtual void restructure(std::list<int> structure);
     //
     // Compute the initial time step.  This is a pure virtual function
     // and hence MUST be implemented by derived classes.
@@ -364,12 +369,7 @@ public:
     //
     Array<int> getID() const;
     std::string getIDString() const ;
-    
-    //
-    // Sets the full id for this region.
-    //
-    void setID(const Array<int> id);
-    
+
     AmrRegion* Parent();
 protected:
     //
@@ -378,7 +378,7 @@ protected:
     AmrRegion ();
 
     AmrRegion (Amr&            papa,
-              int             lev,
+              Array<int>       id,
               const Geometry& level_geom,
               const BoxArray& bl,
               Real            time);

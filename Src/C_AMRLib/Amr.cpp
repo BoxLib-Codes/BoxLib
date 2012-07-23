@@ -121,6 +121,8 @@ Amr::nCycle (int lev) const
 int
 Amr::levelSteps (int lev) const
 {
+    if (lev != 0)
+        BoxLib::Abort("DEBUG: No levelsteps apart from level 0\n");
     if (multi_region)
         BoxLib::Abort("Called getLevel on multi-region level");
     Array<int> id(lev+1);
@@ -140,6 +142,7 @@ Amr::levelCount (int lev) const
     return region_count.getData(id);
 }
 
+///TODO/DEBUG: DEPRECATED--remove once restart has been redone
 AmrRegion&  
 Amr::getParent (int lev, const BoxArray& ba)
 {
@@ -770,6 +773,7 @@ Amr::setRecordDataInfo (int i, const std::string& filename)
 void
 Amr::setDtLevel (Real dt, int lev)
 {
+    BoxLib::Abort("DEBUG: NO! BAD DOG\n");
     if (multi_region)
         BoxLib::Abort("Called getLevel on multi-region level");
     Array<int> id(lev+1);
@@ -1139,6 +1143,7 @@ Amr::initialInit (Real strt_time,
     //
     /// I Don't feel like fixing this atm. Multifluid can use it if they really
     /// don't want to use the standard computeInitialDt model.
+    std::cout << "DEBUG: found initial DT\n";
     //Real dt0   = dt_region.getRoot();
     //dt_min[0]  = dt_region.getRoot();
     //n_cycle[0] = 1;
@@ -1154,14 +1159,6 @@ Amr::initialInit (Real strt_time,
 
     if (max_level > 0)
         bldFineLevels(strt_time);
-
-
-    std::list<int> structure = amr_regions.getStructure(root_id);
-    dt_region.buildFromStructure(root_id, structure);
-    dt_reg_min.buildFromStructure(root_id, structure);
-    n_cycle.buildFromStructure(root_id, structure);
-    region_count.buildFromStructure(root_id, structure);
-    region_steps.buildFromStructure(root_id, structure);
     
     ///TODO/DEBUG: This may be a bad thing--re-calling computeInitialDt
     //
@@ -1174,20 +1171,20 @@ Amr::initialInit (Real strt_time,
                                   dt_region,
                                   stop_time);
     Array<int> id;
-    PTreeIterator<AmrRegion> prit = amr_regions.getIteratorAtRoot();
+    PTreeIterator<AmrRegion> prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
     {
         id = prit.getID();
         (*prit)->setTimeLevel(strt_time,dt_region.getData(id),dt_region.getData(id));
     }
     
-    prit = amr_regions.getIteratorAtRoot();
+    prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
         (*prit)->post_regrid(root_id,finest_level);
     //
     // Perform any special post_initialization operations.
     //
-    prit = amr_regions.getIteratorAtRoot();
+    prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
         (*prit)->post_init(stop_time);
 
@@ -1196,7 +1193,6 @@ Amr::initialInit (Real strt_time,
     {
         id = iit.getID();
         region_count.setData(id,0);
-        region_steps.setData(id,0);
     }
 
     if (ParallelDescriptor::IOProcessor())
@@ -1383,13 +1379,11 @@ Amr::restart (const std::string& filename)
        ///TODO/DEBUG: upgrade
        int lev;
        amr_regions.setData(Amr::root_id, (*levelbld)());
-       coarseRegion().setID(root_id);
        coarseRegion().restart(*this, is);
        for (lev = 1; lev <= finest_level; lev++)
        { 
            Array<int> node_id = getLevel(lev-1).getID();
            Array<int> new_id = amr_regions.addChildToNode(node_id,(*levelbld)());
-           amr_regions.getData(new_id).setID(new_id);
            amr_regions.getData(new_id).restart(*this, is);
        }
        //
@@ -1469,7 +1463,6 @@ Amr::restart (const std::string& filename)
        ///TODO/DEBUG: Upgrade
        int lev;
        amr_regions.setData(Amr::root_id, (*levelbld)());
-       coarseRegion().setID(root_id);
        coarseRegion().restart(*this, is);
        for (lev = 1; lev <= new_finest_level; lev++)
        { 
@@ -1661,6 +1654,7 @@ Amr::timeStep (AmrRegion& base_region,
                int  niter,
                Real stop_time)
 {
+    std::cout << "DEBUG: Timestepping\n";
     int level = base_region.Level();
     Array<int> base_id = base_region.getID();
     //
@@ -1692,12 +1686,11 @@ Amr::timeStep (AmrRegion& base_region,
             //
             // Construct skeleton of new level.
             //
-            AmrRegion* a = (*levelbld)(*this,0,geom[0],lev0,cumtime);
+            AmrRegion* a = (*levelbld)(*this,root_id,geom[0],lev0,cumtime);
 
             a->init(coarseRegion());
             amr_regions.clearData(root_id);
             amr_regions.setRoot( a);
-            coarseRegion().setID(root_id);
             ///TODO/DEBUG: Update parent pointers in regions.
             BL_ASSERT(false);
 
@@ -1731,9 +1724,10 @@ Amr::timeStep (AmrRegion& base_region,
         for ( ; !it.isFinished(); ++it)
         {
             //const int old_finest = finest_level;
-
+            std::cout << "DEBUG: Checking Regrid\n";
             if (okToRegrid(it.getID()))
             {
+                std::cout << "DEBUG: Regridding\n";
                 regrid(*it,time);
 
                 //
@@ -1768,12 +1762,14 @@ Amr::timeStep (AmrRegion& base_region,
                     ////}
                 //}
             }
+            std::cout << "DEBUG: Next\n";
         }
     }
     //
     // Check to see if should write plotfile.
     // This routine is here so it is done after the restart regrid.
     //
+    std::cout << "DEBUG: made it past regrid\n";
     if (plotfile_on_restart && !(restart_file.empty()) )
     {
 	plotfile_on_restart = 0;
@@ -1790,6 +1786,8 @@ Amr::timeStep (AmrRegion& base_region,
                   << level
                   << " with dt = "
                   << dt_region.getData(base_id)
+                  << " and n_cycle "
+                  << n_cycle.getData(base_id)
                   << std::endl;
     }
     
@@ -1797,8 +1795,10 @@ Amr::timeStep (AmrRegion& base_region,
     ///TODO/DEBUG: upgrade
     Real my_dt = dt_region.getData(base_id);
     
+    std::cout << "DEBUG: got dt " << my_dt << "\n";
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
 
+    
     dt_reg_min.setData(base_id, iteration == 1 ? dt_new : std::min(dt_reg_min.getData(base_id),dt_new));
 
     region_steps.setData(base_id, region_steps.getData(base_id) + 1);
@@ -1837,7 +1837,7 @@ Amr::timeStep (AmrRegion& base_region,
             if (sub_cycle)
             {
                 const int ncycle = n_cycle.getData(c_id); /// update this
-
+                std::cout << "DEBUG: NCycle: " << ncycle << " dt " << dt_region.getData(c_id) << "\n";
                 for (int i = 1; i <= ncycle; i++)
                 {
                     std::cout << "DEBUG: advancing finer\n";
@@ -1857,6 +1857,7 @@ Amr::timeStep (AmrRegion& base_region,
 void
 Amr::coarseTimeStep (Real stop_time)
 {
+    std::cout <<"DEBUG: COOAAAARRSE!\n";
     const Real run_strt = ParallelDescriptor::second() ;
     //
     // Compute new dt.
@@ -2055,14 +2056,80 @@ Amr::defBaseLevel (Real strt_time)
     //
     // Now build level 0 grids.
     //
-    amr_regions.setRoot((*levelbld)(*this,0,geom[0],lev0,strt_time));
-    coarseRegion().setID(root_id);
+    amr_regions.setRoot((*levelbld)(*this,root_id,geom[0],lev0,strt_time));
 
     lev0.clear();
     //
     // Now init level 0 grids with data.
     //
     coarseRegion().initData();
+}
+
+
+void 
+Amr::restructure(Array<int> base_region, std::list<int> structure)
+{
+    std::cout << "DEBUG: Restructuring\n";
+    // Note: This clear might have been problematic save for the fact
+    // that regrid has already evicted the children
+    amr_regions.clearChildrenOfNode(base_region); 
+    amr_regions.buildFromStructure(base_region, structure);
+    
+    n_cycle.clearChildrenOfNode(base_region);
+    n_cycle.buildFromStructure(base_region, structure);
+    TreeIterator<int> iit = n_cycle.getIteratorAtNode(base_region, -1 , Prefix);
+    for (++iit; !iit.isFinished(); ++iit)
+    {
+        if (subcycling_mode == "None")
+            (*iit) = 1;
+        else if (subcycling_mode == "Auto" || subcycling_mode == "Optimal")
+        {
+            (*iit) = MaxRefRatio(iit.getLevel()-1);
+            std::cout << "DEBUG: Set ncycle to: " << *iit << "\n";
+        }
+        else
+            BoxLib::Abort("Other subcycling modes (including manual) aren't supported by regions");
+    }
+    
+    region_count.clearChildrenOfNode(base_region);
+    region_count.buildFromStructure(base_region, structure);
+    iit = region_count.getIteratorAtNode(base_region, -1 , Prefix);
+    for (++iit; !iit.isFinished(); ++iit)
+    {
+        (*iit) = 0;
+    }
+    
+    region_steps.clearChildrenOfNode(base_region);
+    region_steps.buildFromStructure(base_region, structure);
+    iit = region_steps.getIteratorAtNode(base_region, -1 , Prefix);
+    for (++iit; !iit.isFinished(); ++iit)
+    {
+        (*iit) = 0;
+    }
+    std::cout << "DEBUG: ints done\n";
+    
+    dt_region.clearChildrenOfNode(base_region);
+    dt_region.buildFromStructure(base_region, structure);
+    Real dt_base = dt_region.getData(base_region);
+    TreeIterator<Real> rit = dt_region.getIteratorAtNode(base_region,-1 , Prefix);
+    for ( ++rit; !rit.isFinished(); ++rit)
+    {
+        *rit = dt_region.getData(rit.getParentID())/n_cycle.getData(rit.getID());
+        std::cout << "DEBUG: Changing dt in restruct " << *rit << "\n";
+    }
+    
+    dt_reg_min.clearChildrenOfNode(base_region);
+    dt_reg_min.buildFromStructure(base_region, structure);
+    dt_base = dt_reg_min.getData(base_region);
+    rit = dt_reg_min.getIteratorAtNode(base_region,-1 , Prefix);
+    for (  ++rit; !rit.isFinished(); ++rit)
+    {
+        *rit = dt_reg_min.getData(rit.getParentID())/n_cycle.getData(rit.getID());
+    }
+    
+    std::cout << "DEBUG: DT's Done\n";
+    
+    getRegion(base_region).restructure(structure);
 }
 
 void
@@ -2094,6 +2161,7 @@ Amr::regrid (AmrRegion* base_region,
     //
     PArray<AmrRegion> active_levels;
     active_levels.resize(finest_level+1);
+    ///TODO/DEBUG: Move away from get_ancestors
     for (int i = 0; i <= lbase; i++)
     {
         active_levels.set(i,&(base_region->get_ancestors()[i]));
@@ -2180,98 +2248,123 @@ Amr::regrid (AmrRegion* base_region,
         Geometry::FlushPIRMCache();
         DistributionMapping::FlushCache();
     }
-
-    ///TODO/DEBUG: Check -- I think evictions accomplish this.
-    //if (initial)
-    //{
-        //for (int lev = start; lev <= new_finest; lev++) 
-            //amr_level.clear(lev);
-    //}
     
     //
-    // Define the new grids from level start up to new_finest.
-    // 
-    ///This can possibly be accomplished by a regular tree iterator
-    for (int lev = start; lev <= new_finest; lev++) 
+    // Determine the new region hierarchy using FOF clustering
+    //
+    Tree<BoxArray> grid_tree;
+    if (start == 0)
+        grid_tree.setRoot(new_grid_places[0]);
+    else 
+        grid_tree.setRoot(base_region->boxArray());
+    std::cout << "DEBUG: PBA: " << grid_tree.getRoot() << "\n";
+    for (int lev = lbase + 1; lev <= new_finest; lev++) 
     {
-        std::cout << "\t\tDEBUG:  Looping " << lev << "/" << new_finest<<"\n";
         std::cout << "DEBUG: Clustering\n";
-        Array<BoxArray> clusters;
+        std::list<BoxArray> clusters;
         if (multi_region)
         {
             FOFCluster(0,new_grid_places[lev],clusters);
         }
         else
         {
-            clusters.resize(1);
-            clusters.set(0,new_grid_places[lev]);
+            clusters.push_back(new_grid_places[lev]);
         }
         int num_regions = clusters.size();
         std::cout << "DEBUG: Creating " << num_regions << " Regions at Level " << lev << "\n";
-        //
-        // Construct skeleton of new level.
-        //
-        for (int regi = 0; regi < num_regions; regi++)
+        for (std::list<BoxArray>::iterator clust_it = clusters.begin(); clust_it != clusters.end(); ++clust_it)
         {
-            AmrRegion* a = (*levelbld)(*this,lev,geom[lev],clusters[regi],cumtime);
-            std::cout << "DEBUG:  skeeeeleton\n";
-            if (initial)
+            BoxArray cba = *clust_it;
+            cba.coarsen(refRatio(lev-1));
+            TreeIterator<BoxArray> it = grid_tree.getIteratorAtRoot(lev-lbase-1);
+            bool added = false;
+            std::cout << "DEBUG: CBA: " << cba << "\n";
+            for ( ; !it.isFinished(); ++it)
             {
-                //
-                // We're being called on startup from bldFineLevels().
-                // NOTE: The initData function may use a fillPatch, and so needs to
-                //       be officially inserted into the hierarchy prior to the call.
-                //
-                a->initData();
+                std::cout << "DEBUG: PBA: " << *it << "\n";
+                if ((*it).contains(cba))
+                {
+                    grid_tree.addChildToNode(it.getID(), *clust_it);
+                    added = true;
+                    break;
+                }
             }
-            else if (active_levels.defined(lev)) /// TODO/DEBUG: Is this correct?
-            {
-                //
-                // Init with data from old structure then remove old structure.
-                // NOTE: The init function may use a filPatch from the old level,
-                //       which therefore needs remain in the hierarchy during the call.
-                //
-                a->init(active_levels[lev]);
-            }
-            else
-            {
-                //
-                // This is a new level of refinement within base_region,
-                //
-                a->init();
-            }
-            //
-            // Add the new region to the hierarchy
-            //
-            Array<int> new_id = amr_regions.addChildToNode(a->Parent()->getID(),a);
-            amr_regions.getData(new_id).setID(new_id);
-            if (lev > 0)
-                touched_regions.push_back(a);
+            if (!added)
+                std::cout << "DEBUG: I Failed to add a region at level " << lev << "\n";
         }
     }
     
     //
-    // Update the timestep control data structures.
+    // Restructure to reflect the new hierarchy
+    // 
+    restructure(base_id, grid_tree.getStructure());
+    
     //
-    std::list<int> structure = amr_regions.getStructure(base_id);
-    dt_region.clearChildrenOfNode(base_id);
-    dt_region.buildFromStructure(base_id,structure);
-    dt_reg_min.clearChildrenOfNode(base_id);
-    dt_reg_min.buildFromStructure(base_id,structure);
-    n_cycle.clearChildrenOfNode(base_id);
-    n_cycle.buildFromStructure(base_id,structure);
-    region_count.clearChildrenOfNode(base_id);
-    region_count.buildFromStructure(base_id,structure);
-    // Count is now 0
+    // Define the new grids
+    // 
+    ///TODO/DEBUG: This might mistreat level 0 regrids.
+    std::cout << "DEBUG: I'm touching a few nodes " << grid_tree.getStructure().size() <<"\n";
+    TreeIterator<BoxArray> it = grid_tree.getIteratorAtRoot(-1,Prefix);
+    // Only touch lbase if we're regridding level 0.
+    if (start != 0)
+        ++it;
+    for(; !it.isFinished(); ++it)
+    {
+        // Configure id's.
+        Array<int> id = it.getID();
+        Array<int> new_id = base_id;
+        new_id.resize(id.size() + lbase);
+        for (int i = 1; i < id.size(); i++)
+            new_id[lbase+i] = id[i];
+        int lev = new_id.size() - 1;
+        
+        //
+        // Construct skeleton of new level.
+        //
+        AmrRegion* a = (*levelbld)(*this,new_id,geom[lev],*it,cumtime);
+        std::cout << "DEBUG:  skeeeeleton\n";
+        if (initial)
+        {
+            //
+            // We're being called on startup from bldFineLevels().
+            // NOTE: The initData function may use a fillPatch, and so needs to
+            //       be officially inserted into the hierarchy prior to the call.
+            //
+            a->initData();
+        }
+        else if (active_levels.defined(lev)) /// TODO/DEBUG: Is this correct?
+        {
+            //
+            // Init with data from old structure then remove old structure.
+            // NOTE: The init function may use a filPatch from the old level,
+            //       which therefore needs remain in the hierarchy during the call.
+            //
+            a->init(active_levels[lev]);
+        }
+        else
+        {
+            //
+            // This is a new level of refinement within base_region,
+            //
+            a->init();
+        }
+        //
+        // Add the new region to the hierarchy
+        //
+        std::cout <<"DEBUG: Now setting data with id " << new_id.toString() << "\n";
+        amr_regions.setData(new_id,a);
+        if (lev > 0)
+            touched_regions.push_back(a);
+    }
+    
     TreeIterator<int> rit = region_count.getIteratorAtNode(base_id);
     for (; !rit.isFinished(); ++rit)
     {
         region_count.setData(rit.getID(),0);
     }
     
-    
     //
-    // Build any additional data structures at levels start and higher after grid generation.
+    // Build any additional data structures at the base region or higher after grid generation.
     //
     std::cout << "DEBUG: calling post regrid\n";
     for (RegionList::iterator it = touched_regions.begin(); it != touched_regions.end(); it++)
@@ -2325,7 +2418,7 @@ Amr::regrid (AmrRegion* base_region,
     
     ///TODO/DEBUG: Remove this stuff.
     std::cout << "DEBUG: New Structure: ";
-    amr_regions.getStructure(root_id);
+    std::list<int> structure = amr_regions.getStructure(root_id);
     for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); it++)
     {
         std::cout << *it << " ";
@@ -2841,9 +2934,18 @@ Amr::bldFineLevels (Real strt_time)
     finest_level = 0;
 
     Array<BoxArray> grids(max_level+1);
+    ////
+    //// Get initial grid placement.
+    ////
+    
     //
-    // Get initial grid placement.
-    //
+    // Setup data that will help us create the "Tree"
+    // 
+    Array<int> parent_id = root_id;
+    Array<int> new_id = parent_id;
+    std::list<int> structure;
+    structure.push_back(1);
+    structure.push_back(0);
     do
     {
         int new_finest;
@@ -2859,47 +2961,24 @@ Amr::bldFineLevels (Real strt_time)
         grid_places(finest_level,active_levels,strt_time,new_finest,grids);
         std::cout << "DEBUG: grid places called\n";
         if (new_finest <= finest_level) break;
+        finest_level = new_finest;
+        
+        new_id.resize(finest_level + 1);
+        new_id[finest_level] = 0;
         //
         // Create a new level and link with others.
-        //
-        finest_level = new_finest;
-        //
-        // Identify Clusters.
-        //
-        Array<BoxArray> clusters;
-        if (multi_region)
-        {
-            FOFCluster(0,grids[new_finest],clusters);
-        }
-        else
-        {
-            clusters.resize(1);
-            clusters.set(0,grids[new_finest]);
-        }
-        int num_regions = clusters.size();
-        std::cout << "DEBUG: Initial Creating " << num_regions << " Regions at Level " << new_finest << "\n";
-        //
         // Construct skeleton of new level.
         //
-        for (int regi = 0; regi < num_regions; regi++)
-        {
-            AmrRegion* level = (*levelbld)(*this,
-                                          new_finest,
-                                          geom[new_finest],
-                                          clusters[regi],
-                                          strt_time);
-            std::cout << "DEBUG: Parent id: ";
-            for (int ii = 0; ii < level->Parent()->getID().size(); ii++)
-                std::cout << level->Parent()->getID()[ii] << " ";
-            std::cout << "\n";
-            Array<int> new_id = amr_regions.addChildToNode(level->Parent()->getID(),level);
-            std::cout << "DEBUG: New id: ";
-            for (int ii = 0; ii < new_id.size(); ii++)
-                std::cout << new_id[ii] << " ";
-            std::cout << "\n";
-            amr_regions.getData(new_id).setID(new_id);
-            level->initData();
-        }
+        restructure(parent_id, structure);
+        AmrRegion* level = (*levelbld)(*this,
+                                      new_id,
+                                      geom[new_finest],
+                                      grids[new_finest],
+                                      strt_time);
+        amr_regions.setData(new_id, level);
+        level->initData();
+        
+        parent_id = new_id;
     }
     while (finest_level < max_level);
     //
@@ -2939,6 +3018,7 @@ Amr::bldFineLevels (Real strt_time)
 void
 Amr::initSubcycle (ParmParse * pp)
 {
+    std::cout  << "DEBUG: Initting Subcycle\n";
     sub_cycle = true;
     if (pp->contains("nosub"))
     {
@@ -2972,6 +3052,8 @@ Amr::initSubcycle (ParmParse * pp)
     }
     else if (subcycling_mode == "Manual")
     {
+        ///TODO/DEBUG: Fix
+            BoxLib::Error("Specifying Manual subcycles is disabled for regions for now");
         int cnt = pp->countval("subcycling_iterations");
 
         if (cnt == 1)
@@ -2995,8 +3077,7 @@ Amr::initSubcycle (ParmParse * pp)
             //
             // Otherwise we expect a vector of max_grid_size values.
             //
-            ///TODO/DEBUG: Fix
-            BoxLib::Error("Specifying Manual subcycles is disabled for regions for now");
+            
             //pp->getarr("subcycling_iterations",n_cycle,0,max_level+1);
             if (n_cycle.getRoot() != 1)
             {
@@ -3020,8 +3101,12 @@ Amr::initSubcycle (ParmParse * pp)
     {
         n_cycle.setRoot(1);
         TreeIterator<int> it = n_cycle.getIteratorAtRoot(-1,Prefix);
-        for (++it; !it.isFinished(); ++it)
+        std::cout << "DEBUG: nc it created\n";
+        ++it;
+        std::cout << "DEBUG: it ++'s\n";
+        for (; !it.isFinished(); ++it)
         {
+            std::cout << "DEBUG: nc lev " << it.getLevel() << "\n";
             (*it) = MaxRefRatio(it.getLevel()-1);
         } 
     }
@@ -3041,6 +3126,7 @@ Amr::initSubcycle (ParmParse * pp)
         std::string err_message = "Unrecognzied subcycling mode: " + subcycling_mode + "\n";
         BoxLib::Error(err_message.c_str());
     }
+    std::cout  << "DEBUG: Done\n";
 }
 
 void
@@ -3105,6 +3191,8 @@ Amr::okToRegrid (Array<int> region_id)
 {
     bool ok = true;
     int level = region_id.size() - 1;
+    if (level == max_level)
+        return false;
     ok = ok && amr_regions.getData(region_id).okToRegrid();
     return region_count.getData(region_id) >= regrid_int[level] && ok;
 }
@@ -3203,7 +3291,7 @@ Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
 }
 
 void
-Amr::FOFCluster (int d, BoxArray boxes, Array<BoxArray>& cluster_array )
+Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxArray>& cluster_list )
 {
     std::list<BoxList>::iterator it;
     int N = boxes.size();
@@ -3242,13 +3330,11 @@ Amr::FOFCluster (int d, BoxArray boxes, Array<BoxArray>& cluster_array )
             clusters.push_back(*new_cluster);
         }
     }
-    // This is clunky and can be improved.
-    int arri = 0;
-    cluster_array.resize(clusters.size());
-    for (std::list<BoxList>::iterator it = clusters.begin(); it != clusters.end(); ++it, ++arri)
+;
+    for (std::list<BoxList>::iterator it = clusters.begin(); it != clusters.end(); ++it)
     {
         BoxArray ba(*it);
-        cluster_array.set(arri,ba);
+        cluster_list.push_back(ba);
     }
     return; 
 }
