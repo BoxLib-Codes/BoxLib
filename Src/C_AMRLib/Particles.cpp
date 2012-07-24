@@ -527,6 +527,7 @@ ParticleBase::Where (ParticleBase& p,
     {
         base_region = *base_region_ptr;
     }
+    
     if (update)
     {
         //
@@ -534,7 +535,7 @@ ParticleBase::Where (ParticleBase& p,
         // Try to update m_cell and m_grid smartly.
         //
         BL_ASSERT(p.m_id > 0);
-        BL_ASSERT(p.m_grid >= 0 && p.m_grid < amr->boxArray(p.m_lev).size());
+        BL_ASSERT(p.m_grid >= 0 && p.m_grid < amr->boxArray(base_region, p.m_lev).size());
 
         const IntVect iv = ParticleBase::Index(p,p.m_lev,amr);
 
@@ -568,11 +569,12 @@ ParticleBase::Where (ParticleBase& p,
     PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIteratorAtNode(base_region);
     for ( ; !it.isFinished(); ++it)
     {
+        if (!it.isDefined()) // for use in initial redistributes.
+            continue;
         int lev = it.getLevel();
         const IntVect iv = ParticleBase::Index(p,lev,amr);
-
-        amr->boxArray((*it)->getID()).intersections(Box(iv,iv),isects);
-
+        BoxArray ba = amr->boxArray((it.getID()));
+        ba.intersections(Box(iv,iv),isects);
         if (!isects.empty())
         {
             BL_ASSERT(isects.size() == 1);

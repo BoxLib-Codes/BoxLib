@@ -160,7 +160,7 @@ AmrRegion::restart (Amr&          papa,
         parent_region = &papa.getParent(level - 1, cba);
         m_id = parent_region->getID();
         m_id.resize(level+1);
-        m_id[level] = master->getAmrRegions().countChildrenOfNode(parent_region->getID());
+        m_id[level] = master->getRegions().countChildrenOfNode(parent_region->getID());
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
         for (int i = level; i >= 0; i--)

@@ -2125,13 +2125,9 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     
     if (finest_level == -1)
     {
-        finest_level = m_amr->finestLevel();
+        finest_level = m_amr->getRegions().getFinestLevelAtNode(base_region);
     }
-    ///TODO/DEBUG: This may need to upgrade
-    //while (!m_amr->getAmrRegions().defined(finest_level))
-    //{
-        //finest_level--;
-    //}
+
     //
     // The size of the returned multifab is limited by lev_min and 
     // finest_level. In the following code, lev is the real level, 
@@ -4394,7 +4390,6 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
-            std::cout << "DEBUG: PIteratin \n";
             int   grid = pmap_it->first;
             PBox& pbox = pmap_it->second;
             RedistributePBox(pbox, grid, notowned, owner, lev,  where_already_called, full_where, base_region, nGrow);
@@ -4421,7 +4416,6 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     {
         int lev = -1;
         PMap& pmap = **it;
-
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
         {
             int   grid = pmap_it->first;
@@ -5301,9 +5295,7 @@ ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_st
     std::cout << "DEBUG: got iterator\n";
     for (; !pmit.isFinished(); ++pmit)
     {
-        std::cout << "DEBUG: begin\n";
         m_particles.setData(pmit.getID(),new PMap());
-        std::cout << "DEBUG: end\n";
     }
     std::cout << "DEBUG: Finished Particle Restructure\n";
 }

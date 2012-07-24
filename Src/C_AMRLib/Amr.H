@@ -248,10 +248,6 @@ public:
     //
     AmrRegion&  getParent (int lev, const BoxArray& ba);
     //
-    // PTree of all the AmrRegions.
-    //
-    PTree<AmrRegion>& getAmrRegions ();
-    //
     // Total number of cells.
     //
     long cellCount ();
@@ -341,6 +337,9 @@ public:
     //
     Array<int> whichRegion(int level, IntVect cell);
     
+    //
+    // PTree of all the AmrRegions.
+    //
     PTree<AmrRegion>& getRegions();
     const PTree<AmrRegion>& getRegions() const;
     
@@ -401,7 +400,7 @@ protected:
     // Restructures our data trees in preparation for recieving new data
     // Normally called in regrid.
     //
-    void restructure(Array<int> base_region, std::list<int> structure);
+    void restructure(Array<int> base_region, std::list<int> structure, bool do_regions = true);
     
     //
     // Define new grid locations (called from regrid) and put into new_grids.
