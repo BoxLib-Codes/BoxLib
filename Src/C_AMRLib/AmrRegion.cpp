@@ -1112,7 +1112,9 @@ AmrRegion::FillCoarsePatch (MultiFab& mf,
     const StateDescriptor&  desc    = desc_lst[index];
     const Box&              pdomain = state[index].getDomain();
     const BoxArray&         mf_BA   = mf.boxArray();
-    AmrRegion&               clev    = master->getLevel(level-1);
+    Array<int> parent_id = m_id;
+    parent_id.resize(level);
+    AmrRegion&               clev    = master->getRegion(parent_id);
 
     std::vector< std::pair<int,int> > ranges  = desc.sameInterps(scomp,ncomp);
 
@@ -1228,7 +1230,7 @@ AmrRegion::derive (const std::string& name,
             const Real* dx      = geom.CellSize();
             const int*  bcr     = rec->getBC();
             const Real* xlo     = gridloc.lo();
-            Real        dt      = master->dtLevel(level);
+            Real        dt      = master->dtRegion(m_id);
 
             rec->derFunc()(ddat,ARLIM(dlo),ARLIM(dhi),&n_der,
                            cdat,ARLIM(clo),ARLIM(chi),&n_state,
@@ -1315,7 +1317,7 @@ AmrRegion::derive (const std::string& name,
             const int*  bcr     = rec->getBC();
             const RealBox temp  = RealBox(mf[idx].box(),geom.CellSize(),geom.ProbLo());
             const Real* xlo     = temp.lo();
-            Real        dt      = master->dtLevel(level);
+            Real        dt      = master->dtRegion(m_id);
 
             rec->derFunc()(ddat,ARLIM(dlo),ARLIM(dhi),&n_der,
                            cdat,ARLIM(clo),ARLIM(chi),&n_state,

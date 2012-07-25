@@ -1500,7 +1500,8 @@ ParticleContainer<N>::InitRandom (long          icount,
 
             BL_ASSERT(p.m_lev >= 0 && p.m_lev <= m_amr->finestLevel());
 
-            const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
+            Array<int> region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
+            const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
 
             if (who == MyProc)
             {
@@ -2135,14 +2136,17 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     //
     int lev_min = base_region.size() - 1;
     mf.resize(finest_level+1-lev_min, PArrayManage);
+    
+    std::cout << "DEBUG: In assign Density " << lev_min << " to " << finest_level << "\n";
 
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int lev_index = lev - lev_min;
         mf.set(lev_index, new MultiFab(m_amr->boxArray(base_region, lev), ncomp, 1));
-
         for (MFIter mfi(mf[lev_index]); mfi.isValid(); ++mfi)
+        {
             mf[lev_index][mfi].setVal(0);
+        }
     }
 
     if (finest_level == 0)
@@ -2258,13 +2262,13 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         BoxArray ccba;
         if (lev > 0)
         {
-            ccba = m_amr->boxArray(lev);
+            ccba = m_amr->boxArray(base_region,lev);
             ccba.coarsen(m_amr->refRatio(lev-1));
         }
         BoxArray cfba;
         if (lev < finest_level)
         {
-            cfba = m_amr->boxArray(lev+1);
+            cfba = m_amr->boxArray(base_region,lev+1);
             cfba.coarsen(m_amr->refRatio(lev));
 
             BL_ASSERT(mf[lev_index].boxArray().contains(cfba));
@@ -2337,7 +2341,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         BoxArray cba;
         if (lev > 0)
         {
-            cba = m_amr->boxArray(lev);
+            cba = m_amr->boxArray(base_region,lev);
             cba.coarsen(m_amr->refRatio(lev-1));
         }
         //
@@ -2346,10 +2350,11 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         //
         const bool GridsCoverDomain = fvalid.contains(m_amr->Geom(lev).Domain());
         
+        int offset = 0;
         PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region,lev);
         for( ; !ptree_it.isFinished(); ++ptree_it)
         {
-
+            
             const PMap& pmap = **ptree_it;
             for (typename PMap::const_iterator pmap_it = pmap.begin(),
                      pmapEnd = pmap.end();
@@ -2357,7 +2362,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
                  ++pmap_it)
             {
                 const PBox& pbx = pmap_it->second;
-                FArrayBox&  fab = mf[lev_index][pmap_it->first];
+                FArrayBox&  fab = mf[lev_index][pmap_it->first + offset];
 
                 for (typename PBox::const_iterator it = pbx.begin(), End = pbx.end();
                      it != End;
@@ -2790,8 +2795,14 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
                     }
                 }
             }
+            
+            // This hack allows the pmap indices to be refer to the
+            // indices in the aggregated mf. There's probably a more 
+            // elegant solution available.
+            offset += m_amr->boxArray(ptree_it.getID()).size();
         }
     }
+    std::cout << "DEBUG: Made it past main loop\n";
     //
     // Send any needed data to other MPI processes.
     // This "may" touch ghost cells so we want to do it before
@@ -3641,10 +3652,10 @@ ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
             } else {
                 BL_ASSERT(p.m_lev == level);
             }
-            const int who = m_amr->getLevel(p.m_lev).get_new_data(0).DistributionMap()[p.m_grid];
+            const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
             if (who == MyProc)
             {
-                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+                m_particles.getData(region_id)[p.m_grid].push_back(p);
                 //
                 // Invalidate the particle so we can reclaim its space.
                 // may be unneeded
@@ -4801,6 +4812,16 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
     const int  NProcs   = ParallelDescriptor::NProcs();
     const int  IOProc   = ParallelDescriptor::IOProcessorNumber();
     const Real strttime = ParallelDescriptor::second();
+    
+    //
+    // Here we temporarily aggregate the regions to use their combined statedata
+    // This is probably overly costly.
+    //
+    Array<int> root_id(1);
+    root_id[0] = 0;
+    PArray<AmrRegion> aggregated_levels(PArrayManage);
+    m_amr->aggregate_descendants(root_id, aggregated_levels);
+    
     //
     // We store the particles in a subdirectory of "dir".
     //
@@ -4932,7 +4953,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         }
 
         ///TODO/DEBUG: Upgrade
-        const MultiFab& state = m_amr->getLevel(lev).get_new_data(0);
+        const MultiFab& state = aggregated_levels[lev].get_new_data(0);
         //
         // We eventually want to write out the file name and the offset
         // into that file into which each grid of particles is written.

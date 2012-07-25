@@ -111,11 +111,17 @@ int
 Amr::nCycle (int lev) const
 {
     if (multi_region)
-        BoxLib::Abort("Called getLevel on multi-region level");
+        BoxLib::Abort("Called nCycle on multi-region level");
     Array<int> id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     return n_cycle.getData(id);
+}
+
+int
+Amr::nCycle (Array<int> region) const
+{
+    return n_cycle.getData(region);
 }
 
 int
@@ -124,7 +130,7 @@ Amr::levelSteps (int lev) const
     if (lev != 0)
         BoxLib::Abort("DEBUG: No levelsteps apart from level 0\n");
     if (multi_region)
-        BoxLib::Abort("Called getLevel on multi-region level");
+        BoxLib::Abort("Called levelSteps on multi-region level");
     Array<int> id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
@@ -132,10 +138,16 @@ Amr::levelSteps (int lev) const
 }
 
 int
+Amr::regionSteps (Array<int> region) const
+{
+    return region_steps.getData(region);
+}
+
+int
 Amr::levelCount (int lev) const
 {
     if (multi_region)
-        BoxLib::Abort("Called getLevel on multi-region level");
+        BoxLib::Abort("Called levelCount on multi-region level");
     Array<int> id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
@@ -770,7 +782,7 @@ Amr::setDtLevel (Real dt, int lev)
 {
     BoxLib::Abort("DEBUG: NO! BAD DOG\n");
     if (multi_region)
-        BoxLib::Abort("Called getLevel on multi-region level");
+        BoxLib::Abort("Called setDtLevel on multi-region level");
     Array<int> id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
@@ -1185,6 +1197,7 @@ Amr::initialInit (Real strt_time,
     for (; !prit.isFinished(); ++prit)
         (*prit)->post_init(stop_time);
 
+    std::cout << "DEBUG: Finished post inits\n";
     TreeIterator<int> iit = region_count.getIteratorAtRoot();
     for (; !iit.isFinished(); ++iit)
     {
@@ -1222,288 +1235,290 @@ Amr::initialInit (Real strt_time,
 void
 Amr::restart (const std::string& filename)
 {
-    Real dRestartTime0 = ParallelDescriptor::second();
+    ;
+    ///TODO/DEBUG: fix
+    //Real dRestartTime0 = ParallelDescriptor::second();
 
-    VisMF::SetMFFileInStreams(mffile_nstreams);
+    //VisMF::SetMFFileInStreams(mffile_nstreams);
 
-    int i;
+    //int i;
 
-    if (verbose > 0 && ParallelDescriptor::IOProcessor())
-        std::cout << "restarting calculation from file: " << filename << std::endl;
+    //if (verbose > 0 && ParallelDescriptor::IOProcessor())
+        //std::cout << "restarting calculation from file: " << filename << std::endl;
 
-    if (record_run_info && ParallelDescriptor::IOProcessor())
-        runlog << "RESTART from file = " << filename << '\n';
-    //
-    // Init problem dependent data.
-    //
-    int init = false;
+    //if (record_run_info && ParallelDescriptor::IOProcessor())
+        //runlog << "RESTART from file = " << filename << '\n';
+    ////
+    //// Init problem dependent data.
+    ////
+    //int init = false;
 
-    readProbinFile(init);
-    //
-    // Start calculation from given restart file.
-    //
-    if (record_run_info && ParallelDescriptor::IOProcessor())
-        runlog << "RESTART from file = " << filename << '\n';
-    //
-    // Open the checkpoint header file for reading.
-    //
-    std::string File = filename;
+    //readProbinFile(init);
+    ////
+    //// Start calculation from given restart file.
+    ////
+    //if (record_run_info && ParallelDescriptor::IOProcessor())
+        //runlog << "RESTART from file = " << filename << '\n';
+    ////
+    //// Open the checkpoint header file for reading.
+    ////
+    //std::string File = filename;
 
-    File += '/';
-    File += "Header";
+    //File += '/';
+    //File += "Header";
 
-    VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
+    //VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
 
-    Array<char> fileCharPtr;
-    ParallelDescriptor::ReadAndBcastFile(File, fileCharPtr);
-    std::string fileCharPtrString(fileCharPtr.dataPtr());
-    std::istringstream is(fileCharPtrString, std::istringstream::in);
-    //
-    // Read global data.
-    //
-    // Attempt to differentiate between old and new CheckPointFiles.
-    //
-    int         spdim;
-    bool        new_checkpoint_format = false;
-    std::string first_line;
+    //Array<char> fileCharPtr;
+    //ParallelDescriptor::ReadAndBcastFile(File, fileCharPtr);
+    //std::string fileCharPtrString(fileCharPtr.dataPtr());
+    //std::istringstream is(fileCharPtrString, std::istringstream::in);
+    ////
+    //// Read global data.
+    ////
+    //// Attempt to differentiate between old and new CheckPointFiles.
+    ////
+    //int         spdim;
+    //bool        new_checkpoint_format = false;
+    //std::string first_line;
 
-    std::getline(is,first_line);
+    //std::getline(is,first_line);
 
-    if (first_line == CheckPointVersion)
-    {
-        new_checkpoint_format = true;
-        is >> spdim;
-    }
-    else
-    {
-        spdim = atoi(first_line.c_str());
-    }
+    //if (first_line == CheckPointVersion)
+    //{
+        //new_checkpoint_format = true;
+        //is >> spdim;
+    //}
+    //else
+    //{
+        //spdim = atoi(first_line.c_str());
+    //}
 
-    if (spdim != BL_SPACEDIM)
-    {
-        std::cerr << "Amr::restart(): bad spacedim = " << spdim << '\n';
-        BoxLib::Abort();
-    }
+    //if (spdim != BL_SPACEDIM)
+    //{
+        //std::cerr << "Amr::restart(): bad spacedim = " << spdim << '\n';
+        //BoxLib::Abort();
+    //}
 
-    is >> cumtime;
-    int mx_lev;
-    is >> mx_lev;
-    is >> finest_level;
+    //is >> cumtime;
+    //int mx_lev;
+    //is >> mx_lev;
+    //is >> finest_level;
 
-    Array<Box> inputs_domain(max_level+1);
-    for (int lev = 0; lev <= max_level; lev++)
-    {
-       Box bx(geom[lev].Domain().smallEnd(),geom[lev].Domain().bigEnd());
-       inputs_domain[lev] = bx;
-    }
+    //Array<Box> inputs_domain(max_level+1);
+    //for (int lev = 0; lev <= max_level; lev++)
+    //{
+       //Box bx(geom[lev].Domain().smallEnd(),geom[lev].Domain().bigEnd());
+       //inputs_domain[lev] = bx;
+    //}
 
-    if (max_level >= mx_lev) {
+    //if (max_level >= mx_lev) {
 
-       for (i = 0; i <= mx_lev; i++) is >> geom[i];
-       for (i = 0; i <  mx_lev; i++) is >> ref_ratio[i];
-       ///TODO/DEBUG: Fix when we have chk/restart
-       //for (i = 0; i <= mx_lev; i++) is >> dt_level[i];
+       //for (i = 0; i <= mx_lev; i++) is >> geom[i];
+       //for (i = 0; i <  mx_lev; i++) is >> ref_ratio[i];
+       /////TODO/DEBUG: Fix when we have chk/restart
+       ////for (i = 0; i <= mx_lev; i++) is >> dt_level[i];
 
-       if (new_checkpoint_format)
-       {
-           //for (i = 0; i <= mx_lev; i++) is >> dt_min[i];
-       }
-       else
-       {
-           ///TODO/DEBUG: Fix when we have chk/restart
-           //for (i = 0; i <= mx_lev; i++) dt_min[i] = dt_level[i];
-       }
-
-       Array<int>  n_cycle_in;
-       n_cycle_in.resize(mx_lev+1);  
-       for (i = 0; i <= mx_lev; i++) is >> n_cycle_in[i];
-       bool any_changed = false;
-
-        ///TODO/DEBUG: Fix when we have chk/restart
-       //for (i = 0; i <= mx_lev; i++) 
-           //if (n_cycle[i] != n_cycle_in[i])
-           //{
-               //any_changed = true;
-               //if (verbose > 0 && ParallelDescriptor::IOProcessor())
-                   //std::cout << "Warning: n_cycle has changed at level " << i << 
-                                //" from " << n_cycle_in[i] << " to " << n_cycle[i] << std::endl;;
-           //}
-
-       // If we change n_cycle then force a full regrid from level 0 up
-       if (max_level > 0 && any_changed)
-       {
-           region_count.setRoot(regrid_int[0]);
-           if ((verbose > 0) && ParallelDescriptor::IOProcessor())
-               std::cout << "Warning: This forces a full regrid " << std::endl;
-       }
-
-
-    ///TODO/DEBUG: Fix when we have chk/restart
-       //for (i = 0; i <= mx_lev; i++) is >> level_steps[i];
-       //for (i = 0; i <= mx_lev; i++) is >> level_count[i];
-
-        ///TODO/DEBUG: Fix when we have chk/restart
-       //
-       // Set bndry conditions.
-       //
-       //if (max_level > mx_lev)
+       //if (new_checkpoint_format)
        //{
-           //for (i = mx_lev+1; i <= max_level; i++)
-           //{
-               //dt_level[i]    = dt_level[i-1]/n_cycle[i];
-               //level_steps[i] = n_cycle[i]*level_steps[i-1];
-               //level_count[i] = 0;
-           //}
-
-           //// This is just an error check
-           //if (!sub_cycle)
-           //{
-               //for (i = 1; i <= finest_level; i++)
-               //{
-                   //if (dt_level[i] != dt_level[i-1])
-                      //BoxLib::Error("defBaseLevel: must have even number of cells");
-               //}
-           //}
+           ////for (i = 0; i <= mx_lev; i++) is >> dt_min[i];
        //}
-       
-       //if (regrid_on_restart && max_level > 0)
-           //region_count.getRoot() = regrid_int[0];
-
-       checkInput();
-       //
-       // Read levels.
-       //
-       ///TODO/DEBUG: upgrade
-       int lev;
-       amr_regions.setData(Amr::root_id, (*levelbld)());
-       coarseRegion().restart(*this, is);
-       for (lev = 1; lev <= finest_level; lev++)
-       { 
-           Array<int> node_id = getLevel(lev-1).getID();
-           Array<int> new_id = amr_regions.addChildToNode(node_id,(*levelbld)());
-           amr_regions.getData(new_id).restart(*this, is);
-       }
-       //
-       // Build any additional data structures.
-       // 
-       ///TODO/DEBUG: upgrade
-       for (lev = 0; lev <= finest_level; lev++)
-           getLevel(lev).post_restart();
-
-    } else {
-
-       if (ParallelDescriptor::IOProcessor())
-          BoxLib::Warning("Amr::restart(): max_level is lower than before");
-
-       int new_finest_level = std::min(max_level,finest_level);
-
-       finest_level = new_finest_level;
- 
-       // These are just used to hold the extra stuff we have to read in.
-       Geometry   geom_dummy;
-       //Real       real_dummy;
-       //int         int_dummy;
-       IntVect intvect_dummy;
-
-       for (i = 0          ; i <= max_level; i++) is >> geom[i];
-       for (i = max_level+1; i <= mx_lev   ; i++) is >> geom_dummy;
-
-       for (i = 0        ; i <  max_level; i++) is >> ref_ratio[i];
-       for (i = max_level; i <  mx_lev   ; i++) is >> intvect_dummy;
-
-        ///TODO/DEBUG: Fix when we have chk/restart
-       //for (i = 0          ; i <= max_level; i++) is >> dt_level[i];
-       //for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
-
-        ///TODO/DEBUG: Fix when we have chk/restart
-       if (new_checkpoint_format)
-       {
-           //for (i = 0          ; i <= max_level; i++) is >> dt_min[i];
-           //for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
-       }
-       else
-       {
-           //for (i = 0; i <= max_level; i++) dt_min[i] = dt_level[i];
-       }
-
-        ///TODO/DEBUG: Fix when we have chk/restart
-       //for (i = 0          ; i <= max_level; i++) is >> n_cycle[i];
-       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
-
-       //for (i = 0          ; i <= max_level; i++) is >> level_steps[i];
-       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
-
-       //for (i = 0          ; i <= max_level; i++) is >> level_count[i];
-       //for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
-
-       //if (regrid_on_restart && max_level > 0)
-           //region_count.getRoot() = regrid_int[0];
-
-       checkInput();
-
-
-       //int lev;
-       //for (lev = 0; lev <= new_finest_level; lev++)
+       //else
        //{
-           //RegionList* ll = new RegionList(PListManage);
-           //ll->push_back((*levelbld)());
-           //amr_level.set(lev,ll);
-           //getLevel(lev).restart(*this, is);
+           /////TODO/DEBUG: Fix when we have chk/restart
+           ////for (i = 0; i <= mx_lev; i++) dt_min[i] = dt_level[i];
+       //}
+
+       //Array<int>  n_cycle_in;
+       //n_cycle_in.resize(mx_lev+1);  
+       //for (i = 0; i <= mx_lev; i++) is >> n_cycle_in[i];
+       //bool any_changed = false;
+
+        /////TODO/DEBUG: Fix when we have chk/restart
+       ////for (i = 0; i <= mx_lev; i++) 
+           ////if (n_cycle[i] != n_cycle_in[i])
+           ////{
+               ////any_changed = true;
+               ////if (verbose > 0 && ParallelDescriptor::IOProcessor())
+                   ////std::cout << "Warning: n_cycle has changed at level " << i << 
+                                ////" from " << n_cycle_in[i] << " to " << n_cycle[i] << std::endl;;
+           ////}
+
+       //// If we change n_cycle then force a full regrid from level 0 up
+       //if (max_level > 0 && any_changed)
+       //{
+           //region_count.setRoot(regrid_int[0]);
+           //if ((verbose > 0) && ParallelDescriptor::IOProcessor())
+               //std::cout << "Warning: This forces a full regrid " << std::endl;
+       //}
+
+
+    /////TODO/DEBUG: Fix when we have chk/restart
+       ////for (i = 0; i <= mx_lev; i++) is >> level_steps[i];
+       ////for (i = 0; i <= mx_lev; i++) is >> level_count[i];
+
+        /////TODO/DEBUG: Fix when we have chk/restart
+       ////
+       //// Set bndry conditions.
+       ////
+       ////if (max_level > mx_lev)
+       ////{
+           ////for (i = mx_lev+1; i <= max_level; i++)
+           ////{
+               ////dt_level[i]    = dt_level[i-1]/n_cycle[i];
+               ////level_steps[i] = n_cycle[i]*level_steps[i-1];
+               ////level_count[i] = 0;
+           ////}
+
+           ////// This is just an error check
+           ////if (!sub_cycle)
+           ////{
+               ////for (i = 1; i <= finest_level; i++)
+               ////{
+                   ////if (dt_level[i] != dt_level[i-1])
+                      ////BoxLib::Error("defBaseLevel: must have even number of cells");
+               ////}
+           ////}
+       ////}
+       
+       ////if (regrid_on_restart && max_level > 0)
+           ////region_count.getRoot() = regrid_int[0];
+
+       //checkInput();
+       ////
+       //// Read levels.
+       ////
+       /////TODO/DEBUG: upgrade
+       //int lev;
+       //amr_regions.setData(Amr::root_id, (*levelbld)());
+       //coarseRegion().restart(*this, is);
+       //for (lev = 1; lev <= finest_level; lev++)
+       //{ 
+           //Array<int> node_id = getLevel(lev-1).getID();
+           //Array<int> new_id = amr_regions.addChildToNode(node_id,(*levelbld)());
+           //amr_regions.getData(new_id).restart(*this, is);
        //}
        ////
        //// Build any additional data structures.
+       //// 
+       /////TODO/DEBUG: upgrade
+       //for (lev = 0; lev <= finest_level; lev++)
+           //getLevel(lev).post_restart();
+
+    //} else {
+
+       //if (ParallelDescriptor::IOProcessor())
+          //BoxLib::Warning("Amr::restart(): max_level is lower than before");
+
+       //int new_finest_level = std::min(max_level,finest_level);
+
+       //finest_level = new_finest_level;
+ 
+       //// These are just used to hold the extra stuff we have to read in.
+       //Geometry   geom_dummy;
+       ////Real       real_dummy;
+       ////int         int_dummy;
+       //IntVect intvect_dummy;
+
+       //for (i = 0          ; i <= max_level; i++) is >> geom[i];
+       //for (i = max_level+1; i <= mx_lev   ; i++) is >> geom_dummy;
+
+       //for (i = 0        ; i <  max_level; i++) is >> ref_ratio[i];
+       //for (i = max_level; i <  mx_lev   ; i++) is >> intvect_dummy;
+
+        /////TODO/DEBUG: Fix when we have chk/restart
+       ////for (i = 0          ; i <= max_level; i++) is >> dt_level[i];
+       ////for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
+
+        /////TODO/DEBUG: Fix when we have chk/restart
+       //if (new_checkpoint_format)
+       //{
+           ////for (i = 0          ; i <= max_level; i++) is >> dt_min[i];
+           ////for (i = max_level+1; i <= mx_lev   ; i++) is >> real_dummy;
+       //}
+       //else
+       //{
+           ////for (i = 0; i <= max_level; i++) dt_min[i] = dt_level[i];
+       //}
+
+        /////TODO/DEBUG: Fix when we have chk/restart
+       ////for (i = 0          ; i <= max_level; i++) is >> n_cycle[i];
+       ////for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+
+       ////for (i = 0          ; i <= max_level; i++) is >> level_steps[i];
+       ////for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+
+       ////for (i = 0          ; i <= max_level; i++) is >> level_count[i];
+       ////for (i = max_level+1; i <= mx_lev   ; i++) is >> int_dummy;
+
+       ////if (regrid_on_restart && max_level > 0)
+           ////region_count.getRoot() = regrid_int[0];
+
+       //checkInput();
+
+
+       ////int lev;
+       ////for (lev = 0; lev <= new_finest_level; lev++)
+       ////{
+           ////RegionList* ll = new RegionList(PListManage);
+           ////ll->push_back((*levelbld)());
+           ////amr_level.set(lev,ll);
+           ////getLevel(lev).restart(*this, is);
+       ////}
+       //////
+       ////// Build any additional data structures.
+       //////
+       //// ^ keeping this for reference atm.
        ////
-       // ^ keeping this for reference atm.
-       //
-       // Read levels.
-       //
-       ///TODO/DEBUG: Upgrade
-       int lev;
-       amr_regions.setData(Amr::root_id, (*levelbld)());
-       coarseRegion().restart(*this, is);
-       for (lev = 1; lev <= new_finest_level; lev++)
-       { 
-           Array<int> node_id = getLevel(lev-1).getID();
-           amr_regions.addChildToNode(node_id,(*levelbld)());
-           getLevel(lev).restart(*this, is);
-       }
-       for (lev = 0; lev <= new_finest_level; lev++)
-           getLevel(lev).post_restart();
-    }
+       //// Read levels.
+       ////
+       /////TODO/DEBUG: Upgrade
+       //int lev;
+       //amr_regions.setData(Amr::root_id, (*levelbld)());
+       //coarseRegion().restart(*this, is);
+       //for (lev = 1; lev <= new_finest_level; lev++)
+       //{ 
+           //Array<int> node_id = getLevel(lev-1).getID();
+           //amr_regions.addChildToNode(node_id,(*levelbld)());
+           //getLevel(lev).restart(*this, is);
+       //}
+       //for (lev = 0; lev <= new_finest_level; lev++)
+           //getLevel(lev).post_restart();
+    //}
 
-    for (int lev = 0; lev <= finest_level; lev++)
-    {
-       Box restart_domain(geom[lev].Domain());
-       if (! (inputs_domain[lev] == restart_domain) )
-       {
-          if (ParallelDescriptor::IOProcessor())
-          {
-             std::cout << "Problem at level " << lev << '\n';
-             std::cout << "Domain according to     inputs file is " <<  inputs_domain[lev] << '\n';
-             std::cout << "Domain according to checkpoint file is " << restart_domain      << '\n';
-             std::cout << "Amr::restart() failed -- box from inputs file does not equal box from restart file" << std::endl;
-          }
-          BoxLib::Abort();
-       }
-    }
+    //for (int lev = 0; lev <= finest_level; lev++)
+    //{
+       //Box restart_domain(geom[lev].Domain());
+       //if (! (inputs_domain[lev] == restart_domain) )
+       //{
+          //if (ParallelDescriptor::IOProcessor())
+          //{
+             //std::cout << "Problem at level " << lev << '\n';
+             //std::cout << "Domain according to     inputs file is " <<  inputs_domain[lev] << '\n';
+             //std::cout << "Domain according to checkpoint file is " << restart_domain      << '\n';
+             //std::cout << "Amr::restart() failed -- box from inputs file does not equal box from restart file" << std::endl;
+          //}
+          //BoxLib::Abort();
+       //}
+    //}
 
-#ifdef USE_STATIONDATA
-    ///TODO/DEBUG: Upgrade
-    //station.init(amr_level, finestLevel());
-    //station.findGrid(amr_level,geom);
-#endif
+//#ifdef USE_STATIONDATA
+    /////TODO/DEBUG: Upgrade
+    ////station.init(amr_level, finestLevel());
+    ////station.findGrid(amr_level,geom);
+//#endif
 
-    if (verbose > 0)
-    {
-        Real dRestartTime = ParallelDescriptor::second() - dRestartTime0;
+    //if (verbose > 0)
+    //{
+        //Real dRestartTime = ParallelDescriptor::second() - dRestartTime0;
 
-        ParallelDescriptor::ReduceRealMax(dRestartTime,ParallelDescriptor::IOProcessorNumber());
+        //ParallelDescriptor::ReduceRealMax(dRestartTime,ParallelDescriptor::IOProcessorNumber());
 
-        if (ParallelDescriptor::IOProcessor())
-        {
-            std::cout << "Restart time = " << dRestartTime << " seconds." << '\n';
-        }
-    }
+        //if (ParallelDescriptor::IOProcessor())
+        //{
+            //std::cout << "Restart time = " << dRestartTime << " seconds." << '\n';
+        //}
+    //}
 }
 
 void
@@ -1860,7 +1875,7 @@ Amr::coarseTimeStep (Real stop_time)
     // Compute new dt.
     //
     
-    if (levelSteps(0) > 0)
+    if (regionSteps(root_id) > 0)
     {
         int post_regrid_flag = 0;
         coarseRegion().computeNewDt(finest_level,
@@ -2154,7 +2169,7 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
-    AmrRegion* base_region = &getLevel(lbase);
+    AmrRegion* base_region = &coarseRegion();
     regrid(base_region, time, initial);
 }
 
@@ -2346,6 +2361,9 @@ Amr::regrid (AmrRegion* base_region,
             // NOTE: The initData function may use a fillPatch, and so needs to
             //       be officially inserted into the hierarchy prior to the call.
             //
+            Array<int> parent_id = new_id;
+            parent_id.resize(parent_id.size()-1);
+            amr_regions.addChildToNode(parent_id,a);
             a->initData();
         }
         else if (active_levels.defined(lev)) /// TODO/DEBUG: Is this correct?
@@ -2367,9 +2385,12 @@ Amr::regrid (AmrRegion* base_region,
         //
         // Add the new region to the hierarchy
         //
+        if (!initial)
+        {
         Array<int> parent_id = new_id;
         parent_id.resize(parent_id.size()-1);
         amr_regions.addChildToNode(parent_id,a);
+        }
         if (lev > 0)
             touched_regions.push_back(a);
     }
@@ -2446,8 +2467,7 @@ Amr::printGridInfo (std::ostream& os,
         long                      ncells  = cellCount(lev);
         double                    ntot    = geom[lev].Domain().d_numPts();
         Real                      frac    = 100.0*(Real(ncells) / ntot);
-        ///TODO/DEBUG: upgrade
-        const DistributionMapping& map    = getLevel(lev).get_new_data(0).DistributionMap();
+        ///TODO/DEBUG: upgrade -- this should accurately give levels, but not regions
 
         os << "  Level "
            << lev
@@ -2461,16 +2481,22 @@ Amr::printGridInfo (std::ostream& os,
            << '\n';
 
 
-        for (int k = 0; k < numgrid; k++)
+        PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+        for ( ; !it.isFinished(); ++it)
         {
-            const Box& b = bs[k];
+            const BoxArray& ba = boxArray(it.getID());
+            const DistributionMapping& map = getRegion(it.getID()).get_new_data(0).DistributionMap();
+            for (int k = 0; k < ba.size(); k++)
+            {
+                const Box& b = ba[k];
 
-            os << ' ' << lev << ": " << b << "   ";
-                
-            for (int i = 0; i < BL_SPACEDIM; i++)
-                os << b.length(i) << ' ';
+                os << ' ' << lev << ": " << b << "   ";
+                    
+                for (int i = 0; i < BL_SPACEDIM; i++)
+                    os << b.length(i) << ' ';
 
-            os << ":: " << map[k] << '\n';
+                os << ":: " << map[k] << '\n';
+            }
         }
     }
 

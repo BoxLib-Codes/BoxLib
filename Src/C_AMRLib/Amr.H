@@ -112,6 +112,10 @@ public:
     //
     int nCycle (int lev) const;
     //
+    // Number of subcycled time steps.
+    //
+    int nCycle (Array<int> region) const;
+    //
     // Refinement ratio.
     //
     IntVect refRatio (int coarse_level) const;
@@ -127,6 +131,10 @@ public:
     // Number of time steps at specified level.
     //
     int levelSteps (int lev) const;
+    //
+    // Number of time steps at specified region.
+    //
+    int regionSteps (Array<int> region) const;
     //
     // Which step are we at for the specified level?
     //
@@ -455,7 +463,7 @@ protected:
     Tree<Real>       dt_region;     // Timestep for this region.
     //Tree<int>        level_steps;  // Number of time steps at this level.
     //Tree<int>        level_count;
-    ///region steps is unreliable and deprecated right now (except for the root entry);
+    ///region steps is unreliable right now--I'm not sure what use it is
     Tree<int>        region_steps;  // Number of time steps at this level.
     Tree<int>        region_count;
     Tree<int>        n_cycle;
@@ -472,7 +480,7 @@ protected:
     int              last_checkpoint; // Step number of previous checkpoint.
     int              check_int;       // How often checkpoint (# time steps).
     Real             check_per;       // How often checkpoint (units of time).
-    std::string          check_file_root; // Root name of checkpoint file.
+    std::string      check_file_root; // Root name of checkpoint file.
     int              last_plotfile;   // Step number of previous plotfile.
     int              plot_int;        // How often plotfile (# of time steps)
     Real             plot_per;        // How often plotfile (in units of time)

@@ -154,6 +154,8 @@ public:
     // Returns the number of nodes in the tree
     //
     int numElements() const;
+    
+    bool isDefined(Array<int> node_id) const;
 protected:
     struct Node
     {
@@ -565,6 +567,12 @@ PTree<T>::numElements() const
     return cnt;
 }
 
+template <class T>
+bool
+PTree<T>::isDefined(Array<int> node_id) const
+{
+    return getNode(node_id)->m_data != 0;
+}
 ////////////////////////// Begin Node Methods ///////////////////////////
 template <class T>
 Array<int>

@@ -401,7 +401,7 @@ protected:
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
     Array<int>            m_id;         // The node region_id specifying the region's id 
-                                        // relative to its parent
+                                        // relative to its parents
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.
 #endif
@@ -560,7 +560,7 @@ inline
 int
 AmrRegion::nStep () const
 {
-    return master->levelSteps(level);
+    return master->regionSteps(m_id);
 }
 
 inline
