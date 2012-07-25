@@ -2137,8 +2137,6 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     int lev_min = base_region.size() - 1;
     mf.resize(finest_level+1-lev_min, PArrayManage);
     
-    std::cout << "DEBUG: In assign Density " << lev_min << " to " << finest_level << "\n";
-
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int lev_index = lev - lev_min;
@@ -2802,7 +2800,6 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
             offset += m_amr->boxArray(ptree_it.getID()).size();
         }
     }
-    std::cout << "DEBUG: Made it past main loop\n";
     //
     // Send any needed data to other MPI processes.
     // This "may" touch ghost cells so we want to do it before
@@ -4396,7 +4393,6 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         int lev = ptree_it.getLevel();
-        std::cout << "DEBUG: Particle Redistribute loop " << lev << "\n";
         PMap& pmap = **ptree_it;
 
         for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
@@ -4415,13 +4411,10 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             else
                 ++pmap_it;
         }
-        std::cout << "DEBUG: Finishing loop " << lev << "\n";
     }
-    
     //
     // Also redistribute all particles orphaned by structure changes.
     //
-    std::cout << "DEBUG: Redistributing Orphans\n";
     typename PList<PMap>::iterator it = orphan_particles.begin();
     for ( ; it != orphan_particles.end(); ++it)
     {
@@ -4435,7 +4428,6 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
             RedistributePBox(pbox, grid, notowned, owner, lev, false, false, base_region, 0);
         }
     }
-    std::cout << "DEBUG: Orphans done\n";
     orphan_particles.clear();
 
     const int NProcs = ParallelDescriptor::NProcs();
@@ -5302,23 +5294,17 @@ template <int N>
 void
 ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_structure)
 {
-    std::cout << "DEBUG: Calling Particle Restructure!\n";
     ///TODO/DEBUG: Figure out an assert to add here so that we don't kill innocent orphans.
     //There should probably be some asserts here.
     //BL_ASSERT(orphan_particles.empty());
     m_particles.extractChildrenOfNode(base_region, orphan_particles);
     m_particles.buildFromStructure(base_region, new_structure);
-    std::cout << "DEBUG: Structure size = " <<new_structure.size() <<"\n";
-    std::cout << "DEBUG: kiddies = " <<m_particles.countChildrenOfNode(base_region) <<"\n";
-    std::cout << "DEBUG: built\n";
     PTreeIterator<PMap> pmit = m_particles.getIteratorAtNode(base_region, -1, Prefix);
     ++pmit;
-    std::cout << "DEBUG: got iterator\n";
     for (; !pmit.isFinished(); ++pmit)
     {
         m_particles.setData(pmit.getID(),new PMap());
     }
-    std::cout << "DEBUG: Finished Particle Restructure\n";
 }
 
 template <int N>

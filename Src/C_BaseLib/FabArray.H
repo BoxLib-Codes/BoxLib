@@ -1219,7 +1219,7 @@ FabArray<FAB>::mergeDefine (PArray<FabArray<FAB> >& fab_arrs)
         bl.join(fab_arrs[i].boxArray().boxList());
     boxarray.define(bl);
     int nboxes = boxarray.size();
-    ///TODO/DEBUG: Improve this
+    // make sure that the cells are all non-overlapping
     BoxArray TBA = boxarray;
     BL_ASSERT(TBA.enclosedCells().isDisjoint());
     // Set other data

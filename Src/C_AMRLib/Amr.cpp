@@ -127,8 +127,6 @@ Amr::nCycle (Array<int> region) const
 int
 Amr::levelSteps (int lev) const
 {
-    if (lev != 0)
-        BoxLib::Abort("DEBUG: No levelsteps apart from level 0\n");
     if (multi_region)
         BoxLib::Abort("Called levelSteps on multi-region level");
     Array<int> id(lev+1);
@@ -780,7 +778,6 @@ Amr::setRecordDataInfo (int i, const std::string& filename)
 void
 Amr::setDtLevel (Real dt, int lev)
 {
-    BoxLib::Abort("DEBUG: NO! BAD DOG\n");
     if (multi_region)
         BoxLib::Abort("Called setDtLevel on multi-region level");
     Array<int> id(lev+1);
@@ -1150,7 +1147,6 @@ Amr::initialInit (Real strt_time,
     //
     /// I Don't feel like fixing this atm. Multifluid can use it if they really
     /// don't want to use the standard computeInitialDt model.
-    std::cout << "DEBUG: found initial DT\n";
     //Real dt0   = dt_region.getRoot();
     //dt_min[0]  = dt_region.getRoot();
     //n_cycle[0] = 1;
@@ -1185,19 +1181,16 @@ Amr::initialInit (Real strt_time,
         (*prit)->setTimeLevel(strt_time,dt_region.getData(id),dt_region.getData(id));
     }
     
-    std::cout << "DEBUG: initial post-regrids\n";
     prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
         (*prit)->post_regrid(root_id,finest_level);
     //
     // Perform any special post_initialization operations.
     //
-    std::cout << "DEBUG: initial post-inits\n";
     prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
         (*prit)->post_init(stop_time);
 
-    std::cout << "DEBUG: Finished post inits\n";
     TreeIterator<int> iit = region_count.getIteratorAtRoot();
     for (; !iit.isFinished(); ++iit)
     {
@@ -1666,7 +1659,6 @@ Amr::timeStep (AmrRegion& base_region,
                int  niter,
                Real stop_time)
 {
-    std::cout << "DEBUG: Timestepping\n";
     int level = base_region.Level();
     Array<int> base_id = base_region.getID();
     //
@@ -1736,10 +1728,8 @@ Amr::timeStep (AmrRegion& base_region,
         for ( ; !it.isFinished(); ++it)
         {
             //const int old_finest = finest_level;
-            std::cout << "DEBUG: Checking Regrid\n";
             if (okToRegrid(it.getID()))
             {
-                std::cout << "DEBUG: Regridding\n";
                 regrid(*it,time);
 
                 //
@@ -1774,14 +1764,12 @@ Amr::timeStep (AmrRegion& base_region,
                     ////}
                 //}
             }
-            std::cout << "DEBUG: Next\n";
         }
     }
     //
     // Check to see if should write plotfile.
     // This routine is here so it is done after the restart regrid.
     //
-    std::cout << "DEBUG: made it past regrid\n";
     if (plotfile_on_restart && !(restart_file.empty()) )
     {
 	plotfile_on_restart = 0;
@@ -1807,7 +1795,6 @@ Amr::timeStep (AmrRegion& base_region,
     ///TODO/DEBUG: upgrade
     Real my_dt = dt_region.getData(base_id);
     
-    std::cout << "DEBUG: got dt " << my_dt << "\n";
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
 
     
@@ -1841,18 +1828,14 @@ Amr::timeStep (AmrRegion& base_region,
     {
         RegionList children;
         amr_regions.getChildrenOfNode(base_region.getID(), children);
-        std::cout << "DEBUG: Got Children\n";
         for (RegionList::iterator child = children.begin(); child != children.end(); ++child)
         {
             Array<int> c_id = (*child)->getID();
-            std::cout << "DEBUG: CHILD " << (*child)->getIDString() << "\n";
             if (sub_cycle)
             {
                 const int ncycle = n_cycle.getData(c_id); /// update this
-                std::cout << "DEBUG: NCycle: " << ncycle << " dt " << dt_region.getData(c_id) << "\n";
                 for (int i = 1; i <= ncycle; i++)
                 {
-                    std::cout << "DEBUG: advancing finer\n";
                     timeStep(**child,time+(i-1)*dt_region.getData(c_id),i,ncycle,stop_time);
                 }
             }
@@ -1869,7 +1852,6 @@ Amr::timeStep (AmrRegion& base_region,
 void
 Amr::coarseTimeStep (Real stop_time)
 {
-    std::cout <<"DEBUG: COOAAAARRSE!\n";
     const Real run_strt = ParallelDescriptor::second() ;
     //
     // Compute new dt.
@@ -2081,14 +2063,6 @@ Amr::defBaseLevel (Real strt_time)
 void 
 Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regions)
 {
-    std::cout << "DEBUG: Restructuring\n";
-    std::cout << "DEBUG: New Structure: ";
-    for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); it++)
-    {
-        std::cout << *it << " ";
-    }
-    std::cout << "\n";
-    
     // Note: This clear might have been problematic save for the fact
     // that regrid has already evicted the children
     if (do_regions)
@@ -2099,7 +2073,6 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     
     n_cycle.clearChildrenOfNode(base_region);
     n_cycle.buildFromStructure(base_region, structure);
-    std::cout << "DEBUG: nc Structure: ";
     structure = n_cycle.getStructure(base_region);
     for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); it++)
     {
@@ -2109,19 +2082,15 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     TreeIterator<int> iit = n_cycle.getIteratorAtNode(base_region, -1 , Prefix);
     for (++iit; !iit.isFinished(); ++iit)
     {
-        std::cout << "DEBUG: Iteratin--my id is " <<iit.getID().toString() << "\n";
         if (subcycling_mode == "None")
             (*iit) = 1;
         else if (subcycling_mode == "Auto" || subcycling_mode == "Optimal")
         {
-            std::cout << "DEBUG: grabbin from level " << iit.getLevel() - 1 << "\n";
             (*iit) = MaxRefRatio(iit.getLevel()-1);
-            std::cout << "DEBUG: Set ncycle to: " << *iit << "\n";
         }
         else
             BoxLib::Abort("Other subcycling modes (including manual) aren't supported by regions");
     }
-    std::cout << "DEBUG: finished nc\n";
     
     region_count.clearChildrenOfNode(base_region);
     region_count.buildFromStructure(base_region, structure);
@@ -2138,7 +2107,6 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     {
         (*iit) = 0;
     }
-    std::cout << "DEBUG: ints done\n";
     
     dt_region.clearChildrenOfNode(base_region);
     dt_region.buildFromStructure(base_region, structure);
@@ -2147,7 +2115,6 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     for ( ++rit; !rit.isFinished(); ++rit)
     {
         *rit = dt_region.getData(rit.getParentID())/n_cycle.getData(rit.getID());
-        std::cout << "DEBUG: Changing dt in restruct " << *rit << "\n";
     }
     
     dt_reg_min.clearChildrenOfNode(base_region);
@@ -2158,8 +2125,6 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     {
         *rit = dt_reg_min.getData(rit.getParentID())/n_cycle.getData(rit.getID());
     }
-    
-    std::cout << "DEBUG: DT's Done\n";
     
     getRegion(base_region).restructure(structure);
 }
@@ -2178,7 +2143,6 @@ Amr::regrid (AmrRegion* base_region,
              Real time,
              bool initial)
 {
-    std::cout << "\tDEBUG: Regridding\n";
     int lbase = base_region->Level();
     const Array<int> base_id  = base_region->getID();
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
@@ -2186,7 +2150,6 @@ Amr::regrid (AmrRegion* base_region,
 
     if (record_run_info && ParallelDescriptor::IOProcessor())
         runlog << "REGRID: at level lbase = " << lbase << '\n';
-    std::cout << "\tDEBUG: Regridding at lbase = " << lbase << "\n";
 
     // This list tracks all regions that need to call post_regrid.
     RegionList touched_regions;
@@ -2200,20 +2163,15 @@ Amr::regrid (AmrRegion* base_region,
     {
         active_levels.set(i,&(base_region->get_ancestors()[i]));
         touched_regions.push_back(&(base_region->get_ancestors()[i]));
-        std::cout << "DEBUG: Active levels " << i << " has grids " << active_levels[i].numGrids() << "\n";
     }
-    std::cout << "DEBUG: computing Descendants\n";
     PArray<AmrRegion> descendants(PArrayManage);
     aggregate_descendants(base_id, descendants);
-    std::cout << "DEBUG: Descendants aggregated\n";
     for (int i = lbase+1; i <= finest_level; i++)
     {
         active_levels.set(i,&descendants[i-lbase]);
         active_levels[i].set_ancestors(active_levels);
-        std::cout << "DEBUG: Active levels " << i << " has grids " << active_levels[i].numGrids() << "\n";
     }
 
-    std::cout << "DEBUG: Regridding lbase " << lbase << " to finest " << finest_level <<"\n";
     
     //
     // Compute positions of new grids.
@@ -2223,7 +2181,6 @@ Amr::regrid (AmrRegion* base_region,
     
     if (lbase <= std::min(finest_level,max_level-1))
       grid_places(lbase,active_levels,time,new_finest, new_grid_places);
-    std::cout << "DEBUG: Called grid places\n";
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != coarseRegion().boxArray()) && (!initial);
     const int start = regrid_level_zero ? 0 : lbase+1;
@@ -2255,8 +2212,6 @@ Amr::regrid (AmrRegion* base_region,
     // Note that evictees is doubly managed so that it will delete
     // all the necessary Regions.
     //
-    std::cout << "DEBUG: Creating evictees\n";
-    std::cout << "DEBUG: " << start << " " << finest_level << "\n";
     RegionList evictees(PListManage);
     amr_regions.extractChildrenOfNode(base_region->getID(), evictees);
     if (regrid_level_zero)
@@ -2267,10 +2222,8 @@ Amr::regrid (AmrRegion* base_region,
     //
     // Reclaim old-time grid space for all remain levels > lbase.
     //
-    std::cout << "DEBUG: Clearing old evictees\n";
     for (RegionList::iterator it = evictees.begin(); it != evictees.end(); it++)
             (*it)->removeOldData();
-    std::cout << "DEBUG: evictees old-cleared\n";
 
     ///TODO/DEBUG: check this logic.
     finest_level = new_finest;
@@ -2293,7 +2246,6 @@ Amr::regrid (AmrRegion* base_region,
         grid_tree.setRoot(base_region->boxArray());
     for (int lev = lbase + 1; lev <= new_finest; lev++) 
     {
-        std::cout << "DEBUG: Clustering\n";
         std::list<BoxArray> clusters;
         if (multi_region)
         {
@@ -2304,7 +2256,7 @@ Amr::regrid (AmrRegion* base_region,
             clusters.push_back(new_grid_places[lev]);
         }
         int num_regions = clusters.size();
-        std::cout << "DEBUG: Creating " << num_regions << " Regions at Level " << lev << "\n";
+        std::cout << "Creating " << num_regions << " Regions at Level " << lev << "\n";
         for (std::list<BoxArray>::iterator clust_it = clusters.begin(); clust_it != clusters.end(); ++clust_it)
         {
             BoxArray cba = *clust_it;
@@ -2321,7 +2273,7 @@ Amr::regrid (AmrRegion* base_region,
                 }
             }
             if (!added)
-                std::cout << "DEBUG: I Failed to add a region at level " << lev << "\n";
+                BoxLib::Abort("Failed to find parent for new region");
         }
     }
     
@@ -2333,8 +2285,6 @@ Amr::regrid (AmrRegion* base_region,
     //
     // Define the new grids
     // 
-    ///TODO/DEBUG: This might mistreat level 0 regrids.
-    std::cout << "DEBUG: I'm touching a few nodes " << grid_tree.getStructure().size() <<"\n";
     TreeIterator<BoxArray> it = grid_tree.getIteratorAtRoot(-1,Prefix);
     // Only touch lbase if we're regridding level 0.
     if (start != 0)
@@ -2353,7 +2303,6 @@ Amr::regrid (AmrRegion* base_region,
         // Construct skeleton of new level.
         //
         AmrRegion* a = (*levelbld)(*this,new_id,geom[lev],*it,cumtime);
-        std::cout << "DEBUG:  skeeeeleton\n";
         if (initial)
         {
             //
@@ -2404,7 +2353,6 @@ Amr::regrid (AmrRegion* base_region,
     //
     // Build any additional data structures at the base region or higher after grid generation.
     //
-    std::cout << "DEBUG: calling post regrid\n";
     for (RegionList::iterator it = touched_regions.begin(); it != touched_regions.end(); it++)
         (*it)->post_regrid(base_id,new_finest);
 
@@ -2415,7 +2363,6 @@ Amr::regrid (AmrRegion* base_region,
     //
     // Report creation of new grids.
     //
-    std::cout << "DEBUG: finalizing\n";
     if (record_run_info && ParallelDescriptor::IOProcessor())
     {
         printGridInfo(runlog,start,finest_level);
@@ -2615,7 +2562,6 @@ Amr::grid_places (int               lbase,
 
         new_grids[0] = lev0;
     }
-    ///TODO/DEBUG: We'll need a fixed grids syntax for regions. - Probably
     if (!grids_file.empty())
     {
 #define STRIP while( is.get() != '\n' )
@@ -2983,8 +2929,6 @@ Amr::bldFineLevels (Real strt_time)
     do
     {
         int new_finest;
-        ///TODO/DEBUG: Evolve this array.
-        std::cout << "DEBUG: Building fine levels\n";
         PArray<AmrRegion> active_levels;
         Array<int> id;
         active_levels.resize(finest_level+1);
@@ -2994,9 +2938,7 @@ Amr::bldFineLevels (Real strt_time)
             id[i] = 0;
             active_levels.set(i,&getRegion(id));
         }
-        std::cout << "DEBUG: calling grid_places\n";
         grid_places(finest_level,active_levels,strt_time,new_finest,grids);
-        std::cout << "DEBUG: grid places called\n";
         if (new_finest <= finest_level) break;
         finest_level = new_finest;
         
@@ -3029,7 +2971,6 @@ Amr::bldFineLevels (Real strt_time)
 
 	int count = 0;
 
-    std::cout << "DEBUG: BLD FINE is regridding\n";
 	do
 	  {
 	    for (int i = 0; i <= finest_level; i++)
@@ -3037,7 +2978,6 @@ Amr::bldFineLevels (Real strt_time)
 
 	    regrid(&coarseRegion(),strt_time,true);
         
-        std::cout << "DEBUG: REGRIDDED\n";
 	    grids_the_same = true;
 
         //Note: This only tracks whether the overall grid 
@@ -3057,7 +2997,6 @@ Amr::bldFineLevels (Real strt_time)
 void
 Amr::initSubcycle (ParmParse * pp)
 {
-    std::cout  << "DEBUG: Initting Subcycle\n";
     sub_cycle = true;
     if (pp->contains("nosub"))
     {
@@ -3140,12 +3079,9 @@ Amr::initSubcycle (ParmParse * pp)
     {
         n_cycle.setRoot(1);
         TreeIterator<int> it = n_cycle.getIteratorAtRoot(-1,Prefix);
-        std::cout << "DEBUG: nc it created\n";
         ++it;
-        std::cout << "DEBUG: it ++'s\n";
         for (; !it.isFinished(); ++it)
         {
-            std::cout << "DEBUG: nc lev " << it.getLevel() << "\n";
             (*it) = MaxRefRatio(it.getLevel()-1);
         } 
     }
@@ -3165,7 +3101,6 @@ Amr::initSubcycle (ParmParse * pp)
         std::string err_message = "Unrecognzied subcycling mode: " + subcycling_mode + "\n";
         BoxLib::Error(err_message.c_str());
     }
-    std::cout  << "DEBUG: Done\n";
 }
 
 void
@@ -3391,7 +3326,6 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
     int num_levels = finest_level - base_level + 1;
     // Initialize the lists of descendants
     PArray<RegionList> descendant_list(PArrayManage);
-    std::cout << "DEBUG: initing\n";
     descendant_list.resize(num_levels);
     for (int i = 0; i < num_levels; i++)
     {
@@ -3399,19 +3333,16 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
         descendant_list.set(i,rl);
     }
     // Fill the lists
-    std::cout << "DEBUG: Listing\n";
     int max_level = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(id);
     for ( ; !it.isFinished(); ++it)
     {
         int cur_level = (*it)->Level();
-        std::cout << "DEBUG: level: " <<cur_level <<"\n";
         max_level = std::max(max_level, cur_level);
         descendant_list[cur_level- base_level].push_back(*it);
     }
     // Create Aggregates
     BL_ASSERT(max_level <= finest_level);
-    std::cout << "DEBUG: Aggregating\n";
     aggregates.resize(max_level - base_level + 1);
     for (int i = 0; i < max_level - base_level + 1; i++)
     {

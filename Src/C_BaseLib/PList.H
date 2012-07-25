@@ -162,12 +162,10 @@ PList<T>::remove (T* victim)
             if (managed)
                 delete (victim);
             std::list<T*>::erase(it);
-            std::cout << "DEBUG: Successful PList Remove\n";
             return;
         }
         ++it;
     }
-    std::cout << "\nDEBUG: FAILED PList Remove\n\n";
 }
 
 template<class T>
@@ -180,7 +178,6 @@ PList<T>::risky_remove (T* victim)
         if ((*it) == victim)
         {
             std::list<T*>::erase(it);
-            std::cout << "DEBUG: Successful PList Risky-Remove\n";
             return;
         }
         else
@@ -188,7 +185,6 @@ PList<T>::risky_remove (T* victim)
             ++it;
         }
     }
-    std::cout << "\nDEBUG: FAILED PList Risky-Remove\n\n";
 }
 
 

@@ -592,7 +592,6 @@ TreeIterator<T>::operator ++()
         else
         {
             ascend();
-            //std::cout << "DEBUG: Ascended " << current_index << " and " << current_node->m_id.toString() <<" \n";
             if  (current_node == base_node && current_index == base_node->m_children.size())
             {
                 finished = true;

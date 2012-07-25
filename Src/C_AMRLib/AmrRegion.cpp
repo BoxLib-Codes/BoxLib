@@ -63,7 +63,6 @@ AmrRegion::AmrRegion (Amr&            papa,
     grids(ba),
     m_id(id)
 {
-    std::cout << "DEBUG: making new AmrRegion\n";
     level  = m_id.size() - 1;
     master = &papa;
     if (level > 0)
@@ -86,7 +85,6 @@ AmrRegion::AmrRegion (Amr&            papa,
         ancestor_regions.set(0,this);
     }
 
-    std::cout << "DEBUG: made ancestors\n";
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
 
@@ -112,7 +110,6 @@ AmrRegion::AmrRegion (Amr&            papa,
     }
 
     finishConstructor();
-    std::cout << "DEBUG: finished\n";
 }
 
 void
@@ -124,7 +121,6 @@ AmrRegion::restart (Amr&          papa,
 
     is >> level;
     is >> geom;
-    std::cout << "DEBUG: Region Restart\n";
 
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
@@ -177,8 +173,6 @@ AmrRegion::restart (Amr&          papa,
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
     }
-    
-    std::cout << "DEBUG: AMRREGION: My ID is: " << m_id.toString() <<"\n";
     
     state.resize(ndesc);
     for (int i = 0; i < ndesc; i++)
@@ -1467,9 +1461,7 @@ AmrRegion::estimateWork ()
 void
 AmrRegion::define(RegionList& regions, Amr* papa)
 {
-    std::cout << "DEBUG: Calling AmrRegion define\n";
     int N = regions.size();
-    std::cout << "DEBUG: Got size\n";
     BL_ASSERT(N > 0);
     //
     // We could add consistency checks for all regions
@@ -1482,7 +1474,6 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     // Resize ancestor array. This array is not set in define, it must
     // be initialized elsewhere TODO/DEBUG: should this change?
     ancestor_regions.resize(level + 1);
-    std::cout << "DEBUG: got basics\n";
     // Initialize ratios.
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
     crse_ratio = IntVect::TheUnitVector(); crse_ratio.scale(-1);
@@ -1497,7 +1488,6 @@ AmrRegion::define(RegionList& regions, Amr* papa)
         bl.join((*it)->boxArray().boxList());
     grids.define(bl);
     
-    std::cout << "DEBUG: Combining States\n";
     // Combine the state data.
     PArray<StateData> state_source;
     int num_states = first->desc_lst.size();
@@ -1506,17 +1496,13 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     {
         state_source.clear();
         state_source.resize(N);
-        std::cout << "DEBUG: CS " << i <<"/"<<num_states-1 << "\n";
         int ri = 0;
         for (RegionList::iterator it = regions.begin(); it != regions.end(); it++, ri++)
         {
             state_source.set(ri, &(*it)->get_state_data(i));
         }
-        std::cout << "DEBUG: MS " << i << "\n";
         StateData* s = new StateData(state_source);
-        std::cout << "DEBUG: SS " << i << "\n";
         state.set(i,*s);
-        std::cout << "DEBUG: set\n";
     }
 }
 
