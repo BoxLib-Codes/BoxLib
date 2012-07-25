@@ -459,7 +459,7 @@ class FillPatchIterator
     //
     // The data.
     //
-    AmrRegion&                        m_amrlevel;
+    AmrRegion&                        m_amrregion;
     MultiFab&                         m_leveldata;
     std::vector< std::pair<int,int> > m_range;
     MultiFab                          m_fabs;
@@ -509,7 +509,7 @@ private:
     //
     // The data.
     //
-    AmrRegion&                  m_amrlevel;
+    AmrRegion&                  m_amrregion;
     MultiFab&                  m_leveldata;
     MultiFabCopyDescriptor     m_mfcd;
     Array< Array<MultiFabId> > m_mfid;     // [level][oldnew]

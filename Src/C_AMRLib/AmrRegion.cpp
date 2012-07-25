@@ -357,9 +357,9 @@ FillPatchIteratorHelper::FillPatchIteratorHelper (AmrRegion& amrlevel,
                                                   MultiFab& leveldata)
     :
     MFIter(leveldata),
-    m_amrlevel(amrlevel),
+    m_amrregion(amrlevel),
     m_leveldata(leveldata),
-    m_mfid(m_amrlevel.level+1),
+    m_mfid(m_amrregion.level+1),
     m_init(false)
 {}
 
@@ -367,7 +367,7 @@ FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
                                       MultiFab& leveldata)
     :
     MFIter(leveldata),
-    m_amrlevel(amrlevel),
+    m_amrregion(amrlevel),
     m_leveldata(leveldata),
     m_ncomp(0)
 {}
@@ -382,9 +382,9 @@ FillPatchIteratorHelper::FillPatchIteratorHelper (AmrRegion&     amrlevel,
                                                   Interpolater* mapper)
     :
     MFIter(leveldata),
-    m_amrlevel(amrlevel),
+    m_amrregion(amrlevel),
     m_leveldata(leveldata),
-    m_mfid(m_amrlevel.level+1),
+    m_mfid(m_amrregion.level+1),
     m_time(time),
     m_growsize(boxGrow),
     m_index(index),
@@ -404,7 +404,7 @@ FillPatchIterator::FillPatchIterator (AmrRegion& amrlevel,
                                       int       ncomp)
     :
     MFIter(leveldata),
-    m_amrlevel(amrlevel),
+    m_amrregion(amrlevel),
     m_leveldata(leveldata),
     m_ncomp(ncomp)
 {
@@ -448,12 +448,12 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     m_index        = index;
     m_scomp        = scomp;
     m_ncomp        = ncomp;
-    m_FixUpCorners = NeedToTouchUpPhysCorners(m_amrlevel.geom);
+    m_FixUpCorners = NeedToTouchUpPhysCorners(m_amrregion.geom);
 
     const int         MyProc     = ParallelDescriptor::MyProc();
     ///TODO/DEBUG: This non-reference might be a slowdown.
-    PArray<AmrRegion>&  amrLevels = m_amrlevel.ancestor_regions;
-    const AmrRegion&   topLevel   = amrLevels[m_amrlevel.level];
+    PArray<AmrRegion>&  amrRegions = m_amrregion.ancestor_regions;
+    const AmrRegion&   topLevel   = amrRegions[m_amrregion.level];
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
     const bool        extrap     = AmrRegion::desc_lst[m_index].extrap();
@@ -462,9 +462,9 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     //
     BL_ASSERT(AmrRegion::desc_lst[m_index].identicalInterps(scomp,ncomp));
 
-    for (int l = 0; l <= m_amrlevel.level; ++l)
+    for (int l = 0; l <= m_amrregion.level; ++l)
     {
-        amrLevels[l].state[m_index].RegisterData(m_mfcd, m_mfid[l]);
+        amrRegions[l].state[m_index].RegisterData(m_mfcd, m_mfid[l]);
     }
 
     for (int i = 0, N = m_leveldata.boxArray().size(); i < N; ++i)
@@ -483,12 +483,12 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
             //
             IntAAAFBIDMapValType v1(i,Array<Array<Array<FillBoxId> > >());
 
-            m_fbid.insert(m_fbid.end(),v1)->second.resize(m_amrlevel.level+1);
+            m_fbid.insert(m_fbid.end(),v1)->second.resize(m_amrregion.level+1);
 
             IntAABoxMapValType v2(i,Array<Array<Box> >());
 
-            m_fbox.insert(m_fbox.end(),v2)->second.resize(m_amrlevel.level+1);
-            m_cbox.insert(m_cbox.end(),v2)->second.resize(m_amrlevel.level+1);
+            m_fbox.insert(m_fbox.end(),v2)->second.resize(m_amrregion.level+1);
+            m_cbox.insert(m_cbox.end(),v2)->second.resize(m_amrregion.level+1);
 
             m_ba.insert(m_ba.end(),std::map<int,Box>::value_type(i,BoxLib::grow(m_leveldata.boxArray()[i],m_growsize)));
         }
@@ -568,11 +568,11 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
         Array< Array<Box> >&                TheFineBoxes = m_fbox[idx];
         Array< Array< Array<FillBoxId> > >& TheFBIDs     = m_fbid[idx];
 
-        for (int l = m_amrlevel.level; l >= 0 && !Done; --l)
+        for (int l = m_amrregion.level; l >= 0 && !Done; --l)
         {
             unfillableThisLevel.clear();
 
-            AmrRegion&      theAmrRegion = amrLevels[l];
+            AmrRegion&      theAmrRegion = amrRegions[l];
             StateData&      theState    = theAmrRegion.state[m_index];
             const Box&      thePDomain  = theState.getDomain();
             const Geometry& theGeom     = theAmrRegion.geom;
@@ -601,7 +601,7 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
             {
                 crse_boxes.push_back(*fit);
 
-                if (l != m_amrlevel.level)
+                if (l != m_amrregion.level)
                 {
                     const Box cbox = m_map->CoarseBox(*fit,fine_ratio);
 
@@ -732,7 +732,7 @@ FillPatchIterator::Initialize (int  boxGrow,
         const int SComp = m_range[i].first;
         const int NComp = m_range[i].second;
 
-        fph = new FillPatchIteratorHelper(m_amrlevel,
+        fph = new FillPatchIteratorHelper(m_amrregion,
                                           m_leveldata,
                                           boxGrow,
                                           time,
@@ -752,7 +752,7 @@ FillPatchIterator::Initialize (int  boxGrow,
     //
     // Call hack to touch up fillPatched data.
     //
-    m_amrlevel.set_preferred_boundary_values(m_fabs,
+    m_amrregion.set_preferred_boundary_values(m_fabs,
                                              index,
                                              scomp,
                                              0,
@@ -874,19 +874,19 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
 
     Array<IntVect>             pshifts(27);
     Array<BCRec>               bcr(m_ncomp);
-    Array< PArray<FArrayBox> > cfab(m_amrlevel.level+1);
+    Array< PArray<FArrayBox> > cfab(m_amrregion.level+1);
     Array< Array<Box> >&                TheCrseBoxes = m_cbox[idx];
     Array< Array<Box> >&                TheFineBoxes = m_fbox[idx];
     Array< Array< Array<FillBoxId> > >& TheFBIDs     = m_fbid[idx];
     const bool                 extrap    = AmrRegion::desc_lst[m_index].extrap();
-    PArray<AmrRegion>&          amrLevels = m_amrlevel.ancestor_regions;
+    PArray<AmrRegion>&          amrRegions = m_amrregion.ancestor_regions;
     //
     // Build all coarse fabs from which we'll interpolate and
     // fill them with coarse data as best we can.
     //
-    for (int l = 0; l <= m_amrlevel.level; l++)
+    for (int l = 0; l <= m_amrregion.level; l++)
     {
-        StateData&                       TheState  = amrLevels[l].state[m_index];
+        StateData&                       TheState  = amrRegions[l].state[m_index];
         const Array<Box>&                CrseBoxes = TheCrseBoxes[l];
         PArray<FArrayBox>&               CrseFabs  = cfab[l];
         const Array< Array<FillBoxId> >& FBIDs     = TheFBIDs[l];
@@ -923,9 +923,9 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     //
     FArrayBox finefab, crsefab;
 
-    for (int l = 0; l < m_amrlevel.level; l++)
+    for (int l = 0; l < m_amrregion.level; l++)
     {
-        AmrRegion&          TheLevel   = amrLevels[l];
+        AmrRegion&          TheLevel   = amrRegions[l];
         PArray<FArrayBox>& CrseFabs   = cfab[l];
         StateData&         TheState   = TheLevel.state[m_index];
         const Box&         ThePDomain = TheState.getDomain();
@@ -1000,8 +1000,8 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
         //
         // Interpolate up to next level.
         //
-        AmrRegion&          crseAmrRegion  = amrLevels[l];
-        AmrRegion&          fineAmrRegion  = amrLevels[l+1];
+        AmrRegion&          crseAmrRegion  = amrRegions[l];
+        AmrRegion&          fineAmrRegion  = amrRegions[l+1];
         const IntVect&      fine_ratio    = crseAmrRegion.fine_ratio;
         const Array<Box>&   FineBoxes     = TheFineBoxes[l];
         StateData&          fState        = fineAmrRegion.state[m_index];
@@ -1065,10 +1065,10 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     //
     // Now for the finest level stuff.
     //
-    StateData&         FineState      = m_amrlevel.state[m_index];
+    StateData&         FineState      = m_amrregion.state[m_index];
     const Box&         FineDomain     = FineState.getDomain();
-    const Geometry&    FineGeom       = m_amrlevel.geom;
-    PArray<FArrayBox>& FinestCrseFabs = cfab[m_amrlevel.level];
+    const Geometry&    FineGeom       = m_amrregion.geom;
+    PArray<FArrayBox>& FinestCrseFabs = cfab[m_amrregion.level];
     //
     // Set fab to special value we'll later check to ensure we've filled the FAB.
     //
@@ -1115,7 +1115,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     //
     if (!FineState.getDomain().contains(fab.box()))
     {
-        m_amrlevel.setPhysBoundaryValues(fab,
+        m_amrregion.setPhysBoundaryValues(fab,
                                          m_index,
                                          m_time,
                                          dcomp,
@@ -1125,7 +1125,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
 
     if (m_FixUpCorners)
     {
-        FixUpPhysCorners(fab,m_amrlevel,m_index,m_time,m_scomp,dcomp,m_ncomp);
+        FixUpPhysCorners(fab,m_amrregion,m_index,m_time,m_scomp,dcomp,m_ncomp);
     }
 }
 
