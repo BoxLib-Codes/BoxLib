@@ -98,7 +98,7 @@ public:
     //
     // Tree of timesteps at all regions.
     //
-    const Tree<Real>& dtRegion () const;
+    Tree<Real> dtRegion ();
     //
     // Timestep at a specific region.
     //
@@ -502,7 +502,6 @@ protected:
     std::string      probin_file;
     LevelBld*        levelbld;
     bool             multi_region;
-    Array<int>             root_id; // The constant tree id for the root node. Pulled out for convenience.
     //
     // The static data ...
     //
@@ -561,10 +560,9 @@ Amr::refRatio () const
     return ref_ratio;
 }
 
-
 inline
-const Tree<Real>&
-Amr::dtRegion() const
+Tree<Real>
+Amr::dtRegion()
 {
     return dt_region;
 }

@@ -255,7 +255,7 @@ Tree<T>::getNode(const Array<int> id)
     BL_ASSERT(N > 0);
     BL_ASSERT(id[0] == 0);
     Node* node = root;
-    for (int i = 1; i < N; i++)
+    for (int i = root->m_id.size(); i < N; i++)
     {
         BL_ASSERT(node->m_children.size() > id[i]);
         node = &(node->m_children[id[i]]);
@@ -271,7 +271,7 @@ Tree<T>::getNode(const Array<int> id) const
     BL_ASSERT(N > 0);
     BL_ASSERT(id[0] == 0);
     Node* node = root;
-    for (int i = 1; i < N; i++)
+    for (int i = root->m_id.size(); i < N; i++)
     {
         BL_ASSERT(node->m_children.size() > id[i]);
         node = &(node->m_children[id[i]]);
@@ -455,8 +455,7 @@ Tree<T>::Node::Node()
     m_parent = 0;
     m_index = 0;
     m_level = 0;
-    m_id.resize(1);
-    m_id[0] = 0;
+    m_id = ROOT_ID;
 }
 
 template <class T>
@@ -650,4 +649,95 @@ TreeIterator<T>::getParentID() const
     BL_ASSERT(current_node->m_parent != 0);
     return current_node->m_parent->getID();
 }
+
+//////////////////// Execution Tree Class ///////////////////////////
+
+/*
+  The ExecutionTree class is a thin wrapper around a Tree<int>. It
+  exists to allow the creation of trees with root id's other than 0. 
+  These trees are then used to control execution by specifying the use 
+  a subset of a master tree.
+   
+  The Data elements of this tree are either 1 if the node is part of 
+  execution and 0 if the node is not part.
+   
+  For an example, see Nyx's partially multilevel advance routine.
+ */
+ 
+class ExecutionTreeIterator; //Forward declaration
+class ExecutionTree;         //Forward declaration
+ 
+class ExecutionTree
+    :
+    public Tree<int>
+{
+    friend class ExecutionTreeIterator;
+public:
+    
+    ExecutionTree(Array<int> root_id);
+    
+    ExecutionTreeIterator getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix);
+    ExecutionTreeIterator getIteratorAtNode(const Array<int> id, int restrict_level = -1 , IteratorMode mode = Postfix);
+    
+};
+
+// Iterator Class
+class ExecutionTreeIterator
+    :
+    public TreeIterator<int>
+{
+    typedef ExecutionTree::Node iNode;
+public:
+    
+    void operator ++();
+    
+    ExecutionTreeIterator(iNode* base, int r_level, IteratorMode mode);
+    
+};
+
+// Tree Methods
+inline
+ExecutionTree::ExecutionTree(Array<int> root_id)
+    :
+    Tree<int>()
+{
+    root->m_id = root_id;
+    int level = root_id.size() - 1;
+    root->m_level = level;
+    root->m_data = 1;
+    // I don't think we need to set index or parent here.
+}
+
+inline
+ExecutionTreeIterator
+ExecutionTree::getIteratorAtRoot(int restrict_level, IteratorMode mode)
+{
+    return ExecutionTreeIterator(root, restrict_level,mode);
+}
+
+inline
+ExecutionTreeIterator
+ExecutionTree::getIteratorAtNode(const Array<int> id, int restrict_level, IteratorMode mode)
+{
+    return ExecutionTreeIterator(getNode(id), restrict_level,mode);
+}
+
+// Iterator Methods
+inline
+ExecutionTreeIterator::ExecutionTreeIterator(iNode* base, int r_level, IteratorMode mode)
+    :
+    TreeIterator<int>(base, r_level, mode)
+{
+    return;
+}
+
+inline
+void
+ExecutionTreeIterator::operator ++()
+{
+    this->TreeIterator<int>::operator ++();
+    if (!finished && current_node->m_data == 0)
+        ++(*this);
+}
+
 #endif /*BL_TREE_H*/

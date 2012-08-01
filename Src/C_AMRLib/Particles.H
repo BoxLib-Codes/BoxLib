@@ -373,7 +373,6 @@ protected:
     Amr*        m_amr;
     PTree<PMap> m_particles;
     PList<PMap> orphan_particles;
-    Array<int> root_id;
 };
 
 template <int N>
@@ -382,8 +381,6 @@ ParticleContainer<N>::ParticleContainer(Amr* amr)
         m_verbose(1), m_amr(amr),m_particles(PTreeManage)
 { 
     BL_ASSERT(amr != 0); 
-    root_id.resize(1); 
-    root_id[0] = 0;
     m_particles.setRoot(new PMap());
 }
 
@@ -513,7 +510,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
     }
     
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     IntVect lNrep(D_DECL(1,1,1));
 
@@ -870,7 +867,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
     }
 
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     long howmany_read = 0;
     //
@@ -1131,7 +1128,7 @@ ParticleContainer<N>::InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const R
     const Real*     dx       = geom.CellSize();
 
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     ParticleType p;
     Real         disp[BL_SPACEDIM];
@@ -1215,7 +1212,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
     const Geometry& geom     = m_amr->Geom(0);
 
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     const Real len[BL_SPACEDIM] = { geom.ProbLength(0),geom.ProbLength(1),geom.ProbLength(2) };
     //
@@ -1339,7 +1336,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
     //
     // FIXME: Will we ever need initial particles in grids deeper than 0?!
     //
-    PMap& pmap = m_particles.getData(root_id);
+    PMap& pmap = m_particles.getData(ROOT_ID);
     //
     // Make sure, that mf and m_amr->boxArray(0) are based on the same boxarray.
     //
@@ -1435,7 +1432,7 @@ ParticleContainer<N>::InitRandom (long          icount,
     BoxLib::InitRandom(iseed+MyProc);
     
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     if (serialize)
     {
@@ -1702,7 +1699,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -1864,7 +1861,7 @@ ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -1916,7 +1913,7 @@ ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -2117,7 +2114,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -4373,7 +4370,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -4713,7 +4710,7 @@ ParticleContainer<N>::OK (bool full_where,
     Array<int> base_region;
     if (base_region_ptr == 0)
     {
-        base_region = root_id;
+        base_region = ROOT_ID;
     }
     else
     {
@@ -4809,10 +4806,8 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
     // Here we temporarily aggregate the regions to use their combined statedata
     // This is probably overly costly.
     //
-    Array<int> root_id(1);
-    root_id[0] = 0;
     PArray<AmrRegion> aggregated_levels(PArrayManage);
-    m_amr->aggregate_descendants(root_id, aggregated_levels);
+    m_amr->aggregate_descendants(ROOT_ID, aggregated_levels);
     
     //
     // We store the particles in a subdirectory of "dir".
@@ -5003,9 +4998,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                     // for the start of writing of each block of data.
                     //
                     ///TODO/DEBUG: FIX THIS WHOLE THING
-                    Array<int> root_id(1);
-                    root_id[0] = 0;
-                    WriteParticles(root_id, ParticleFile, FileNumber, which, count, where);
+                    WriteParticles(ROOT_ID, ParticleFile, FileNumber, which, count, where);
 
                     ParticleFile.flush();
 
@@ -5391,7 +5384,7 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
     BL_ASSERT(finest_level == m_amr->finestLevel());
     
     // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(root_id, m_amr->getRegions().getStructure(root_id));
+    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
     if (ParallelDescriptor::IOProcessor())
     {
@@ -5511,7 +5504,7 @@ ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
     int*         iptr = istuff.dataPtr();
     Real*        rptr = rstuff.dataPtr();
     ///TODO/DEBUG: upgrade -- this in no way works
-    PBox&        pbox = m_particles.getData(root_id )[grd];
+    PBox&        pbox = m_particles.getData(ROOT_ID )[grd];
     ParticleType p;
 
     for (int i = 0; i < cnt; i++)
@@ -5742,7 +5735,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     for (int lev = 0; lev < m_amr->finestLevel(); lev++)
     {
         ///TODO/DEBUG: Upgrade -- this in no way works
-        const PMap& pmap = m_particles.getData(root_id);
+        const PMap& pmap = m_particles.getData(ROOT_ID);
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -5812,7 +5805,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
             for (int lev = 0; lev < m_amr->finestLevel(); lev++)
             {
                 ///TODO/DEBUG: Upgrade -- this in no way works
-                const PMap& pmap = m_particles.getData(root_id);
+                const PMap& pmap = m_particles.getData(ROOT_ID);
 
                 for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
                 {

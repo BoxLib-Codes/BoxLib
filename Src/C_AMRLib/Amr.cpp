@@ -325,9 +325,6 @@ Amr::Amr ()
     file_name_digits       = 5;
     record_run_info_terse  = false;
     multi_region           = false;
-
-    root_id.resize(1);
-    root_id[0] = 0;
     
     int i;
     for (i = 0; i < BL_SPACEDIM; i++)
@@ -416,8 +413,6 @@ Amr::Amr ()
     //
     // Set bogus values.
     //
-    Array<int> root_id(1);
-    root_id[0] = 0;
     for (i = 0; i < nlev; i++)
     {
         dt_region.setRoot(1.e200); // Something nonzero so old & new will differ
@@ -902,7 +897,7 @@ Amr::writePlotFile (const std::string& root,
     // when we have more sophisticated plt/chk logic.
     //
     PArray<AmrRegion> plot_levels(PArrayManage);
-    aggregate_descendants(root_id, plot_levels);
+    aggregate_descendants(ROOT_ID, plot_levels);
     
     //
     // Write plotfiles for our plot regions.
@@ -1151,7 +1146,7 @@ Amr::initialInit (Real strt_time,
     //dt_min[0]  = dt_region.getRoot();
     //n_cycle[0] = 1;
 
-    //std::list<int> structure = amr_regions.getStructure(root_id);
+    //std::list<int> structure = amr_regions.getStructure(ROOT_ID);
     
     //for (int lev = 1; lev <= max_level; lev++)
     //{
@@ -1183,7 +1178,7 @@ Amr::initialInit (Real strt_time,
     
     prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
-        (*prit)->post_regrid(root_id,finest_level);
+        (*prit)->post_regrid(ROOT_ID,finest_level);
     //
     // Perform any special post_initialization operations.
     //
@@ -1383,7 +1378,7 @@ Amr::restart (const std::string& filename)
        ////
        /////TODO/DEBUG: upgrade
        //int lev;
-       //amr_regions.setData(Amr::root_id, (*levelbld)());
+       //amr_regions.setData(ROOT_ID, (*levelbld)());
        //coarseRegion().restart(*this, is);
        //for (lev = 1; lev <= finest_level; lev++)
        //{ 
@@ -1467,7 +1462,7 @@ Amr::restart (const std::string& filename)
        ////
        /////TODO/DEBUG: Upgrade
        //int lev;
-       //amr_regions.setData(Amr::root_id, (*levelbld)());
+       //amr_regions.setData(ROOT_ID, (*levelbld)());
        //coarseRegion().restart(*this, is);
        //for (lev = 1; lev <= new_finest_level; lev++)
        //{ 
@@ -1690,15 +1685,15 @@ Amr::timeStep (AmrRegion& base_region,
             //
             // Construct skeleton of new level.
             //
-            AmrRegion* a = (*levelbld)(*this,root_id,geom[0],lev0,cumtime);
+            AmrRegion* a = (*levelbld)(*this,ROOT_ID,geom[0],lev0,cumtime);
 
             a->init(coarseRegion());
-            amr_regions.clearData(root_id);
+            amr_regions.clearData(ROOT_ID);
             amr_regions.setRoot( a);
             ///TODO/DEBUG: Update parent pointers in regions.
             BL_ASSERT(false);
 
-            coarseRegion().post_regrid(root_id,0);
+            coarseRegion().post_regrid(ROOT_ID,0);
 
             if (ParallelDescriptor::IOProcessor())
             {
@@ -1857,7 +1852,7 @@ Amr::coarseTimeStep (Real stop_time)
     // Compute new dt.
     //
     
-    if (regionSteps(root_id) > 0)
+    if (regionSteps(ROOT_ID) > 0)
     {
         int post_regrid_flag = 0;
         coarseRegion().computeNewDt(finest_level,
@@ -2050,7 +2045,7 @@ Amr::defBaseLevel (Real strt_time)
     //
     // Now build level 0 grids.
     //
-    amr_regions.setRoot((*levelbld)(*this,root_id,geom[0],lev0,strt_time));
+    amr_regions.setRoot((*levelbld)(*this,ROOT_ID,geom[0],lev0,strt_time));
 
     lev0.clear();
     //
@@ -2216,7 +2211,7 @@ Amr::regrid (AmrRegion* base_region,
     amr_regions.extractChildrenOfNode(base_region->getID(), evictees);
     if (regrid_level_zero)
     {
-        evictees.push_back(amr_regions.removeData(Amr::root_id));
+        evictees.push_back(amr_regions.removeData(ROOT_ID));
     }
 
     //
@@ -2921,7 +2916,7 @@ Amr::bldFineLevels (Real strt_time)
     //
     // Setup data that will help us create the "Tree"
     // 
-    Array<int> parent_id = root_id;
+    Array<int> parent_id = ROOT_ID;
     Array<int> new_id = parent_id;
     std::list<int> structure;
     structure.push_back(1);
@@ -3247,10 +3242,8 @@ void
 Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
 {
     Tree<Real> dt_max(dt_level);
-    Array<int> root_id(1);
     Array<int> id;
     Array<int> parent_id;
-    root_id[0] = 0;
     TreeIterator<Real> dt_it = dt_max.getIteratorAtRoot(-1,Postfix);
     for (;!dt_it.isFinished(); ++dt_it)
     {
@@ -3364,6 +3357,6 @@ Amr::whichRegion(int level, IntVect cell)
             return (*it)->getID();
     }
     BoxLib::Abort("Unable to find region containing specified IntVect");
-    return root_id; // to remove compiler warnings.
+    return ROOT_ID; // to remove compiler warnings.
 }
 

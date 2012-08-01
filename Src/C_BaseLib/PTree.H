@@ -6,8 +6,11 @@
 
 #include <BLassert.H>
 #include <PArray.H>
+#include <Array.H>
 #include <PList.H>
 #include <BoxLib.H>
+
+#define ROOT_ID Array<int>(1,0)
 
 enum PTreePolicy
 {
@@ -604,8 +607,7 @@ PTree<T>::Node::Node(PTreePolicy is_managed)
     m_index = 0;
     m_level = 0;
     m_data = 0;
-    m_id.resize(1);
-    m_id[0] = 0;
+    m_id = ROOT_ID;
 }
 
 template <class T>

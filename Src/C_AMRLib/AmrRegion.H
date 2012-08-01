@@ -616,7 +616,6 @@ inline
 void 
 AmrRegion::set_ancestors(PArray<AmrRegion>& ancs)
 {
-    std::cout << "DEBUG: Setting ancestors\n";
     for(int i = 0; i <= level; i++)
     {   
         ancestor_regions.clear(i);
