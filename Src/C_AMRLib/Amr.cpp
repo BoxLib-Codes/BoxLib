@@ -214,6 +214,19 @@ Amr::boxArray (Array<int> base_region, int lev) const
 }
 
 BoxArray
+Amr::boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const
+{
+    BoxList bl;
+    ExecutionTreeIterator it = exec_tree->getIteratorAtNode(base_region, lev);
+    for ( ; !it.isFinished(); ++it)
+    {
+        bl.join(amr_regions.getData(it.getID()).boxArray().boxList());
+    }
+    const BoxArray ba(bl);
+    return ba;
+}
+
+BoxArray
 Amr::boxArray (Array<int> region_id) const
 {
     return amr_regions.getData(region_id).boxArray();

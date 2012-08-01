@@ -233,7 +233,7 @@ public:
 
     void AssignDensitySingleRegion (MultiFab& mf, Array<int> region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
-    void AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0, int ncomp = 1, int finest_level = -1) const;
+    void AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
 
     void AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0) const;
 
@@ -2105,7 +2105,7 @@ ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* ba
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr, int ncomp, int finest_level) const
+ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr, int ncomp, int finest_level, ExecutionTree* exec_tree) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(N >= ncomp);
@@ -2120,7 +2120,27 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     {
         base_region = *base_region_ptr;
     }
-    
+    if (exec_tree == 0)
+    {
+        exec_tree = new ExecutionTree(base_region);
+        exec_tree->buildFromStructure(m_particles.getStructure(base_region));
+        PTreeConstIterator<PMap> it = m_particles.getConstIteratorAtNode(base_region);
+        for( ; !it.isFinished(); ++it)
+        {
+            if (it.isDefined())
+            {
+                exec_tree->setData(it.getID(),1);
+            }
+            else
+            {
+                exec_tree->setData(it.getID(),0);
+                // This is safe because it's a postfix iterator.
+                exec_tree->clearChildrenOfNode(it.getID()); 
+            }
+        }
+    }
+        
+    // This might possibly cause problems with some exec_trees--we'll see
     if (finest_level == -1)
     {
         finest_level = m_amr->getRegions().getFinestLevelAtNode(base_region);
@@ -2137,7 +2157,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int lev_index = lev - lev_min;
-        mf.set(lev_index, new MultiFab(m_amr->boxArray(base_region, lev), ncomp, 1));
+        mf.set(lev_index, new MultiFab(m_amr->boxArray(base_region, lev, exec_tree), ncomp, 1));
         for (MFIter mfi(mf[lev_index]); mfi.isValid(); ++mfi)
         {
             mf[lev_index][mfi].setVal(0);
@@ -2257,13 +2277,13 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         BoxArray ccba;
         if (lev > 0)
         {
-            ccba = m_amr->boxArray(base_region,lev);
+            ccba = m_amr->boxArray(base_region,lev, exec_tree);
             ccba.coarsen(m_amr->refRatio(lev-1));
         }
         BoxArray cfba;
         if (lev < finest_level)
         {
-            cfba = m_amr->boxArray(base_region,lev+1);
+            cfba = m_amr->boxArray(base_region,lev+1, exec_tree);
             cfba.coarsen(m_amr->refRatio(lev));
 
             BL_ASSERT(mf[lev_index].boxArray().contains(cfba));
@@ -2336,7 +2356,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         BoxArray cba;
         if (lev > 0)
         {
-            cba = m_amr->boxArray(base_region,lev);
+            cba = m_amr->boxArray(base_region,lev, exec_tree);
             cba.coarsen(m_amr->refRatio(lev-1));
         }
         //
@@ -2346,11 +2366,12 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
         const bool GridsCoverDomain = fvalid.contains(m_amr->Geom(lev).Domain());
         
         int offset = 0;
-        PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region,lev);
-        for( ; !ptree_it.isFinished(); ++ptree_it)
+        //PTreeConstIterator<PMap> ptree_it = m_particles.getConstIteratorAtNode(base_region,lev);
+        //for( ; !ptree_it.isFinished(); ++ptree_it)
+        ExecutionTreeIterator it = exec_tree->getIteratorAtNode(base_region, lev);
+        for ( ; !it.isFinished(); ++it)
         {
-            
-            const PMap& pmap = **ptree_it;
+            const PMap& pmap = m_particles.getData(it.getID());
             for (typename PMap::const_iterator pmap_it = pmap.begin(),
                      pmapEnd = pmap.end();
                  pmap_it != pmapEnd;
@@ -2794,7 +2815,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
             // This hack allows the pmap indices to be refer to the
             // indices in the aggregated mf. There's probably a more 
             // elegant solution available.
-            offset += m_amr->boxArray(ptree_it.getID()).size();
+            offset += m_amr->boxArray(it.getID()).size();
         }
     }
     //

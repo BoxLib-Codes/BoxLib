@@ -245,6 +245,8 @@ public:
     //
     BoxArray boxArray (Array<int> base_region, int lev) const;
     
+    BoxArray boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const;
+    
     BoxArray boxArray (Array<int> region_id) const;
     //
     // AmrRegion lev.

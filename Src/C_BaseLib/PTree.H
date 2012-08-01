@@ -144,8 +144,8 @@ public:
     // Extracts a list representing the structure of the subtree rooted at the specified id.
     // The structure is a list giving the number of children in prefix_notation.
     //
-    std::list<int> getStructure(const Array<int> id);
-    std::list<int> getStructure();
+    std::list<int> getStructure(const Array<int> id) const;
+    std::list<int> getStructure() const;
     
     //
     // Builds an empty subtree beneath the specified node based on the supplied structure list.
@@ -200,7 +200,7 @@ protected:
         //
         // Recursively adds the structure for this node and its children to the structure list.
         //
-        void getStructure(std::list<int>& structure);
+        void getStructure(std::list<int>& structure) const;
         
         //
         // Recursively builds the node from the specified position in the structure list.
@@ -515,7 +515,7 @@ PTree<T>::getFinestLevelAtNode(Array<int> base_node)
 
 template <class T>
 std::list<int> 
-PTree<T>::getStructure(const Array<int> id)
+PTree<T>::getStructure(const Array<int> id) const
 {
     // Create the list
     std::list<int> structure;
@@ -527,7 +527,7 @@ PTree<T>::getStructure(const Array<int> id)
 
 template <class T>
 std::list<int> 
-PTree<T>::getStructure()
+PTree<T>::getStructure() const
 {
     // Create the list
     std::list<int> structure;
@@ -681,7 +681,7 @@ PTree<T>::Node::clearChildren()
 
 template <class T>
 void
-PTree<T>::Node::getStructure(std::list<int>& structure)
+PTree<T>::Node::getStructure(std::list<int>& structure) const
 {
     int N = m_children.size();
     structure.push_back(N);
