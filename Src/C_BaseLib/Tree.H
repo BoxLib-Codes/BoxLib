@@ -117,6 +117,11 @@ public:
     // Returns the number of nodes in the tree
     //
     int numElements() const;
+    
+    //
+    // Returns a printable string representation of the Tree
+    //
+    std::string toString();
 protected:
     struct Node
     {
@@ -159,6 +164,8 @@ protected:
         // Recursively builds the node from the specified position in the structure list.
         //
         void buildFromStructure(std::list<int>& structure, std::list<int>::iterator& it);
+        
+        void addToString(std::stringstream& ss, std::string indent, bool last);
         
         T               m_data;     // The data stored by this node.
         int             m_index;    // The index of this node in its parent's children.
@@ -229,7 +236,8 @@ template <class T>
 Tree<T>::Tree(Tree<T>& old_tree)
 {
     root = new Node();
-    Array<int> root_id = root->getID();
+    Array<int> root_id = old_tree.root->m_id;
+    //root->m_id = root_id;
     Array<int> id;
     buildFromStructure(root_id, old_tree.getStructure(root_id));
     // This initialization method is pretty inefficient. We could do better if we want.
@@ -426,6 +434,16 @@ Tree<T>::numElements() const
     return cnt;
 }
 
+template <class T>
+std::string
+Tree<T>::toString()
+{
+    std::stringstream ss;
+    std::string indent = "";
+    root->addToString(ss, indent, true);
+    return ss.str();
+}
+
 ////////////////////////// Begin Node Methods ///////////////////////////
 template <class T>
 Array<int>
@@ -528,6 +546,28 @@ Tree<T>::Node::buildFromStructure(std::list<int>& structure, std::list<int>::ite
     {
         addChild();
         m_children[i].buildFromStructure(structure, it);
+    }
+}
+
+template <class T>
+void
+Tree<T>::Node::addToString(std::stringstream& ss, std::string indent, bool last)
+{
+    
+    if (last)
+    {
+        ss << indent << "\\-" << m_data << "\n";
+        indent += "  ";
+    }
+    else
+    {
+        ss << indent << "|-" << m_data << "\n";
+        indent += "| ";
+    }
+    int N = m_children.size();
+    for (int i = 0; i < N; i++)
+    {
+        m_children[i].addToString(ss, indent, i == N - 1);
     }
 }
 
@@ -676,6 +716,11 @@ public:
     
     ExecutionTree(Array<int> root_id);
     
+    //
+    // Deletes all nodes with no children.
+    //
+    void prune();
+    
     ExecutionTreeIterator getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix);
     ExecutionTreeIterator getIteratorAtNode(const Array<int> id, int restrict_level = -1 , IteratorMode mode = Postfix);
     
@@ -693,6 +738,7 @@ public:
     
     ExecutionTreeIterator(iNode* base, int r_level, IteratorMode mode);
     
+    bool isLeaf();
 };
 
 // Tree Methods
@@ -722,13 +768,37 @@ ExecutionTree::getIteratorAtNode(const Array<int> id, int restrict_level, Iterat
     return ExecutionTreeIterator(getNode(id), restrict_level,mode);
 }
 
+inline
+void
+ExecutionTree::prune()
+{
+    ExecutionTreeIterator it = getIteratorAtRoot(-1, Prefix);
+    for ( ; !it.isFinished() ; ++it)
+    {
+        Node* c_node = getNode(it.getID());
+        bool leaf = true;
+        int N = c_node->m_children.size();
+        for (int i = 0; i < N; i++)
+        {
+            if (c_node->m_children[i].m_data != 0)
+            {
+                leaf = false;
+                break;
+            }
+        }
+        if (leaf)
+            c_node->clearChildren();
+    }
+}
+
 // Iterator Methods
 inline
 ExecutionTreeIterator::ExecutionTreeIterator(iNode* base, int r_level, IteratorMode mode)
     :
     TreeIterator<int>(base, r_level, mode)
 {
-    return;
+    if (current_node->m_data == 0)
+        ++(*this);
 }
 
 inline
@@ -739,5 +809,13 @@ ExecutionTreeIterator::operator ++()
     if (!finished && current_node->m_data == 0)
         ++(*this);
 }
+
+inline
+bool
+ExecutionTreeIterator::isLeaf()
+{
+    return current_node->m_children.size() == 0;
+}
+
 
 #endif /*BL_TREE_H*/

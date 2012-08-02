@@ -2021,6 +2021,7 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
              ++it)
         {
             const ParticleType& p = *it;
+            
 
             if (p.m_id <= 0) continue;
 

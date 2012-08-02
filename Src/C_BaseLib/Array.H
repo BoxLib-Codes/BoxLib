@@ -116,7 +116,7 @@ public:
     //
     // Returns a string form of the array, assuming we know what that is.
     //
-    std::string toString();
+    std::string toString() const;
 private:
     //
     // This is disallowed.
@@ -231,7 +231,7 @@ Array<T>::Array (const T* vec,
 
 template <class T>
 std::string
-Array<T>::toString()
+Array<T>::toString() const
 {
     std::stringstream ss;
     ss << "[";

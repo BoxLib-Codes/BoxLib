@@ -98,7 +98,7 @@ public:
     //
     // Tree of timesteps at all regions.
     //
-    Tree<Real> dtRegion ();
+    Tree<Real>& dtRegion ();
     //
     // Timestep at a specific region.
     //
@@ -265,6 +265,10 @@ public:
     // Number of cells at given level.
     //
     long cellCount (int lev);
+    //
+    // Number of cells at given region.
+    //
+    long cellCount (Array<int> region_id);
     //
     // Total number of grids.
     //
@@ -563,8 +567,8 @@ Amr::refRatio () const
 }
 
 inline
-Tree<Real>
-Amr::dtRegion()
+Tree<Real>&
+Amr::dtRegion() 
 {
     return dt_region;
 }

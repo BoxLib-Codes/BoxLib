@@ -250,13 +250,19 @@ Amr::boxArray (Array<int> region_id) const
 long
 Amr::cellCount (int lev)
 {
-    int cnt = 0;
+    long cnt = 0;
     PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
     for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->countCells();
     }
     return cnt;
+}
+
+long
+Amr::cellCount (Array<int> region_id)
+{
+    return amr_regions.getData(region_id).countCells();
 }
 
 int
@@ -1814,9 +1820,9 @@ Amr::timeStep (AmrRegion& base_region,
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
         std::cout << "Advanced " ///TODO/DEBUG: upgrade
-                  << cellCount(level)
-                  << " cells at level "
-                  << level
+                  << cellCount(base_id)
+                  << " cells in region "
+                  << base_region.getIDString()
                   << std::endl;
     }
 
@@ -2081,12 +2087,14 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     
     n_cycle.clearChildrenOfNode(base_region);
     n_cycle.buildFromStructure(base_region, structure);
+    
+    ///Should there be a print message here?
+    //if (verbose > 0 && ParallelDescriptor::IOProcessor())
+    //{
+        //std::cout << "Restructured from base region " << base_region.toString() <<"\n";
+        //std::cout << "New Hierarchy:\n"
+    //}
     structure = n_cycle.getStructure(base_region);
-    for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); it++)
-    {
-        std::cout << *it << " ";
-    }
-    std::cout << "\n";
     TreeIterator<int> iit = n_cycle.getIteratorAtNode(base_region, -1 , Prefix);
     for (++iit; !iit.isFinished(); ++iit)
     {
@@ -2154,10 +2162,10 @@ Amr::regrid (AmrRegion* base_region,
     int lbase = base_region->Level();
     const Array<int> base_id  = base_region->getID();
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
-        std::cout << "REGRID: at level lbase = " << lbase << std::endl;
+        std::cout << "REGRID: at base region " << base_id.toString() << std::endl;
 
     if (record_run_info && ParallelDescriptor::IOProcessor())
-        runlog << "REGRID: at level lbase = " << lbase << '\n';
+        runlog << "REGRID: at base region " << base_id.toString() << '\n';
 
     // This list tracks all regions that need to call post_regrid.
     RegionList touched_regions;
@@ -2209,7 +2217,7 @@ Amr::regrid (AmrRegion* base_region,
         if (grids_unchanged) 
         {
             if (verbose > 0 && ParallelDescriptor::IOProcessor())
-                std::cout << "Regridding at level lbase = " << lbase << " but grids unchanged " << std::endl;
+                std::cout << "Regridding at base region " << base_id.toString() << " but grids unchanged " << std::endl;
             return;
         }
     }
@@ -2398,7 +2406,7 @@ Amr::regrid (AmrRegion* base_region,
                   << " : REGRID  with lbase = "
                   << lbase
                   << std::endl;
-
+                  
         if (verbose > 1)
         {
            printGridInfo(std::cout,start,finest_level);
@@ -3182,7 +3190,6 @@ Amr::okToRegrid (Array<int> region_id)
 Real
 Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& est_work, Tree<int>& cycle_max)
 {
-    //BL_ASSERT(cycle_max[0] == 1);
     BL_ASSERT(best.getStructure() == cycle_max.getStructure());
     // internally these represent the total number of steps at a level, 
     // not the number of cycles
@@ -3203,7 +3210,7 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         limit *= *ptic;
     for (int candidate = 0; candidate < limit; candidate++)
     {
-        int temp_cand = candidate;
+        long temp_cand = candidate;
         id.resize(1);
         id[0] = 0;
         dt = dt_max.getRoot();
@@ -3213,12 +3220,10 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         {
             //get the id for this node
             id = pti.getID();
-            //get the parent id by cutting the last digit.
-            parent_id = id;
-            parent_id.resize(parent_id.size()-1);
+            parent_id = pti.getParentID();
             // grab the relevant "digit" and shift over.
             // All this gettin is probably inefficient. It can be streamlined if needed.
-            cycles.setData(id,1 + temp_cand%cycle_max.getData(id) * cycles.getData(parent_id));
+            cycles.setData(id,(1 + temp_cand%cycle_max.getData(id)) * cycles.getData(parent_id));
             temp_cand /= cycle_max.getData(id);
             dt = std::min(dt, cycles.getData(id) * dt_max.getData(id));
             work += cycles.getData(id) * est_work.getData(id);
