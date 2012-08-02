@@ -1030,7 +1030,8 @@ BoxLib::linInterpFillFab (MultiFabCopyDescriptor& fabCopyDesc,
 void
 MultiFab::FillBoundary (int  scomp,
                         int  ncomp,
-                        bool local)
+                        bool local,
+                        bool cross)
 {
     if ( n_grow <= 0 ) return;
 
@@ -1065,14 +1066,14 @@ MultiFab::FillBoundary (int  scomp,
     }
     else
     {
-        FabArray<FArrayBox>::FillBoundary(scomp,ncomp);
+        FabArray<FArrayBox>::FillBoundary(scomp,ncomp,cross);
     }
 }
 
 void
-MultiFab::FillBoundary (bool local)
+MultiFab::FillBoundary (bool local, bool cross)
 {
-    FillBoundary(0, n_comp, local);
+    FillBoundary(0, n_comp, local, cross);
 }
 
 void
