@@ -2106,7 +2106,11 @@ ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* ba
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr, int ncomp, int finest_level, ExecutionTree* exec_tree) const
+ParticleContainer<N>::AssignDensity (PArray<MultiFab>&  mf, 
+                                     Array<int>*        base_region_ptr, 
+                                     int                ncomp, 
+                                     int                finest_level, 
+                                     ExecutionTree*     exec_tree) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(N >= ncomp);
@@ -2135,11 +2139,10 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
             else
             {
                 exec_tree->setData(it.getID(),0);
-                // This is safe because it's a postfix iterator.
-                exec_tree->clearChildrenOfNode(it.getID()); 
             }
         }
     }
+    exec_tree->prune();
         
     // This might possibly cause problems with some exec_trees--we'll see
     if (finest_level == -1)
@@ -2158,7 +2161,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int lev_index = lev - lev_min;
-        mf.set(lev_index, new MultiFab(m_amr->boxArray(base_region, lev, exec_tree), ncomp, 1));
+        mf.set(lev_index, m_amr->createMultiFab(base_region, lev, exec_tree, ncomp, 1));
         for (MFIter mfi(mf[lev_index]); mfi.isValid(); ++mfi)
         {
             mf[lev_index][mfi].setVal(0);
@@ -2378,6 +2381,12 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
                  pmap_it != pmapEnd;
                  ++pmap_it)
             {
+                // Check if we own the mf here. 
+                if (!mf[lev_index].defined(pmap_it->first + offset))
+                {
+                    BL_ASSERT(pmap_it->second.empty());
+                    continue;
+                }
                 const PBox& pbx = pmap_it->second;
                 FArrayBox&  fab = mf[lev_index][pmap_it->first + offset];
 
@@ -2811,6 +2820,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
                         }
                     }
                 }
+                
             }
             
             // This hack allows the pmap indices to be refer to the
@@ -2824,8 +2834,11 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>& mf, Array<int>* base_regi
     // This "may" touch ghost cells so we want to do it before
     // the SumBoundary() and SumPeriodicBoundary() stuff.
     //
+    
+    
     AssignDensityDoit(mf,data,ncomp, lev_min);
 
+    
     for (int lev = lev_min; lev <= finest_level; lev++)
     {
         const int       lev_index = lev - lev_min;

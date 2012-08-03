@@ -111,6 +111,18 @@ public:
                                Tree<Real>&          dt_region,
                                Real                  stop_time,
                                int                   post_regrid_flag) = 0;
+    
+    //
+    // Recomputes dt and subcycling pattern for descendents of base_region
+    // without changing dt at base_region.
+    //
+    // This is not a pure virtual method, but the default version just aborts.
+    // If a derived class wishes to use Optimal Subcycling, it must overload this
+    // method
+    //
+    virtual void computeRestrictedDt (Array<int>  base_region,
+                                      Tree<int>&  n_cycle,
+                                      Tree<Real>& dt_region);
     //
     // Do an integration step on this level.  Returns maximum safe
     // time step.  This is a pure virtual function and hence MUST
@@ -290,6 +302,10 @@ public:
     // State data at new time.
     //
     const MultiFab& get_new_data (int state_indx) const;
+    //
+    // Returns the distribution map for this region's stateData.
+    //
+    const DistributionMapping& get_distribution_map(int state_indx = 0) const;
     //
     // Returns list of Descriptors.
     //
@@ -596,6 +612,13 @@ MultiFab&
 AmrRegion::get_new_data (int state_indx)
 {
     return state[state_indx].newData();
+}
+
+inline
+const DistributionMapping& 
+AmrRegion::get_distribution_map(int state_indx) const
+{
+    return state[state_indx].newData().DistributionMap();
 }
 
 inline

@@ -1217,7 +1217,7 @@ AmrRegion::derive (const std::string& name,
 
     if (isStateVariable(name, index, scomp))
     {
-        mf = new MultiFab(state[index].boxArray(), 1, ngrow);
+        mf = new MultiFab(state[index].boxArray(), get_distribution_map(), 1, ngrow);
         FillPatchIterator fpi(*this,get_new_data(index),ngrow,time,index,scomp,1);
         for ( ; fpi.isValid(); ++fpi)
         {
@@ -1238,7 +1238,7 @@ AmrRegion::derive (const std::string& name,
         srcBA.convert(rec->boxMap());
         dstBA.convert(rec->deriveType());
 
-        MultiFab srcMF(srcBA, rec->numState(), ngrow);
+        MultiFab srcMF(srcBA, get_distribution_map(), rec->numState(), ngrow);
 
         for (int k = 0, dc = 0; k < rec->numRange(); k++, dc += ncomp)
         {
@@ -1252,7 +1252,7 @@ AmrRegion::derive (const std::string& name,
             }
         }
 
-        mf = new MultiFab(dstBA, rec->numDerive(), ngrow);
+        mf = new MultiFab(dstBA, get_distribution_map(), rec->numDerive(), ngrow);
 
         for (MFIter mfi(srcMF); mfi.isValid(); ++mfi)
         {
@@ -1325,7 +1325,7 @@ AmrRegion::derive (const std::string& name,
         BoxArray srcBA(mf.boxArray());
         srcBA.convert(rec->boxMap());
 
-        MultiFab srcMF(srcBA,rec->numState(),ngrow);
+        MultiFab srcMF(srcBA, get_distribution_map(),rec->numState(),ngrow);
 
         for (int k = 0, dc = 0; k < rec->numRange(); k++, dc += ncomp)
         {
@@ -1578,4 +1578,12 @@ void
 AmrRegion::restructure(std::list<int> structure)
 {
     return;
+}
+
+void 
+AmrRegion::computeRestrictedDt (Array<int>  base_region,
+                                Tree<int>&  n_cycle,
+                                Tree<Real>& dt_region)
+{
+    BoxLib::Abort("You must overload computeRestrictedDt if your simulation uses Optimal Subcycling\n");
 }

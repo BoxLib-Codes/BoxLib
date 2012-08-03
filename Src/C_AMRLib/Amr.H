@@ -237,19 +237,28 @@ public:
     //
     int nProper () const;
     //
-    // List of grids at each level.
+    // List of grids in various portions of the domain.
     //
     BoxArray boxArray (int lev) const;
-    //
-    // List of grids at each level.
-    //
     BoxArray boxArray (Array<int> base_region, int lev) const;
-    
     BoxArray boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const;
-    
     BoxArray boxArray (Array<int> region_id) const;
     //
-    // AmrRegion lev.
+    // Creates an empty multifab built on the boxArrays of the specified domain
+    // portion. The importance of this method is that the resulting multifab's
+    // distribution map is the union of the maps for the component boxArrays,
+    // rather than a separate map for the new, larger mf.
+    //
+    MultiFab* createMultiFab(Array<int>     base_region, 
+                            int             lev, 
+                            ExecutionTree*  exec_tree, 
+                            int             ncomp,
+                            int             ngrow);
+                            
+    DistributionMapping createDM(Array<int>     base_region, 
+                                 int             lev);
+    //
+    // AmrRegion lev. Only allowed when multi_region = 0
     //
     AmrRegion&  getLevel (int lev);
     //
@@ -324,6 +333,19 @@ public:
                                          Tree<Real>& dt_max, 
                                          Tree<Real>& est_work, 
                                          Tree<int>& cycle_max);
+             
+    //
+    // Compute and set a new subcycling pattern for the subtree of base_region.
+    // Descendents subcycle just enough to respect their max dt's while
+    // allowing the base_region to keep its dt the same.
+    //
+    // This method is typically called after a regrid on a subtree.
+    //
+    static void setRestrictedSubcycling(Array<int>  base_region,
+                             Tree<int>&   n_cycle, 
+                             Tree<Real>& dt_region, 
+                             Tree<Real>& dt_max, 
+                             Tree<int>&  cycle_max);
     
     //
     // Uses a friends-of-friends clustering algorithm with min distance d
@@ -421,6 +443,7 @@ protected:
     //
     void grid_places (int               lbase,
                       PArray<AmrRegion>& active_levels,
+                      Array<DistributionMapping>& dms,
                       Real              time,
                       int&              new_finest,
                       Array<BoxArray>&  new_grids);

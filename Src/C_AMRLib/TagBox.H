@@ -117,6 +117,7 @@ public:
     // The constructor.
     //
     TagBoxArray (const BoxArray& bs, int _ngrow=0);
+    TagBoxArray (const BoxArray& bs, const DistributionMapping& dm, int _ngrow=0);
     //
     // Returns the grow factor for the TagBoxArray.
     //

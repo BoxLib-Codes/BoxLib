@@ -1761,22 +1761,6 @@ Amr::timeStep (AmrRegion& base_region,
                                               stop_time, 
                                               post_regrid_flag);
                 }
-
-                ///TODO/DEBUG: I'm guessing that level steps is useless as
-                /// a tree; we only need it at level 0. This should be double-checked
-
-                //if (old_finest < finest_level)
-                //{
-                    ////
-                    //// The new levels will not have valid time steps
-                    //// and iteration counts.
-                    ////
-                    ///TODO/DEBUG: I'm turning this off for now. We'll see if it is actually a problem.
-                    ////for (int k = old_finest+1; k <= finest_level; k++)
-                    ////{
-                        ////dt_level[k]    = dt_level[k-1]/n_cycle[k];
-                    ////}
-                //}
             }
         }
     }
@@ -2174,18 +2158,24 @@ Amr::regrid (AmrRegion* base_region,
     //
     PArray<AmrRegion> active_levels;
     active_levels.resize(finest_level+1);
+    Array<DistributionMapping> dms(finest_level+1);
     ///TODO/DEBUG: Move away from get_ancestors
     for (int i = 0; i <= lbase; i++)
     {
         active_levels.set(i,&(base_region->get_ancestors()[i]));
         touched_regions.push_back(&(base_region->get_ancestors()[i]));
+        if (i != lbase);
+            dms[i] = createDM(ROOT_ID, i);
     }
+    dms[lbase] = createDM(base_id, lbase);
+    
     PArray<AmrRegion> descendants(PArrayManage);
     aggregate_descendants(base_id, descendants);
     for (int i = lbase+1; i <= finest_level; i++)
     {
         active_levels.set(i,&descendants[i-lbase]);
         active_levels[i].set_ancestors(active_levels);
+        dms[i] = createDM(base_id, i);
     }
 
     
@@ -2196,7 +2186,7 @@ Amr::regrid (AmrRegion* base_region,
     Array<BoxArray> new_grid_places(max_level+1);
     
     if (lbase <= std::min(finest_level,max_level-1))
-      grid_places(lbase,active_levels,time,new_finest, new_grid_places);
+      grid_places(lbase, active_levels, dms, time, new_finest, new_grid_places);
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != coarseRegion().boxArray()) && (!initial);
     const int start = regrid_level_zero ? 0 : lbase+1;
@@ -2272,7 +2262,9 @@ Amr::regrid (AmrRegion* base_region,
             clusters.push_back(new_grid_places[lev]);
         }
         int num_regions = clusters.size();
-        std::cout << "Creating " << num_regions << " Regions at Level " << lev << "\n";
+        
+        if (verbose > 0 && ParallelDescriptor::IOProcessor())
+            std::cout << "Creating " << num_regions << " Regions at Level " << lev << "\n";
         for (std::list<BoxArray>::iterator clust_it = clusters.begin(); clust_it != clusters.end(); ++clust_it)
         {
             BoxArray cba = *clust_it;
@@ -2371,6 +2363,13 @@ Amr::regrid (AmrRegion* base_region,
     //
     for (RegionList::iterator it = touched_regions.begin(); it != touched_regions.end(); it++)
         (*it)->post_regrid(base_id,new_finest);
+        
+    /// Is there any problem with changing dt here?
+    //
+    // Optimal subcycling codes must update the subcycling pattern for the subtree
+    //
+    if (subcycling_mode == "Optimal")
+        base_region->computeRestrictedDt(base_id, n_cycle, dt_region);
 
 #ifdef USE_STATIONDATA
     /// TODO/DEBUG: Upgrade
@@ -2550,6 +2549,7 @@ Amr::ProjPeriodic (BoxList&        blout,
 void
 Amr::grid_places (int               lbase,
                   PArray<AmrRegion>& active_levels,
+                  Array<DistributionMapping>& dms,
                   Real              time,
                   int&              new_finest,
                   Array<BoxArray>&  new_grids)
@@ -2702,7 +2702,7 @@ Amr::grid_places (int               lbase,
                 ngrow++;
             }
         }
-        TagBoxArray tags(active_levels[levc].boxArray(),n_error_buf[levc]+ngrow);
+        TagBoxArray tags(active_levels[levc].boxArray(),dms[levc], n_error_buf[levc]+ngrow);
 
         active_levels[levc].errorEst(tags,
                                  TagBox::CLEAR,TagBox::SET,time,
@@ -2947,14 +2947,16 @@ Amr::bldFineLevels (Real strt_time)
         int new_finest;
         PArray<AmrRegion> active_levels;
         Array<int> id;
+        Array<DistributionMapping> dms(finest_level + 1);
         active_levels.resize(finest_level+1);
         for (int i = 0; i <= finest_level; i++)
         {
             id.resize(i+1);
             id[i] = 0;
             active_levels.set(i,&getRegion(id));
+            dms[i] = createDM(ROOT_ID, i);
         }
-        grid_places(finest_level,active_levels,strt_time,new_finest,grids);
+        grid_places(finest_level,active_levels,dms, strt_time,new_finest,grids);
         if (new_finest <= finest_level) break;
         finest_level = new_finest;
         
@@ -3257,6 +3259,45 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
 }
 
 void
+Amr::setRestrictedSubcycling(Array<int>  base_region,
+                             Tree<int>&   ncycle, 
+                             Tree<Real>& dtregion, 
+                             Tree<Real>& dt_max, 
+                             Tree<int>&  cycle_max)
+{
+    
+    TreeIterator<int> it = ncycle.getIteratorAtNode(base_region, -1, Prefix);
+    Array<int> id;
+    Array<int> parent_id;
+    // Limit dt_max by the fully iterated child dts.
+    TreeIterator<Real> dt_it = dt_max.getIteratorAtNode(base_region);
+    for ( ; !dt_it.isFinished(); ++dt_it)
+    {
+        id = dt_it.getID();
+        if (id.size() == base_region.size())
+            break;
+        parent_id = dt_it.getParentID();
+        Real cmax = dt_max.getData(id)*cycle_max.getData(id);
+        dt_max.setData(parent_id, std::min(dt_max.getData(parent_id), cmax));
+    }
+    BL_ASSERT(dtregion.getData(base_region) <= dt_max.getData(base_region));
+    for (++it ; !it.isFinished(); ++it)
+    {
+        id = it.getID();
+        parent_id = it.getParentID();
+        TreeIterator<Real> dt_it = dt_max.getIteratorAtNode(id);
+        // Necessary dt / allowed dt
+        int new_cycle = int(ceil(dtregion.getData(parent_id) / dt_max.getData(id)));
+        if (new_cycle > cycle_max.getData(id))
+        {
+            BoxLib::Abort("Invalid dt after regrid: unable to subcycle enough\n");
+        }
+        ncycle.setData(id, new_cycle);
+        dtregion.setData(id, dtregion.getData(parent_id) / new_cycle);
+    }
+}
+
+void
 Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
 {
     Tree<Real> dt_max(dt_level);
@@ -3376,5 +3417,44 @@ Amr::whichRegion(int level, IntVect cell)
     }
     BoxLib::Abort("Unable to find region containing specified IntVect");
     return ROOT_ID; // to remove compiler warnings.
+}
+
+MultiFab* 
+Amr::createMultiFab(Array<int>     base_region, 
+                            int             lev, 
+                            ExecutionTree*  exec_tree, 
+                            int             ncomp,
+                            int             ngrow)
+{
+    MultiFab* result = new MultiFab();
+    PList<MultiFab> mf_list;
+    ExecutionTreeIterator it = exec_tree->getIteratorAtNode(base_region, lev);
+    for ( ; !it.isFinished(); ++it)
+    {
+        mf_list.push_back(new MultiFab(amr_regions.getData(it.getID()).boxArray(), ncomp, ngrow));
+    }
+    result->define(mf_list);
+    return result;
+}
+
+DistributionMapping
+Amr::createDM(Array<int>     base_region, 
+                            int             lev)
+{
+    Array<DistributionMapping> da;
+    int nprocs = ParallelDescriptor::NProcs();
+    int box_count = 0;
+    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(base_region, lev);
+    for ( ; !it.isFinished(); ++it)
+    {
+        // inefficient
+        da.resize(da.size() + 1);
+        BoxArray ba = boxArray(it.getID());
+        box_count += ba.size();
+        da[da.size()-1] = DistributionMapping(ba, nprocs);
+    }
+    DistributionMapping dm;
+    dm.define(box_count, da);
+    return dm;
 }
 

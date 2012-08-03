@@ -235,6 +235,7 @@ Tree<T>::Tree()
 template <class T>
 Tree<T>::Tree(Tree<T>& old_tree)
 {
+    /// This method seems to have some problems, but I'm not sure why.
     root = new Node();
     Array<int> root_id = old_tree.root->m_id;
     //root->m_id = root_id;

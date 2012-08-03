@@ -315,6 +315,17 @@ TagBoxArray::TagBoxArray (const BoxArray& ba,
     define(grownBoxArray, 1, 0, Fab_allocate);
 }
 
+TagBoxArray::TagBoxArray (const BoxArray& ba,
+                          const DistributionMapping& dm, 
+                          int             ngrow)
+    :
+    m_border(ngrow)
+{
+    BoxArray grownBoxArray(ba);
+    grownBoxArray.grow(ngrow);
+    define(grownBoxArray, 1, 0, dm, Fab_allocate);
+}
+
 int
 TagBoxArray::borderSize () const
 {

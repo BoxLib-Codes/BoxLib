@@ -501,6 +501,13 @@ public:
               int             ngrow,
               FabAlloc        mem_mode = Fab_allocate,
               FabClear        clear = Fab_clear);
+              
+    FabArray (const BoxArray&               bxs,
+              const DistributionMapping&    dm,
+              int                           nvar,
+              int                           ngrow,
+              FabAlloc                      mem_mode = Fab_allocate,
+              FabClear                      clear = Fab_clear);
     //
     // Construct a FabArray<FAB> as the merger of the fabs specified
     // in fab_arrs. By default this is a non-allocated fab; it points
@@ -527,7 +534,7 @@ public:
     void define (const BoxArray&            bxs,
                  int                        nvar,
                  int                        ngrow,
-		 const DistributionMapping& dm,
+                 const DistributionMapping& dm,
                  FabAlloc                   mem_mode);
     //
     // Define the FabArray based on the merger of the listed arrays,
@@ -1129,6 +1136,18 @@ FabArray<FAB>::FabArray (const BoxArray& bxs,
 {
     clear_mode = clear;
     define(bxs,nvar,ngrow,alloc);
+}
+
+template <class FAB>
+FabArray<FAB>::FabArray (const BoxArray&            bxs,
+                         const DistributionMapping& dm,
+                         int                        nvar,
+                         int                        ngrow,
+                         FabAlloc                   alloc,
+                         FabClear                   clear)
+{
+    clear_mode = clear;
+    define(bxs, nvar, ngrow, dm, alloc);
 }
 
 template <class FAB>

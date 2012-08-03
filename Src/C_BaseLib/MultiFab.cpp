@@ -236,6 +236,19 @@ MultiFab::MultiFab (const BoxArray& bxs,
     if ((check_for_nan || check_for_inf) && alloc == Fab_allocate) setVal(0);
 }
 
+MultiFab::MultiFab (const BoxArray&               bxs,
+                    const DistributionMapping&    dm,
+                    int                           ncomp,
+                    int                           ngrow,
+                    FabAlloc                      alloc)
+    :
+    FabArray<FArrayBox>(bxs, dm, ncomp, ngrow, alloc)
+{
+    Initialize();
+
+    if ((check_for_nan || check_for_inf) && alloc == Fab_allocate) setVal(0);
+}
+
 MultiFab::MultiFab (PArray<MultiFab>&  mfs,
                     FabAlloc           mem_mode,
                     FabClear           clear)

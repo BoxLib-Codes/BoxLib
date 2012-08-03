@@ -86,12 +86,19 @@ public:
               int             ngrow,
               FabAlloc        mem_mode = Fab_allocate);
               
-    MultiFab (PArray<MultiFab>& mfs,
+    MultiFab (const BoxArray&               bs,
+              const DistributionMapping&    dm,
+              int                           ncomp,
+              int                           ngrow,
+              FabAlloc                      mem_mode = Fab_allocate);
+              
+    MultiFab (PArray<MultiFab>&      mfs,
               FabAlloc               mem_mode = Fab_noallocate,
               FabClear               clear = Fab_noclear);
+              
     MultiFab (PList<MultiFab>&   mf_list,
-                      FabAlloc           mem_mode = Fab_noallocate,
-                      FabClear           clear = Fab_noclear);
+              FabAlloc           mem_mode = Fab_noallocate,
+              FabClear           clear = Fab_noclear);
 
     void operator= (const Real& r);
     //
