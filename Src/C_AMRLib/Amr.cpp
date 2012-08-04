@@ -156,7 +156,7 @@ Amr::levelCount (int lev) const
 AmrRegion&  
 Amr::getParent (int lev, const BoxArray& ba)
 {
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+    RegionIterator it = amr_regions.getIteratorAtRoot(lev);
     for ( ; !it.isFinished(); ++it)
     {
         if ((*it)->boxArray().contains(ba))
@@ -251,7 +251,7 @@ long
 Amr::cellCount (int lev)
 {
     long cnt = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+    RegionIterator it = amr_regions.getIteratorAtRoot(lev);
     for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->countCells();
@@ -269,7 +269,7 @@ int
 Amr::numGrids (int lev)
 {
     int cnt = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+    RegionIterator it = amr_regions.getIteratorAtRoot(lev);
     for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->numGrids();
@@ -285,7 +285,7 @@ Amr::derive (const std::string& name,
 {
     PArray<MultiFab> mfa(PArrayManage);
     int N = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+    RegionIterator it = amr_regions.getIteratorAtRoot(lev);
     for ( ; !it.isFinished(); ++it)
     {
         mfa.resize(N+1);
@@ -823,7 +823,7 @@ long
 Amr::cellCount ()
 {
     int cnt = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
+    RegionIterator it = amr_regions.getIteratorAtRoot();
     for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->countCells();
@@ -835,7 +835,7 @@ int
 Amr::numGrids ()
 {
     int cnt = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
+    RegionIterator it = amr_regions.getIteratorAtRoot();
     for ( ; !it.isFinished(); ++it)
     {
         cnt += (*it)->numGrids();
@@ -847,7 +847,7 @@ int
 Amr::okToContinue ()
 {
     int ok = true;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
+    RegionIterator it = amr_regions.getIteratorAtRoot();
     for ( ; ok && !it.isFinished(); ++it)
     {
         ok = ok && (*it)->okToContinue();
@@ -1188,7 +1188,7 @@ Amr::initialInit (Real strt_time,
                                   dt_region,
                                   stop_time);
     Array<int> id;
-    PTreeIterator<AmrRegion> prit = amr_regions.getIteratorAtRoot(-1, Prefix);
+    RegionIterator prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
     {
         id = prit.getID();
@@ -1609,7 +1609,7 @@ Amr::checkPoint ()
     }
 
     ///TODO/DEBUG: Upgrade this along with the restart code.
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot();
+    RegionIterator it = amr_regions.getIteratorAtRoot();
     for ( ; !it.isFinished(); ++it)
     {
         (*it)->checkPoint(ckfile, HeaderFile);
@@ -1738,13 +1738,13 @@ Amr::timeStep (AmrRegion& base_region,
     else
     {
         //See if any subregions want to regrid in prefix fashion
-        PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(base_id,-1,Prefix);
+        RegionIterator it = amr_regions.getIteratorAtNode(base_id,-1,Prefix);
         for ( ; !it.isFinished(); ++it)
         {
             //const int old_finest = finest_level;
             if (okToRegrid(it.getID()))
             {
-                regrid(*it,time);
+                regrid(it.getID(),time);
 
                 //
                 // Compute new dt after regrid if at level 0 and compute_new_dt_on_regrid.
@@ -2134,17 +2134,17 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
-    AmrRegion* base_region = &coarseRegion();
-    regrid(base_region, time, initial);
+    Array<int> region_id(lbase+1,0);
+    regrid(region_id, time, initial);
 }
 
 void
-Amr::regrid (AmrRegion* base_region,
+Amr::regrid (Array<int> base_id,
              Real time,
              bool initial)
 {
-    int lbase = base_region->Level();
-    const Array<int> base_id  = base_region->getID();
+    AmrRegion& base_region = getRegion(base_id);
+    int lbase = base_region.Level();
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "REGRID: at base region " << base_id.toString() << std::endl;
 
@@ -2159,15 +2159,13 @@ Amr::regrid (AmrRegion* base_region,
     PArray<AmrRegion> active_levels;
     active_levels.resize(finest_level+1);
     Array<DistributionMapping> dms(finest_level+1);
-    ///TODO/DEBUG: Move away from get_ancestors
     for (int i = 0; i <= lbase; i++)
     {
-        active_levels.set(i,&(base_region->get_ancestors()[i]));
-        touched_regions.push_back(&(base_region->get_ancestors()[i]));
-        if (i != lbase);
-            dms[i] = createDM(ROOT_ID, i);
+        Array<int> ancestor_id(base_id);
+        ancestor_id.resize(i+1);
+        active_levels.set(i,&getRegion(ancestor_id));
+        touched_regions.push_back(&getRegion(ancestor_id));
     }
-    dms[lbase] = createDM(base_id, lbase);
     
     PArray<AmrRegion> descendants(PArrayManage);
     aggregate_descendants(base_id, descendants);
@@ -2175,8 +2173,10 @@ Amr::regrid (AmrRegion* base_region,
     {
         active_levels.set(i,&descendants[i-lbase]);
         active_levels[i].set_ancestors(active_levels);
-        dms[i] = createDM(base_id, i);
     }
+    
+    for(int i = 0; i < finest_level; i++)
+        dms[i] = active_levels[i].get_distribution_map();
 
     
     //
@@ -2219,7 +2219,7 @@ Amr::regrid (AmrRegion* base_region,
     // all the necessary Regions.
     //
     RegionList evictees(PListManage);
-    amr_regions.extractChildrenOfNode(base_region->getID(), evictees);
+    amr_regions.extractChildrenOfNode(base_region.getID(), evictees);
     if (regrid_level_zero)
     {
         evictees.push_back(amr_regions.removeData(ROOT_ID));
@@ -2249,7 +2249,7 @@ Amr::regrid (AmrRegion* base_region,
     if (start == 0)
         grid_tree.setRoot(new_grid_places[0]);
     else 
-        grid_tree.setRoot(base_region->boxArray());
+        grid_tree.setRoot(base_region.boxArray());
     for (int lev = lbase + 1; lev <= new_finest; lev++) 
     {
         std::list<BoxArray> clusters;
@@ -2369,7 +2369,7 @@ Amr::regrid (AmrRegion* base_region,
     // Optimal subcycling codes must update the subcycling pattern for the subtree
     //
     if (subcycling_mode == "Optimal")
-        base_region->computeRestrictedDt(base_id, n_cycle, dt_region);
+        base_region.computeRestrictedDt(base_id, n_cycle, dt_region);
 
 #ifdef USE_STATIONDATA
     /// TODO/DEBUG: Upgrade
@@ -2443,7 +2443,7 @@ Amr::printGridInfo (std::ostream& os,
            << '\n';
 
 
-        PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(lev);
+        RegionIterator it = amr_regions.getIteratorAtRoot(lev);
         for ( ; !it.isFinished(); ++it)
         {
             const BoxArray& ba = boxArray(it.getID());
@@ -2954,7 +2954,7 @@ Amr::bldFineLevels (Real strt_time)
             id.resize(i+1);
             id[i] = 0;
             active_levels.set(i,&getRegion(id));
-            dms[i] = createDM(ROOT_ID, i);
+            dms[i] = active_levels[i].get_distribution_map();
         }
         grid_places(finest_level,active_levels,dms, strt_time,new_finest,grids);
         if (new_finest <= finest_level) break;
@@ -2994,7 +2994,7 @@ Amr::bldFineLevels (Real strt_time)
 	    for (int i = 0; i <= finest_level; i++)
 	      grids[i] = boxArray(i);
 
-	    regrid(&coarseRegion(),strt_time,true);
+	    regrid(ROOT_ID,strt_time,true);
         
 	    grids_the_same = true;
 
@@ -3170,7 +3170,7 @@ Amr::initPltAndChk(ParmParse * pp)
 //Amr::okToRegrid (int level)
 //{
     //bool ok = true;
-    //PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
+    //RegionIterator it = amr_regions.getIteratorAtRoot(level);
     //for ( ; !it.isFinished(); ++it)
     //{
         //ok = ok && (*it)->okToRegrid();
@@ -3386,7 +3386,7 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
     }
     // Fill the lists
     int max_level = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(id);
+    RegionIterator it = amr_regions.getIteratorAtNode(id);
     for ( ; !it.isFinished(); ++it)
     {
         int cur_level = (*it)->Level();
@@ -3409,7 +3409,7 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
 Array<int>
 Amr::whichRegion(int level, IntVect cell)
 {
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtRoot(level);
+    RegionIterator it = amr_regions.getIteratorAtRoot(level);
     for ( ; !it.isFinished(); ++it)
     {
         if ((*it)->boxArray().contains(cell))
@@ -3444,7 +3444,7 @@ Amr::createDM(Array<int>     base_region,
     Array<DistributionMapping> da;
     int nprocs = ParallelDescriptor::NProcs();
     int box_count = 0;
-    PTreeIterator<AmrRegion> it = amr_regions.getIteratorAtNode(base_region, lev);
+    RegionIterator it = amr_regions.getIteratorAtNode(base_region, lev);
     for ( ; !it.isFinished(); ++it)
     {
         // inefficient

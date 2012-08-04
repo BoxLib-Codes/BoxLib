@@ -451,9 +451,8 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
     m_FixUpCorners = NeedToTouchUpPhysCorners(m_amrregion.geom);
 
     const int         MyProc     = ParallelDescriptor::MyProc();
-    ///TODO/DEBUG: This non-reference might be a slowdown.
     PArray<AmrRegion>&  amrRegions = m_amrregion.ancestor_regions;
-    const AmrRegion&   topLevel   = amrRegions[m_amrregion.level];
+    const AmrRegion&  topLevel   = amrRegions[m_amrregion.level];
     const Box&        topPDomain = topLevel.state[m_index].getDomain();
     const IndexType   boxType    = m_leveldata.boxArray()[0].ixType();
     const bool        extrap     = AmrRegion::desc_lst[m_index].extrap();

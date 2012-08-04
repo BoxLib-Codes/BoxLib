@@ -20,6 +20,7 @@
 class AmrRegion;
 class LevelBld;
 class BoxDomain;
+typedef PTreeIterator<AmrRegion> RegionIterator;
 
 //
 //
@@ -35,6 +36,7 @@ class Amr
 public:
     // Typedef the list of regions for amr_level stuff.
     typedef PList<AmrRegion> RegionList;
+    
     //
     // The constructor.
     //
@@ -93,12 +95,13 @@ public:
     Real cumTime () const;
     //
     // Time step at specified level.
+    // Only allowed when multi_region = 0
     //
     Real dtLevel (int level) const;
     //
     // Tree of timesteps at all regions.
     //
-    Tree<Real>& dtRegion ();
+    const Tree<Real>& dtRegion ();
     //
     // Timestep at a specific region.
     //
@@ -109,6 +112,7 @@ public:
     const Geometry& Geom (int level) const;
     //
     // Number of subcycled time steps.
+    // Only allowed when multi_region = 0
     //
     int nCycle (int lev) const;
     //
@@ -129,6 +133,7 @@ public:
     const Array<IntVect>& refRatio () const;
     //
     // Number of time steps at specified level.
+    // Only allowed when multi_region = 0
     //
     int levelSteps (int lev) const;
     //
@@ -137,6 +142,7 @@ public:
     int regionSteps (Array<int> region) const;
     //
     // Which step are we at for the specified level?
+    // Only allowed when multi_region = 0
     //
     int levelCount (int lev) const;
     //
@@ -258,7 +264,8 @@ public:
     DistributionMapping createDM(Array<int>     base_region, 
                                  int             lev);
     //
-    // AmrRegion lev. Only allowed when multi_region = 0
+    // gets the AmrRegion at a given level. 
+    // Only allowed when multi_region = 0
     //
     AmrRegion&  getLevel (int lev);
     //
@@ -379,6 +386,9 @@ public:
     PTree<AmrRegion>& getRegions();
     const PTree<AmrRegion>& getRegions() const;
     
+    RegionIterator getRegionIterator(int lev = -1, IteratorMode mode = Postfix);
+    RegionIterator getRegionIterator(const Array<int> region_id, int lev = -1, IteratorMode mode = Postfix);
+    
     void FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level);
                                          
 protected:
@@ -428,7 +438,7 @@ protected:
     //
     // Rebuild grid hierarchy for descendants of base_region.
     //
-    void regrid (AmrRegion* base_region,
+    void regrid (Array<int> base_id,
                  Real time,
                  bool initial = false);
                  
@@ -484,20 +494,15 @@ protected:
     int              max_level;    // Maximum allowed level.
     int              finest_level; // Current finest level.
     Array<IntVect>   ref_ratio;    // Refinement ratios [0:finest_level-1]
-    //PArray<RegionList> amr_level;    // Array of list of Regions
     PTree<AmrRegion> amr_regions;
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
-    //Array<Real>      dt_level;     // Timestep at this level.
     Tree<Real>       dt_region;     // Timestep for this region.
-    //Tree<int>        level_steps;  // Number of time steps at this level.
-    //Tree<int>        level_count;
     ///region steps is unreliable right now--I'm not sure what use it is
     Tree<int>        region_steps;  // Number of time steps at this level.
     Tree<int>        region_count;
     Tree<int>        n_cycle;
     std::string      subcycling_mode; //Type of subcycling to use.
-    //Tree<Real>       dt_min;
     Tree<Real>       dt_reg_min; 
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?
     Array<int>       regrid_int;      // Interval between regridding.
@@ -590,7 +595,7 @@ Amr::refRatio () const
 }
 
 inline
-Tree<Real>&
+const Tree<Real>&
 Amr::dtRegion() 
 {
     return dt_region;
@@ -734,6 +739,20 @@ const PTree<AmrRegion>&
 Amr::getRegions() const
 {
     return amr_regions;
+}
+
+inline
+RegionIterator
+Amr::getRegionIterator(int lev, IteratorMode mode)
+{
+    return amr_regions.getIteratorAtRoot(lev, mode);
+}
+
+inline
+RegionIterator
+Amr::getRegionIterator(const Array<int> region_id, int lev, IteratorMode mode)
+{
+    return amr_regions.getIteratorAtNode(region_id, lev, mode);
 }
 
 #endif /*_Amr_H_*/
