@@ -11,7 +11,7 @@
 StationRec::StationRec ()
 {
     D_TERM(pos[0],=pos[1],=pos[2]) = -1;
-    id = level = grd = -1;
+    id = grd = -1;
     own = false;
 }
 
@@ -21,7 +21,7 @@ StationData::~StationData ()
 }
 
 void
-StationData::init (const PArray<std::list<AmrRegion>>& levels, const int finestlevel)
+StationData::init (const PTree<AmrRegion>& regions, Real* fineCellSize)
 {
     //
     // ParmParse variables:
@@ -109,12 +109,10 @@ StationData::init (const PArray<std::list<AmrRegion>>& levels, const int finestl
     }
 
 
-    // adjust the positions so they are not exactly on a grid line
-    // cannot use [levels.size()-1] because of level capping
-    const Real *fineDX = levels[finestlevel].front().Geom().CellSize();
+    ///const Real *fineDX = levels[finestlevel].front().Geom().CellSize();
     for(int i(0); i < m_stn.size(); ++i) {
       for(int d(0); d < BL_SPACEDIM; ++d) {
-        Real tempPos(m_stn[i].pos[d]), dx(fineDX[d]);
+        Real tempPos(m_stn[i].pos[d]), dx(fineCellSize[d]);
         Real dxEps(0.1 * dx);
 	long nCells(fabs(tempPos/dx));
 	Real rR = fabs(fabs(tempPos) - (nCells * dx));
@@ -184,12 +182,12 @@ StationData::init (const PArray<std::list<AmrRegion>>& levels, const int finestl
 
 void
 StationData::report (Real            time,
-                     int             level,
-                     const AmrRegion& amrlevel)
+                     const AmrRegion& amrRegion)
 {
     if (m_stn.size() <= 0)
         return;
 
+    ID region_id = amrRegion.getID();
     static Array<Real> data;
 
     const int N = m_vars.size();
@@ -203,13 +201,13 @@ StationData::report (Real            time,
         if (m_IsDerived[iVar])
         {
             mfPtrs[iVar] =
-                const_cast<AmrRegion&>(amrlevel).derive(m_vars[iVar], time, nGhost);
+                const_cast<AmrRegion&>(amrRegion).derive(m_vars[iVar], time, nGhost);
         }
     }
 
     for (int i = 0; i < m_stn.size(); i++)
     {
-        if (m_stn[i].own && m_stn[i].level == level)
+        if (m_stn[i].own && m_stn[i].region == region_id)
         {
             //
             // Fill in the data vector.
@@ -222,7 +220,7 @@ StationData::report (Real            time,
 
                     BL_ASSERT(mf != NULL);
                     BL_ASSERT(mf->DistributionMap() ==
-                              amrlevel.get_new_data(0).DistributionMap());
+                              amrRegion.get_new_data(0).DistributionMap());
                     BL_ASSERT(mf->DistributionMap()[m_stn[i].grd] == ParallelDescriptor::MyProc());
                     //
                     // Find IntVect so we can index into FAB.
@@ -230,7 +228,7 @@ StationData::report (Real            time,
                     // Must adjust the position to account for NodeCentered-ness.
                     //
                     IndexType ityp = 
-                        amrlevel.get_derive_lst().get(m_vars[j])->deriveType();
+                        amrRegion.get_derive_lst().get(m_vars[j])->deriveType();
 
                     Real pos[BL_SPACEDIM];
 
@@ -238,13 +236,13 @@ StationData::report (Real            time,
                            pos[1] = m_stn[i].pos[1] + .5 * ityp[1];,
                            pos[2] = m_stn[i].pos[2] + .5 * ityp[2];);
 
-                    IntVect idx = amrlevel.Geom().CellIndex(&pos[0]);
+                    IntVect idx = amrRegion.Geom().CellIndex(&pos[0]);
 
                     data[j] = (*mf)[m_stn[i].grd](idx,m_ncomp[j]);
                 }
                 else
                 {
-                    const MultiFab& mf = amrlevel.get_new_data(m_typ[j]);
+                    const MultiFab& mf = amrRegion.get_new_data(m_typ[j]);
 
                     BL_ASSERT(mf.nComp() > m_ncomp[j]);
                     BL_ASSERT(mf.DistributionMap()[m_stn[i].grd] == ParallelDescriptor::MyProc());
@@ -253,7 +251,7 @@ StationData::report (Real            time,
                     // We want to use Geometry::CellIndex().
                     // Must adjust the position to account for NodeCentered-ness.
                     //
-                    IndexType ityp = amrlevel.get_desc_lst()[m_typ[j]].getType();
+                    IndexType ityp = amrRegion.get_desc_lst()[m_typ[j]].getType();
 
                     Real pos[BL_SPACEDIM];
 
@@ -261,7 +259,7 @@ StationData::report (Real            time,
                            pos[1] = m_stn[i].pos[1] + .5 * ityp[1];,
                            pos[2] = m_stn[i].pos[2] + .5 * ityp[2];);
 
-                    IntVect idx = amrlevel.Geom().CellIndex(&pos[0]);
+                    IntVect idx = amrRegion.Geom().CellIndex(&pos[0]);
 
                     data[j] = mf[m_stn[i].grd](idx,m_ncomp[j]);
                 }
@@ -297,59 +295,53 @@ StationData::report (Real            time,
 }
 
 void
-StationData::findGrid (const PArray<std::list<AmrRegion>>& levels,
+StationData::findGrid (const PTree<AmrRegion>& regions,
                        const Array<Geometry>&  geoms)
 {
-    BL_ASSERT(geoms.size() == levels.size());
-
     if (m_stn.size() <= 0)
         return;
     //
     // Flag all stations as not having a home.
     //
     for (int i = 0; i < m_stn.size(); i++)
-        m_stn[i].level = -1;
+        m_stn[i].region.resize(0);
     //
-    // Find level and grid owning the data.
+    // Find region and grid owning the data.
     //
     const int MyProc = ParallelDescriptor::MyProc();
 
-    for (int level = levels.size()-1; level >= 0; level--)
+    for (RegionIterator it = regions.getIteratorAtRoot(), !it.isFinished(); ++it)
     {
-        if (levels.defined(level))
+        if (it.isDefined();)
         {
-            //TODO/DEBUG: Check that this breaks properly and gives the right data.
-            for (RegionList::iterator it = levels[k].begin(); it != levels[k].end(); it++)
+            AmrRegion region = *it;
+            Array<RealBox> boxes(region.boxArray().size());
+
+            for (int i = 0; i < boxes.size(); i++)
             {
-                AmrRegion region = *it;
-                Array<RealBox> boxes(region.boxArray().size());
+                boxes[i] = RealBox(region.boxArray()[i],
+                                   region.Geom().CellSize(),
+                                   region.Geom().ProbLo());
+            }
 
-                for (int i = 0; i < boxes.size(); i++)
+
+            MultiFab mf(region.boxArray(),1,0,Fab_noallocate);
+
+            BL_ASSERT(mf.boxArray().size() == boxes.size());
+
+            for (int i = 0; i < m_stn.size(); i++)
+            {
+                if (m_stn[i].region.empty())
                 {
-                    boxes[i] = RealBox(region.boxArray()[i],
-                                       region.Geom().CellSize(),
-                                       region.Geom().ProbLo());
-                }
-
-
-                MultiFab mf(region.boxArray(),1,0,Fab_noallocate);
-
-                BL_ASSERT(mf.boxArray().size() == boxes.size());
-
-                for (int i = 0; i < m_stn.size(); i++)
-                {
-                    if (m_stn[i].level < 0)
+                    for (int j = 0; j < boxes.size(); j++)
                     {
-                        for (int j = 0; j < boxes.size(); j++)
+                        if (boxes[j].contains(&m_stn[i].pos[0]))
                         {
-                            if (boxes[j].contains(&m_stn[i].pos[0]))
-                            {
-                                m_stn[i].grd   = j;
-                                m_stn[i].own   = (mf.DistributionMap()[j] == MyProc);
-                                m_stn[i].level = level;
+                            m_stn[i].grd   = j;
+                            m_stn[i].own   = (mf.DistributionMap()[j] == MyProc);
+                            m_stn[i].region = it.getID();
 
-                                break;
-                            }
+                            break;
                         }
                     }
                 }

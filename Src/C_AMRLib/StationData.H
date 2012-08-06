@@ -22,7 +22,7 @@ struct StationRec
 
     Real pos[BL_SPACEDIM]; // Physical coordinates
     int  id;               // Identifier
-    int  level;            // Finest level containing station
+    ID   region;           // Finest region containing station
     int  grd;              // Index of BoxArray containing FAB
     bool own;              // Does this CPU own the data at grd?
 };
@@ -44,17 +44,16 @@ public:
     //
     // Data files have the form: "Station/stn_CPU_NNNN"
     //
-    void init (const PArray<std::list<AmrRegion>>& levels, const int finestlevel);
+    void init (const PTree<AmrRegion>& regions, Real* fineCellSize);
     //
     // Collect data for all station points at level and write to station file.
     //
     void report (Real            time,
-                 int             level,
-                 const AmrRegion& amrlevel);
+                 const AmrRegion& amrRegion);
     //
     // Locate finest level grid for each station point.
     //
-    void findGrid (const PArray<std::list<AmrRegion>>& levels,
+    void findGrid (const PTree<AmrRegion>& regions,
                    const Array<Geometry>&  geoms);
 private:
 

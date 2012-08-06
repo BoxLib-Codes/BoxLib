@@ -1233,9 +1233,8 @@ Amr::initialInit (Real strt_time,
     }
 
 #ifdef USE_STATIONDATA
-    ///TODO/DEBUG: Upgrade
-    //station.init(amr_level, finestLevel());
-    //station.findGrid(amr_level,geom);
+    station.init(amr_regions, geom[finestLevel()].CellSize());
+    station.findGrid(amr_regions,geom);
 #endif
 }
 
@@ -1510,9 +1509,8 @@ Amr::restart (const std::string& filename)
     //}
 
 //#ifdef USE_STATIONDATA
-    /////TODO/DEBUG: Upgrade
-    ////station.init(amr_level, finestLevel());
-    ////station.findGrid(amr_level,geom);
+    //station.init(amr_regions, geom[finestLevel()].CellSize());
+    //station.findGrid(amr_regions,geom);
 //#endif
 
     //if (verbose > 0)
@@ -1811,8 +1809,7 @@ Amr::timeStep (AmrRegion& base_region,
     }
 
 #ifdef USE_STATIONDATA
-    ///TODO/DEBUG: Upgrade.
-    //station.report(time+my_dt,level,base_region);
+    station.report(time+my_dt,base_region);
 #endif
 
 #ifdef USE_SLABSTAT
@@ -1821,7 +1818,6 @@ Amr::timeStep (AmrRegion& base_region,
     //
     // Advance grids at higher level.
     //
-    ///TODO/DEBUG: Upgrade.
     if (level < finest_level)
     {
         RegionList children;
@@ -1831,7 +1827,7 @@ Amr::timeStep (AmrRegion& base_region,
             ID c_id = (*child)->getID();
             if (sub_cycle)
             {
-                const int ncycle = n_cycle.getData(c_id); /// update this
+                const int ncycle = n_cycle.getData(c_id);
                 for (int i = 1; i <= ncycle; i++)
                 {
                     timeStep(**child,time+(i-1)*dt_region.getData(c_id),i,ncycle,stop_time);
@@ -2370,8 +2366,7 @@ Amr::regrid (ID base_id,
         base_region.computeRestrictedDt(base_id, n_cycle, dt_region);
 
 #ifdef USE_STATIONDATA
-    /// TODO/DEBUG: Upgrade
-    //station.findGrid(amr_level,geom);
+    station.findGrid(amr_regions,geom);
 #endif
     //
     // Report creation of new grids.
