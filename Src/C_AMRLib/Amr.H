@@ -105,7 +105,7 @@ public:
     //
     // Timestep at a specific region.
     //
-    Real dtRegion(Array<int> id) const;
+    Real dtRegion(ID id) const;
     //
     // Geometry object.
     //
@@ -118,7 +118,7 @@ public:
     //
     // Number of subcycled time steps.
     //
-    int nCycle (Array<int> region) const;
+    int nCycle (ID region) const;
     //
     // Refinement ratio.
     //
@@ -139,7 +139,7 @@ public:
     //
     // Number of time steps at specified region.
     //
-    int regionSteps (Array<int> region) const;
+    int regionSteps (ID region) const;
     //
     // Which step are we at for the specified level?
     // Only allowed when multi_region = 0
@@ -246,22 +246,22 @@ public:
     // List of grids in various portions of the domain.
     //
     BoxArray boxArray (int lev) const;
-    BoxArray boxArray (Array<int> base_region, int lev) const;
-    BoxArray boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const;
-    BoxArray boxArray (Array<int> region_id) const;
+    BoxArray boxArray (ID base_region, int lev) const;
+    BoxArray boxArray (ID base_region, int lev, ExecutionTree* exec_tree) const;
+    BoxArray boxArray (ID region_id) const;
     //
     // Creates an empty multifab built on the boxArrays of the specified domain
     // portion. The importance of this method is that the resulting multifab's
     // distribution map is the union of the maps for the component boxArrays,
     // rather than a separate map for the new, larger mf.
     //
-    MultiFab* createMultiFab(Array<int>     base_region, 
+    MultiFab* createMultiFab(ID     base_region, 
                             int             lev, 
                             ExecutionTree*  exec_tree, 
                             int             ncomp,
                             int             ngrow);
                             
-    DistributionMapping createDM(Array<int>     base_region, 
+    DistributionMapping createDM(ID     base_region, 
                                  int             lev);
     //
     // gets the AmrRegion at a given level. 
@@ -284,7 +284,7 @@ public:
     //
     // Number of cells at given region.
     //
-    long cellCount (Array<int> region_id);
+    long cellCount (ID region_id);
     //
     // Total number of grids.
     //
@@ -304,7 +304,7 @@ public:
     //
     // Should we regrid this region?
     //
-    bool okToRegrid (Array<int> region_id);
+    bool okToRegrid (ID region_id);
     //
     // Do a complete integration cycle.
     //
@@ -348,7 +348,7 @@ public:
     //
     // This method is typically called after a regrid on a subtree.
     //
-    static void setRestrictedSubcycling(Array<int>  base_region,
+    static void setRestrictedSubcycling(ID  base_region,
                              Tree<int>&   n_cycle, 
                              Tree<Real>& dt_region, 
                              Tree<Real>& dt_max, 
@@ -363,7 +363,7 @@ public:
     
     AmrRegion* build_blank_region();
     
-    void aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates);
+    void aggregate_descendants(const ID id, PArray<AmrRegion>& aggregates);
     
     //
     // Returns a reference to the coarse region of the simulation.
@@ -373,12 +373,12 @@ public:
     //
     // Return a reference to the specified region.
     //
-    AmrRegion& getRegion(const Array<int> id);
+    AmrRegion& getRegion(const ID id);
     
     //
     // Locate the region that contains the specified cell. Aborts on failure.
     //
-    Array<int> whichRegion(int level, IntVect cell);
+    ID whichRegion(int level, IntVect cell);
     
     //
     // PTree of all the AmrRegions.
@@ -387,7 +387,7 @@ public:
     const PTree<AmrRegion>& getRegions() const;
     
     RegionIterator getRegionIterator(int lev = -1, IteratorMode mode = Postfix);
-    RegionIterator getRegionIterator(const Array<int> region_id, int lev = -1, IteratorMode mode = Postfix);
+    RegionIterator getRegionIterator(const ID region_id, int lev = -1, IteratorMode mode = Postfix);
     
     void FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level);
                                          
@@ -438,7 +438,7 @@ protected:
     //
     // Rebuild grid hierarchy for descendants of base_region.
     //
-    void regrid (Array<int> base_id,
+    void regrid (ID base_id,
                  Real time,
                  bool initial = false);
                  
@@ -446,7 +446,7 @@ protected:
     // Restructures our data trees in preparation for recieving new data
     // Normally called in regrid.
     //
-    void restructure(Array<int> base_region, std::list<int> structure, bool do_regions = true);
+    void restructure(ID base_region, std::list<int> structure, bool do_regions = true);
     
     //
     // Define new grid locations (called from regrid) and put into new_grids.
@@ -603,7 +603,7 @@ Amr::dtRegion()
 
 inline
 Real
-Amr::dtRegion(Array<int> id) const
+Amr::dtRegion(ID id) const
 {
     return dt_region.getData(id);
 }
@@ -722,7 +722,7 @@ Amr::coarseRegion()
 
 inline
 AmrRegion&
-Amr::getRegion(const Array<int> id)
+Amr::getRegion(const ID id)
 {
     return amr_regions.getData(id);
 }
@@ -750,7 +750,7 @@ Amr::getRegionIterator(int lev, IteratorMode mode)
 
 inline
 RegionIterator
-Amr::getRegionIterator(const Array<int> region_id, int lev, IteratorMode mode)
+Amr::getRegionIterator(const ID region_id, int lev, IteratorMode mode)
 {
     return amr_regions.getIteratorAtNode(region_id, lev, mode);
 }

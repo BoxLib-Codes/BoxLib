@@ -55,21 +55,21 @@ struct ParticleBase
     // Checks/sets a particles location on levels lev_min and higher.
     // Returns false if the particle does not exist on that level.
     //
-    static bool Where (ParticleBase& prt, const Amr* amr, bool update = false, Array<int>* base_region_ptr = 0);
+    static bool Where (ParticleBase& prt, const Amr* amr, bool update = false, ID* base_region_ptr = 0);
     //
     // Checks/sets whether the particle has crossed a periodic boundary in such a way
     // that it is on levels lev_min and higher.
     //
-    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, Array<int> base_region);
+    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, ID base_region);
     //
     // Checks/sets whether a particle is within its grid (including grow cells).
     //
-    static bool RestrictedWhere (ParticleBase& p, const Amr* amr, Array<int> base_region, int ngrow);
+    static bool RestrictedWhere (ParticleBase& p, const Amr* amr, ID base_region, int ngrow);
     //
     // Checks/sets a particle's location on a specific level.
     // (Yes this is distict from the functionality provided above)
     //
-    static bool SingleRegionWhere (ParticleBase& p, const Amr* amr, Array<int> region_id);
+    static bool SingleRegionWhere (ParticleBase& p, const Amr* amr, ID region_id);
     //
     // Updates a particle's location (Where), tries to periodic shift any particles
     // that have left the domain. May need work (see inline comments)
@@ -224,28 +224,28 @@ public:
     void InitCosmo  (MultiFab& mf, const Real vel_fac[], const Array<int> n_part, const Real particleMass, const Real shift[]);
     void InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const Real particleMass);
 
-    Real sumParticleMass (const MultiFab& mf, int level, Array<int>* base_region_ptr = 0) const;
-    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, Array<int>* base_region_ptr = 0) const;
+    Real sumParticleMass (const MultiFab& mf, int level, ID* base_region_ptr = 0) const;
+    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, ID* base_region_ptr = 0) const;
 
-    void Increment (MultiFab& mf, int level, Array<int>* base_region_ptr = 0);
+    void Increment (MultiFab& mf, int level, ID* base_region_ptr = 0);
 
-    long IncrementWithTotal (MultiFab& mf, int level, Array<int>* base_region_ptr = 0);
+    long IncrementWithTotal (MultiFab& mf, int level, ID* base_region_ptr = 0);
 
-    void AssignDensitySingleRegion (MultiFab& mf, Array<int> region_id, int ncomp=1, int particle_lvl_offset = 0) const;
+    void AssignDensitySingleRegion (MultiFab& mf, ID region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
-    void AssignDensity (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
+    void AssignDensity (PArray<MultiFab>& mf, ID* base_region_ptr = 0, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
 
-    void AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* base_region_ptr = 0) const;
+    void AssignDensityAndVels (PArray<MultiFab>& mf, ID* base_region_ptr = 0) const;
 
     void AssignDensityDoit (PArray<MultiFab>& mf, PBox& data, int ncomp,  int lev_min) const;
 
     void MultiplyParticleMass (int lev, Real mult);
  
-    Real estTimestep (const MultiFab& grav_vector, Real a, Array<int> region_id, Real cfl) const;
+    Real estTimestep (const MultiFab& grav_vector, Real a, ID region_id, Real cfl) const;
 
     void Redistribute (bool where_already_called = false,
                        bool full_where           = false,
-                       Array<int>* base_region_ptr = 0, 
+                       ID* base_region_ptr = 0, 
                        int  nGrow                = 0);
                        
     void RedistributePBox(PBox& pbox, 
@@ -255,7 +255,7 @@ public:
                           int lev, 
                           bool where_already_called,
                           bool full_where,
-                          Array<int> base_region,
+                          ID base_region,
                           int  nGrow);
     //
     // OK checks that all particles are in the right places (for some value of right)
@@ -263,7 +263,7 @@ public:
     // These flags are used to do proper checking for subcycling particles
     // the default values are fine for non-subcycling methods
     //
-    bool OK (bool full_where = false,  Array<int>* base_region_ptr = 0 , int ngrow = 0) const;
+    bool OK (bool full_where = false,  ID* base_region_ptr = 0 , int ngrow = 0) const;
 
     void ByteSpread () const;
     //
@@ -288,22 +288,22 @@ public:
     // The following two functions form a PREDICTOR CORRECTOR scheme for integrating the motion of the particles
     // BE CAREFUL: This one uses a NGP interpolation, which is not consistent with the density assignment scheme!
     //
-    void movePredict (const MultiFab& grav_vector,  Array<int> region_id, Real timestep);
-    void moveCorrect (const MultiFab& grav_vector_old, const MultiFab& grav_vector,  Array<int> region_id, Real timestep);
+    void movePredict (const MultiFab& grav_vector,  ID region_id, Real timestep);
+    void moveCorrect (const MultiFab& grav_vector_old, const MultiFab& grav_vector,  ID region_id, Real timestep);
     //
     // TODO: the methods should return a constraint on the timestep...
     //
     // The following two functions form a KICK DRIFT KICK scheme for integrating the motion of the particles in
     //   comoving coordinates -- these rely on CELL-BASED gravity component
     //
-    void moveKickDrift (const MultiFab& grav_vector,  Array<int> region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
-    void moveKick      (const MultiFab& grav_vector,  Array<int> region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
+    void moveKickDrift (const MultiFab& grav_vector,  ID region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
+    void moveKick      (const MultiFab& grav_vector,  ID region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
     //
     // The following two functions form a KICK DRIFT KICK scheme for integrating the motion of the particles in
     //   comoving coordinates -- these rely on EDGE-BASED gravity component
     //
-    void moveKickDrift (PArray<MultiFab>& grav_vector,  Array<int> region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
-    void moveKick      (PArray<MultiFab>& grav_vector,  Array<int> region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
+    void moveKickDrift (PArray<MultiFab>& grav_vector,  ID region_id, Real timestep, Real a_old = 1.0, Real a_half = 1.0);
+    void moveKick      (PArray<MultiFab>& grav_vector,  ID region_id, Real timestep, Real a_new = 1.0, Real a_half = 1.0);
     //
     // after the moveKickDrift step the positions of the particles are advanced for a full timestep,
     // so this scheme should work in the overall algorithm...
@@ -313,32 +313,32 @@ public:
     //
     // Removes all particles at a given level
     //
-    void RemoveParticlesInRegion ( Array<int> region_id);
+    void RemoveParticlesInRegion ( ID region_id);
     //
     // Creates virtual particles for a given region that represent
     // in some capacity all particles at finer regions
     //
-    void CreateVirtualParticles ( Array<int> region_id, PBox& virts) const;
+    void CreateVirtualParticles ( ID region_id, PBox& virts) const;
     // 
     // Create ghost particles for a given region that are copies of particles
     // near coarse->fine boundaries in level-1
     //
-    void CreateGhostParticles ( Array<int> region_id, int ngrow, PBox& ghosts) const;
+    void CreateGhostParticles ( ID region_id, int ngrow, PBox& ghosts) const;
     //
     // Add particles from a pbox to the grid at this level
     //
-    void AddParticlesToRegion ( Array<int> region_id, PBox& virts, bool where_already_called = false);
+    void AddParticlesToRegion ( ID region_id, PBox& virts, bool where_already_called = false);
     // **************************************************************************************************************** 
 
-    void AdvectWithUmac (const MultiFab* umac,  Array<int> region_id, Real dt, const int vcomp = 0);
+    void AdvectWithUmac (const MultiFab* umac,  ID region_id, Real dt, const int vcomp = 0);
 
     void Checkpoint (const std::string& dir, const std::string& name) const;
 
     void Restart (const std::string& dir, const std::string& file);
 
-    void Timestamp (const std::string& file, const MultiFab& mf,  Array<int> region_id, Real time, const std::vector<int>& idx, const int vcomp = 0);
+    void Timestamp (const std::string& file, const MultiFab& mf,  ID region_id, Real time, const std::vector<int>& idx, const int vcomp = 0);
     
-    void Restructure(Array<int> base_region, std::list<int> new_structure);
+    void Restructure(ID base_region, std::list<int> new_structure);
 
     void WriteAsciiFile (const std::string& file);
 
@@ -350,7 +350,7 @@ protected:
     //
     // Helper function for Checkpoint().
     //
-    void WriteParticles ( Array<int> region_id,
+    void WriteParticles ( ID region_id,
                          std::ofstream& ofs,
                          int            fnum,
                          Array<int>&    which,
@@ -1497,7 +1497,7 @@ ParticleContainer<N>::InitRandom (long          icount,
 
             BL_ASSERT(p.m_lev >= 0 && p.m_lev <= m_amr->finestLevel());
 
-            Array<int> region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
+            ID region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
             const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
 
             if (who == MyProc)
@@ -1684,7 +1684,7 @@ template <int N>
 void
 ParticleContainer<N>::Increment (MultiFab& mf,
                                  int       lev,
-                                 Array<int>* base_region_ptr) 
+                                 ID* base_region_ptr) 
 {
     IncrementWithTotal(mf,lev, base_region_ptr);
 }
@@ -1693,10 +1693,10 @@ template <int N>
 long
 ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
                                           int       lev,
-                                          Array<int>* base_region_ptr)
+                                          ID* base_region_ptr)
 {
     BL_ASSERT(OK());
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -1744,7 +1744,7 @@ template <int N>
 Real
 ParticleContainer<N>::estTimestep (const MultiFab& gv,
                                    Real            a,
-                                   Array<int>      region_id,
+                                   ID      region_id,
                                    Real            cfl) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
@@ -1853,12 +1853,12 @@ template <int N>
 Real
 ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
                                        int             lev,
-                                       Array<int>* base_region_ptr) const
+                                       ID* base_region_ptr) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(lev >= 0);
     ///TODO/DEBUG: Any other assertions needed?
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -1905,12 +1905,12 @@ void
 ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
                                            int             lev,
                                            Real*           mom,
-                                           Array<int>* base_region_ptr) const
+                                           ID* base_region_ptr) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
     
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -1964,7 +1964,7 @@ ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
 template <int N>
 void
 ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
-                                                Array<int> region_id,
+                                                ID region_id,
                                                 int       ncomp,
                                                 int       particle_lvl_offset) const
 {
@@ -2099,7 +2099,7 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* base_region_ptr) const
+ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, ID* base_region_ptr) const
 {
     AssignDensity(mf, base_region_ptr, BL_SPACEDIM+1);
 }
@@ -2107,7 +2107,7 @@ ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, Array<int>* ba
 template <int N>
 void
 ParticleContainer<N>::AssignDensity (PArray<MultiFab>&  mf, 
-                                     Array<int>*        base_region_ptr, 
+                                     ID*        base_region_ptr, 
                                      int                ncomp, 
                                      int                finest_level, 
                                      ExecutionTree*     exec_tree) const
@@ -2116,7 +2116,7 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>&  mf,
     BL_ASSERT(N >= ncomp);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
 
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -3137,7 +3137,7 @@ ParticleContainer<N>::MultiplyParticleMass (int lev, Real mult)
 template <int N>
 void
 ParticleContainer<N>::movePredict (const MultiFab& gv,
-                                   Array<int>      region_id,
+                                   ID      region_id,
                                    Real            dt)
 {
     BL_ASSERT(OK());
@@ -3201,7 +3201,7 @@ template <int N>
 void
 ParticleContainer<N>::moveCorrect (const MultiFab& gv_old,
                                    const MultiFab& gv,
-                                   Array<int>      region_id,
+                                   ID      region_id,
                                    Real            dt)
 {
     BL_ASSERT(OK());
@@ -3274,7 +3274,7 @@ ParticleContainer<N>::moveCorrect (const MultiFab& gv_old,
 template <int N>
 void
 ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
-                                     Array<int>      region_id,
+                                     ID      region_id,
                                      Real            dt,
                                      Real            a_old,
                                      Real            a_half) 
@@ -3369,7 +3369,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
-                                Array<int>      region_id,
+                                ID      region_id,
                                 Real            dt,
                                 Real            a_new,
                                 Real            a_half) 
@@ -3447,7 +3447,7 @@ ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
-                                     Array<int>      region_id,
+                                     ID      region_id,
                                      Real            dt,
                                      Real            a_old,
                                      Real            a_half) 
@@ -3552,7 +3552,7 @@ ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
-                                Array<int>        region_id,
+                                ID        region_id,
                                 Real              dt,
                                 Real              a_new,
                                 Real              a_half) 
@@ -3640,19 +3640,19 @@ ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
 
 template <int N>
 void
-ParticleContainer<N>::RemoveParticlesInRegion (Array<int> region_id)
+ParticleContainer<N>::RemoveParticlesInRegion (ID region_id)
 {
     PMap().swap(m_particles.getData(region_id));
 }
 
 template <int N>
 void
-ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
+ParticleContainer<N>::AddParticlesToRegion (ID region_id,
                                            PBox& virts,
                                            bool  where_already_called)
 {
     const int MyProc = ParallelDescriptor::MyProc();
-    int level = region_id.size() - 1;
+    int level = region_id.level();
     //
     // The valid particles that we don't own.
     //
@@ -3963,10 +3963,10 @@ ParticleContainer<N>::AddParticlesToRegion (Array<int> region_id,
 
 template <int N>
 void
-ParticleContainer<N>::CreateVirtualParticles (Array<int>   region_id,
+ParticleContainer<N>::CreateVirtualParticles (ID   region_id,
                                               PBox& virts) const
 {
-    int level = region_id.size() - 1;
+    int level = region_id.level();
     BL_ASSERT(level > 0);
     BL_ASSERT(virts.empty());
 
@@ -4089,12 +4089,12 @@ ParticleContainer<N>::CreateVirtualParticles (Array<int>   region_id,
 
 template <int N>
 void
-ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
+ParticleContainer<N>::CreateGhostParticles (ID region_id,
                                             int   ngrow,
                                             PBox& ghosts) const
 {
     BL_ASSERT(ghosts.empty());
-    int level = region_id.size() - 1;
+    int level = region_id.level();
 
     //
     // Copy and grow the box array for the finer level.
@@ -4105,7 +4105,7 @@ ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
     
     std::vector< std::pair<int,Box> > isects;
 
-    Array<int> parent_id = m_amr->getRegion(region_id).Parent()->getID();
+    ID parent_id = region_id.parent();
     const PMap& pmap = m_particles.getData(parent_id);
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end();
@@ -4161,7 +4161,7 @@ ParticleContainer<N>::CreateGhostParticles (Array<int> region_id,
 template <int N>
 void
 ParticleContainer<N>::AdvectWithUmac (const MultiFab* umac,
-                                      Array<int>      region_id,
+                                      ID      region_id,
                                       Real            dt,
                                       const int       vcomp)
 {
@@ -4291,7 +4291,7 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                                        int lev,
                                        bool where_already_called,
                                        bool full_where,
-                                       Array<int> base_region,
+                                       ID base_region,
                                        int  nGrow)
 {
     const int MyProc   = ParallelDescriptor::MyProc();
@@ -4302,7 +4302,7 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
     while (!pbox.empty() && pbox.front().m_id <= 0)
         pbox.pop_front();
 
-    Array<int> region_id;
+    ID region_id;
     for (typename PBox::iterator it = pbox.begin(), End = pbox.end(); it != End; )
     {
         ParticleType& p = *it;
@@ -4396,13 +4396,13 @@ template <int N>
 void
 ParticleContainer<N>::Redistribute (bool where_already_called,
                                     bool full_where,
-                                    Array<int>* base_region_ptr,
+                                    ID* base_region_ptr,
                                     int  nGrow)
 {
     const int MyProc   = ParallelDescriptor::MyProc();
     Real      strttime = ParallelDescriptor::second();
     
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -4505,7 +4505,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         maxsendcount += Snds[i];
     ParallelDescriptor::ReduceLongMax(maxsendcount);
 
-    Array<int> region_id;
+    ID region_id;
     if (maxsendcount == 0)
     {
         //
@@ -4739,10 +4739,10 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 template <int N>
 bool
 ParticleContainer<N>::OK (bool full_where,
-                          Array<int>* base_region_ptr,
+                          ID* base_region_ptr,
                           int  ngrow) const
 {
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region = ROOT_ID;
@@ -5127,7 +5127,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
 
 template <int N>
 void
-ParticleContainer<N>::WriteParticles (Array<int>     region_id,
+ParticleContainer<N>::WriteParticles (ID     region_id,
                                       std::ofstream& ofs,
                                       int            fnum,
                                       Array<int>&    which,
@@ -5320,7 +5320,7 @@ ParticleContainer<N>::Restart (const std::string& dir,
 
 template <int N>
 void
-ParticleContainer<N>::Restructure (Array<int> base_region, std::list<int> new_structure)
+ParticleContainer<N>::Restructure (ID base_region, std::list<int> new_structure)
 {
     ///TODO/DEBUG: Figure out an assert to add here so that we don't kill innocent orphans.
     //There should probably be some asserts here.
@@ -5577,7 +5577,7 @@ template <int N>
 void
 ParticleContainer<N>::Timestamp (const std::string&      basename,
                                  const MultiFab&         mf,
-                                 Array<int>              region_id,
+                                 ID              region_id,
                                  Real                    time,
                                  const std::vector<int>& indices,
                                  const int               vcomp)

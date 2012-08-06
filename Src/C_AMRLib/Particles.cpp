@@ -513,11 +513,11 @@ bool
 ParticleBase::Where (ParticleBase& p,
                      const Amr*    amr,
                      bool          update,
-                     Array<int>*    base_region_ptr)
+                     ID*    base_region_ptr)
 {
     BL_ASSERT(amr != 0);
 
-    Array<int> base_region;
+    ID base_region;
     if (base_region_ptr == 0)
     {
         base_region.resize(1);
@@ -592,7 +592,7 @@ ParticleBase::Where (ParticleBase& p,
 bool
 ParticleBase::PeriodicWhere (ParticleBase& p,
                              const Amr*    amr,
-                             Array<int>    base_region)
+                             ID    base_region)
 {
     BL_ASSERT(amr != 0);
     //
@@ -648,7 +648,7 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
 bool
 ParticleBase::RestrictedWhere (ParticleBase& p,
                                const Amr*    amr,
-                               Array<int>    base_region,
+                               ID    base_region,
                                int           ngrow)
 {
     BL_ASSERT(amr != 0);
@@ -674,11 +674,11 @@ ParticleBase::RestrictedWhere (ParticleBase& p,
 bool 
 ParticleBase::SingleRegionWhere (ParticleBase& p, 
                                 const Amr*    amr,
-                                Array<int> region_id)
+                                ID region_id)
 {
     BL_ASSERT(amr != 0);
 
-    int level = region_id.size() - 1;
+    int level = region_id.level();
     const IntVect iv = ParticleBase::Index(p,level,amr);
 
     std::vector< std::pair<int,Box> > isects;

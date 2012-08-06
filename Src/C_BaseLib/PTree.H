@@ -8,9 +8,10 @@
 #include <PArray.H>
 #include <Array.H>
 #include <PList.H>
+#include <ID.H>
 #include <BoxLib.H>
 
-#define ROOT_ID Array<int>(1,0)
+#define ROOT_ID ID(1)
 
 enum PTreePolicy
 {
@@ -76,47 +77,47 @@ public:
     //
     // Returns the data associated with the specified node
     //
-    T& getData(const Array<int> id);
-    const T& getData(const Array<int> id) const;
+    T& getData(const ID id);
+    const T& getData(const ID id) const;
     
     //
     // 0's the pointer and returns the data associated with the specified node.
     // The user is now responsible for deleting the pointer.
     //
-    T* removeData(const Array<int> id);
+    T* removeData(const ID id);
     
     //
     // Clears the data associated with the specified node. If managed,
     // the data pointed to will be deleted.
     //
-    void clearData(const Array<int> id);
+    void clearData(const ID id);
     
     //
     // Seths the data associated with the specified node
     //
-    void setData(const Array<int> id, T* data);
+    void setData(const ID id, T* data);
     
     //
     // Adds a child to the specified node. Sets the child data if provided.
     //
-    Array<int> addChildToNode(const Array<int> id);
-    Array<int> addChildToNode(const Array<int> id, T* data);
+    ID addChildToNode(const ID id);
+    ID addChildToNode(const ID id, T* data);
 
     //
     // Gets the data from the children of the node -- only direct children, not descendents.
     //
-    void getChildrenOfNode(const Array<int> id, PList<T>& children);
-    int countChildrenOfNode(const Array<int> id);
+    void getChildrenOfNode(const ID id, PList<T>& children);
+    int countChildrenOfNode(const ID id);
     
     //
     // Extracts the data from children of the node and removes the children (and all descendents).
     //
-    void extractChildrenOfNode(const Array<int> id, PList<T>& extracted);
+    void extractChildrenOfNode(const ID id, PList<T>& extracted);
     
     //
     // removes the children of the node(and all descendents).
     //
-    void clearChildrenOfNode(const Array<int> id);
+    void clearChildrenOfNode(const ID id);
     
     //
     // Returns a PTreeIterator to root or the specified node. If restrict_level
@@ -130,27 +131,27 @@ public:
     //
     PTreeIterator<T> getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false);
     PTreeConstIterator<T> getConstIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false) const;
-    PTreeIterator<T> getIteratorAtNode(const Array<int> id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false);
-    PTreeConstIterator<T> getConstIteratorAtNode(const Array<int> id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false) const;
+    PTreeIterator<T> getIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false);
+    PTreeConstIterator<T> getConstIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false) const;
 
     //
     // Returns the finest level (defined) in the tree. Try to avoid this in general,
     // but sometimes *cough* Nyx *cough* it is necessary.
     //
     int getFinestLevel();
-    int getFinestLevelAtNode(Array<int> base_node);
+    int getFinestLevelAtNode(ID base_node);
     
     //
     // Extracts a list representing the structure of the subtree rooted at the specified id.
     // The structure is a list giving the number of children in prefix_notation.
     //
-    std::list<int> getStructure(const Array<int> id) const;
+    std::list<int> getStructure(const ID id) const;
     std::list<int> getStructure() const;
     
     //
     // Builds an empty subtree beneath the specified node based on the supplied structure list.
     //
-    void buildFromStructure(const Array<int> id, std::list<int> structure);
+    void buildFromStructure(const ID id, std::list<int> structure);
     void buildFromStructure(std::list<int> structure);
     
     //
@@ -158,7 +159,7 @@ public:
     //
     int numElements() const;
     
-    bool isDefined(Array<int> node_id) const;
+    bool isDefined(ID node_id) const;
 protected:
     struct Node
     {
@@ -179,13 +180,13 @@ protected:
         // Adds a new node as a child of this node. Fills in data if specified.
         // Managed policy will be the same as this node.
         //
-        Array<int> addChild();
-        Array<int> addChild(T* data);
+        ID addChild();
+        ID addChild(T* data);
         
         //
         // Returns the id for this node.
         //
-        Array<int> getID() const ;
+        ID getID() const ;
         
         //
         // Recursively extracts the data from children of the node and removes the children.
@@ -213,12 +214,12 @@ protected:
         Node*           m_parent;   // Pointer to the parent node.
         PTreePolicy     managed;    // The data memory management policy for the node.
         int             m_level;    // The level of this node w/in the tree (root = 0)
-        Array<int>      m_id;
+        ID      m_id;
     };
     
     Node* root;
-    Node* getNode(const Array<int> id);
-    const Node* getNode(const Array<int> id) const;
+    Node* getNode(const ID id);
+    const Node* getNode(const ID id) const;
     PTreePolicy managed;
 };
 
@@ -253,8 +254,8 @@ public:
     
     int getLevel() const;
     
-    Array<int> getID() const;
-    Array<int> getParentID() const;
+    ID getID() const;
+    ID getParentID() const;
     
     bool isDefined() const;
     
@@ -285,8 +286,8 @@ public:
     
     int getLevel() const;
     
-    Array<int> getID() const;
-    Array<int> getParentID() const;
+    ID getID() const;
+    ID getParentID() const;
     
     bool isDefined() const;
     
@@ -318,7 +319,7 @@ PTree<T>::~PTree()
 
 template <class T>
 typename PTree<T>::Node*
-PTree<T>::getNode(const Array<int> id)
+PTree<T>::getNode(const ID id)
 {
     int N = id.size();
     BL_ASSERT(N > 0);
@@ -334,7 +335,7 @@ PTree<T>::getNode(const Array<int> id)
 
 template <class T>
 const typename PTree<T>::Node*
-PTree<T>::getNode(const Array<int> id) const
+PTree<T>::getNode(const ID id) const
 {
     int N = id.size();
     BL_ASSERT(N > 0);
@@ -366,7 +367,7 @@ PTree<T>::setRoot(T* data)
 
 template <class T>
 T&
-PTree<T>::getData(const Array<int> id)
+PTree<T>::getData(const ID id)
 {
     T* data = getNode(id)->m_data;
     BL_ASSERT(data != 0);
@@ -375,7 +376,7 @@ PTree<T>::getData(const Array<int> id)
 
 template <class T>
 const T&
-PTree<T>::getData(const Array<int> id) const
+PTree<T>::getData(const ID id) const
 {
     const T* data = getNode(id)->m_data;
     BL_ASSERT(data != 0);
@@ -384,7 +385,7 @@ PTree<T>::getData(const Array<int> id) const
 
 template <class T>
 T*
-PTree<T>::removeData(const Array<int> id)
+PTree<T>::removeData(const ID id)
 {
     T* data = getNode(id)->m_data;
     BL_ASSERT(data != 0);
@@ -394,7 +395,7 @@ PTree<T>::removeData(const Array<int> id)
 
 template <class T>
 void
-PTree<T>::clearData(const Array<int> id)
+PTree<T>::clearData(const ID id)
 {
     if (managed)
         delete (T*)getNode(id)->m_data;
@@ -404,29 +405,29 @@ PTree<T>::clearData(const Array<int> id)
 
 template <class T>
 void
-PTree<T>::setData(const Array<int> id, T* data)
+PTree<T>::setData(const ID id, T* data)
 {
     BL_ASSERT(getNode(id)->m_data == 0);
     getNode(id)->m_data = data;
 }
 
 template <class T>
-Array<int>
-PTree<T>::addChildToNode(const Array<int> id)
+ID
+PTree<T>::addChildToNode(const ID id)
 {
     return getNode(id)->addChild();
 }
 
 template <class T>
-Array<int>
-PTree<T>::addChildToNode(const Array<int> id, T* data)
+ID
+PTree<T>::addChildToNode(const ID id, T* data)
 {
     return getNode(id)->addChild(data);
 }
 
 template <class T>
 void
-PTree<T>::getChildrenOfNode(const Array<int> id, PList<T>& children)
+PTree<T>::getChildrenOfNode(const ID id, PList<T>& children)
 {
     Node* node = getNode(id);
     for (int i = 0; i < node->m_children.size(); i++)
@@ -437,21 +438,21 @@ PTree<T>::getChildrenOfNode(const Array<int> id, PList<T>& children)
 
 template <class T>
 int
-PTree<T>::countChildrenOfNode(const Array<int> id)
+PTree<T>::countChildrenOfNode(const ID id)
 {
     return getNode(id)->m_children.size();
 }
 
 template <class T>
 void
-PTree<T>::extractChildrenOfNode(const Array<int> id, PList<T>& extracted)
+PTree<T>::extractChildrenOfNode(const ID id, PList<T>& extracted)
 {
     getNode(id)->extractChildren(extracted);
 }
 
 template <class T>
 void
-PTree<T>::clearChildrenOfNode(const Array<int> id)
+PTree<T>::clearChildrenOfNode(const ID id)
 {
     getNode(id)->clearChildren();
 }
@@ -473,14 +474,14 @@ PTree<T>::getConstIteratorAtRoot(int restrict_level, IteratorMode mode, bool ski
 
 template <class T>
 PTreeIterator<T>
-PTree<T>::getIteratorAtNode(const Array<int> id, int restrict_level, IteratorMode mode, bool skip_undefined)
+PTree<T>::getIteratorAtNode(const ID id, int restrict_level, IteratorMode mode, bool skip_undefined)
 {
     return PTreeIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
 }
 
 template <class T>
 PTreeConstIterator<T>
-PTree<T>::getConstIteratorAtNode(const Array<int> id, int restrict_level, IteratorMode mode, bool skip_undefined) const
+PTree<T>::getConstIteratorAtNode(const ID id, int restrict_level, IteratorMode mode, bool skip_undefined) const
 {
     return PTreeConstIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
 }
@@ -501,7 +502,7 @@ PTree<T>::getFinestLevel()
 
 template <class T>
 int
-PTree<T>::getFinestLevelAtNode(Array<int> base_node)
+PTree<T>::getFinestLevelAtNode(ID base_node)
 {
     PTreeIterator<T> it = getIteratorAtNode(base_node, -1,Postfix, true);
     int flev = 0;
@@ -515,7 +516,7 @@ PTree<T>::getFinestLevelAtNode(Array<int> base_node)
 
 template <class T>
 std::list<int> 
-PTree<T>::getStructure(const Array<int> id) const
+PTree<T>::getStructure(const ID id) const
 {
     // Create the list
     std::list<int> structure;
@@ -539,7 +540,7 @@ PTree<T>::getStructure() const
 
 template <class T>
 void 
-PTree<T>::buildFromStructure(const Array<int> id, std::list<int> structure)
+PTree<T>::buildFromStructure(const ID id, std::list<int> structure)
 {
     Node* current_node = getNode(id);
     BL_ASSERT(current_node->m_children.size() == 0);
@@ -572,13 +573,13 @@ PTree<T>::numElements() const
 
 template <class T>
 bool
-PTree<T>::isDefined(Array<int> node_id) const
+PTree<T>::isDefined(ID node_id) const
 {
     return getNode(node_id)->m_data != 0;
 }
 ////////////////////////// Begin Node Methods ///////////////////////////
 template <class T>
-Array<int>
+ID
 PTree<T>::Node::addChild()
 {
     int num_children = m_children.size();
@@ -588,7 +589,7 @@ PTree<T>::Node::addChild()
 }
 
 template <class T>
-Array<int>
+ID
 PTree<T>::Node::addChild(T* data)
 {
     int num_children = m_children.size();
@@ -651,7 +652,7 @@ PTree<T>::Node::~Node()
 }
 
 template <class T>
-Array<int>
+ID
 PTree<T>::Node::getID() const
 {
     return m_id;
@@ -815,14 +816,14 @@ PTreeIterator<T>::getLevel() const
 }
 
 template <class T>
-Array<int>
+ID
 PTreeIterator<T>::getID() const
 {
     return current_node->getID();
 }
 
 template <class T>
-Array<int>
+ID
 PTreeIterator<T>::getParentID() const
 {
     BL_ASSERT(current_node->m_parent != 0);
@@ -946,14 +947,14 @@ PTreeConstIterator<T>::getLevel() const
 }
 
 template <class T>
-Array<int>
+ID
 PTreeConstIterator<T>::getID() const
 {
     return current_node->getID();
 }
 
 template <class T>
-Array<int>
+ID
 PTreeConstIterator<T>::getParentID() const
 {
     BL_ASSERT(current_node->m_parent != 0);

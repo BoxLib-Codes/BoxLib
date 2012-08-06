@@ -120,7 +120,7 @@ public:
     // If a derived class wishes to use Optimal Subcycling, it must overload this
     // method
     //
-    virtual void computeRestrictedDt (Array<int>  base_region,
+    virtual void computeRestrictedDt (ID  base_region,
                                       Tree<int>&  n_cycle,
                                       Tree<Real>& dt_region);
     //
@@ -153,7 +153,7 @@ public:
     // This is a pure virtual function and hence MUST be
     // implemented by derived classes.
     //
-    virtual  void post_regrid (Array<int> base_region,
+    virtual  void post_regrid (ID base_region,
                                int new_finest) = 0;
     //
     // Operations to be done after initialization.
@@ -383,7 +383,7 @@ public:
     //
     // Returns the full id of this region.
     //
-    Array<int> getID() const;
+    ID getID() const;
     std::string getIDString() const ;
 
     AmrRegion* Parent();
@@ -394,7 +394,7 @@ protected:
     AmrRegion ();
 
     AmrRegion (Amr&            papa,
-              Array<int>       id,
+              ID       id,
               const Geometry& level_geom,
               const BoxArray& bl,
               Real            time);
@@ -416,7 +416,7 @@ protected:
     static DescriptorList desc_lst;     // List of state variables.
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
-    Array<int>            m_id;         // The node region_id specifying the region's id 
+    ID            m_id;         // The node region_id specifying the region's id 
                                         // relative to its parents
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.

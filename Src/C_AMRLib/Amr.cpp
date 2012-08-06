@@ -101,7 +101,7 @@ Amr::getLevel (int lev)
 {
     if (multi_region)
         BoxLib::Abort("Called getLevel on multi-region level");
-    Array<int> id(lev+1);
+    ID id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     return amr_regions.getData(id);
@@ -112,14 +112,14 @@ Amr::nCycle (int lev) const
 {
     if (multi_region)
         BoxLib::Abort("Called nCycle on multi-region level");
-    Array<int> id(lev+1);
+    ID id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     return n_cycle.getData(id);
 }
 
 int
-Amr::nCycle (Array<int> region) const
+Amr::nCycle (ID region) const
 {
     return n_cycle.getData(region);
 }
@@ -129,14 +129,14 @@ Amr::levelSteps (int lev) const
 {
     if (multi_region)
         BoxLib::Abort("Called levelSteps on multi-region level");
-    Array<int> id(lev+1);
+    ID id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     return region_steps.getData(id);
 }
 
 int
-Amr::regionSteps (Array<int> region) const
+Amr::regionSteps (ID region) const
 {
     return region_steps.getData(region);
 }
@@ -146,7 +146,7 @@ Amr::levelCount (int lev) const
 {
     if (multi_region)
         BoxLib::Abort("Called levelCount on multi-region level");
-    Array<int> id(lev+1);
+    ID id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     return region_count.getData(id);
@@ -201,7 +201,7 @@ Amr::boxArray (int lev) const
 }
 
 BoxArray
-Amr::boxArray (Array<int> base_region, int lev) const
+Amr::boxArray (ID base_region, int lev) const
 {
     BoxList bl;
     PTreeConstIterator<AmrRegion> it = amr_regions.getConstIteratorAtNode(base_region, lev);
@@ -214,7 +214,7 @@ Amr::boxArray (Array<int> base_region, int lev) const
 }
 
 BoxArray
-Amr::boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const
+Amr::boxArray (ID base_region, int lev, ExecutionTree* exec_tree) const
 {
     BoxList bl;
     ExecutionTreeIterator it = exec_tree->getIteratorAtNode(base_region, lev);
@@ -227,7 +227,7 @@ Amr::boxArray (Array<int> base_region, int lev, ExecutionTree* exec_tree) const
 }
 
 BoxArray
-Amr::boxArray (Array<int> region_id) const
+Amr::boxArray (ID region_id) const
 {
     return amr_regions.getData(region_id).boxArray();
 }
@@ -260,7 +260,7 @@ Amr::cellCount (int lev)
 }
 
 long
-Amr::cellCount (Array<int> region_id)
+Amr::cellCount (ID region_id)
 {
     return amr_regions.getData(region_id).countCells();
 }
@@ -794,7 +794,7 @@ Amr::setDtLevel (Real dt, int lev)
 {
     if (multi_region)
         BoxLib::Abort("Called setDtLevel on multi-region level");
-    Array<int> id(lev+1);
+    ID id(lev+1);
     for (int i = 0; i <= lev; i++)
         id[i] = 0;
     dt_region.setData(id,dt);
@@ -805,7 +805,7 @@ Amr::dtLevel (int level) const
 {
     if (multi_region)
         BoxLib::Abort("Called dtLevel on multi-region level");
-    Array<int> id(level+1);
+    ID id(level+1);
     for (int i = 0; i <= level; i++)
         id[i] = 0;
     return dt_region.getData(id);
@@ -1187,7 +1187,7 @@ Amr::initialInit (Real strt_time,
                                   ref_ratio,
                                   dt_region,
                                   stop_time);
-    Array<int> id;
+    ID id;
     RegionIterator prit = amr_regions.getIteratorAtRoot(-1, Prefix);
     for (; !prit.isFinished(); ++prit)
     {
@@ -1401,8 +1401,8 @@ Amr::restart (const std::string& filename)
        //coarseRegion().restart(*this, is);
        //for (lev = 1; lev <= finest_level; lev++)
        //{ 
-           //Array<int> node_id = getLevel(lev-1).getID();
-           //Array<int> new_id = amr_regions.addChildToNode(node_id,(*levelbld)());
+           //ID node_id = getLevel(lev-1).getID();
+           //ID new_id = amr_regions.addChildToNode(node_id,(*levelbld)());
            //amr_regions.getData(new_id).restart(*this, is);
        //}
        ////
@@ -1485,7 +1485,7 @@ Amr::restart (const std::string& filename)
        //coarseRegion().restart(*this, is);
        //for (lev = 1; lev <= new_finest_level; lev++)
        //{ 
-           //Array<int> node_id = getLevel(lev-1).getID();
+           //ID node_id = getLevel(lev-1).getID();
            //amr_regions.addChildToNode(node_id,(*levelbld)());
            //getLevel(lev).restart(*this, is);
        //}
@@ -1674,7 +1674,7 @@ Amr::timeStep (AmrRegion& base_region,
                Real stop_time)
 {
     int level = base_region.Level();
-    Array<int> base_id = base_region.getID();
+    ID base_id = base_region.getID();
     //
     // Allow regridding of level 0 calculation on restart.
     //
@@ -1828,7 +1828,7 @@ Amr::timeStep (AmrRegion& base_region,
         amr_regions.getChildrenOfNode(base_region.getID(), children);
         for (RegionList::iterator child = children.begin(); child != children.end(); ++child)
         {
-            Array<int> c_id = (*child)->getID();
+            ID c_id = (*child)->getID();
             if (sub_cycle)
             {
                 const int ncycle = n_cycle.getData(c_id); /// update this
@@ -2059,7 +2059,7 @@ Amr::defBaseLevel (Real strt_time)
 
 
 void 
-Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regions)
+Amr::restructure(ID base_region, std::list<int> structure, bool do_regions)
 {
     // Note: This clear might have been problematic save for the fact
     // that regrid has already evicted the children
@@ -2075,7 +2075,7 @@ Amr::restructure(Array<int> base_region, std::list<int> structure, bool do_regio
     ///Should there be a print message here?
     //if (verbose > 0 && ParallelDescriptor::IOProcessor())
     //{
-        //std::cout << "Restructured from base region " << base_region.toString() <<"\n";
+        //std::cout << "Restructured from base region " << base_region <<"\n";
         //std::cout << "New Hierarchy:\n"
     //}
     structure = n_cycle.getStructure(base_region);
@@ -2134,22 +2134,22 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
-    Array<int> region_id(lbase+1,0);
+    ID region_id(lbase+1);
     regrid(region_id, time, initial);
 }
 
 void
-Amr::regrid (Array<int> base_id,
+Amr::regrid (ID base_id,
              Real time,
              bool initial)
 {
     AmrRegion& base_region = getRegion(base_id);
     int lbase = base_region.Level();
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
-        std::cout << "REGRID: at base region " << base_id.toString() << std::endl;
+        std::cout << "REGRID: at base region " << base_id << std::endl;
 
     if (record_run_info && ParallelDescriptor::IOProcessor())
-        runlog << "REGRID: at base region " << base_id.toString() << '\n';
+        runlog << "REGRID: at base region " << base_id << '\n';
 
     // This list tracks all regions that need to call post_regrid.
     RegionList touched_regions;
@@ -2161,7 +2161,7 @@ Amr::regrid (Array<int> base_id,
     Array<DistributionMapping> dms(finest_level+1);
     for (int i = 0; i <= lbase; i++)
     {
-        Array<int> ancestor_id(base_id);
+        ID ancestor_id(base_id);
         ancestor_id.resize(i+1);
         active_levels.set(i,&getRegion(ancestor_id));
         touched_regions.push_back(&getRegion(ancestor_id));
@@ -2207,7 +2207,7 @@ Amr::regrid (Array<int> base_id,
         if (grids_unchanged) 
         {
             if (verbose > 0 && ParallelDescriptor::IOProcessor())
-                std::cout << "Regridding at base region " << base_id.toString() << " but grids unchanged " << std::endl;
+                std::cout << "Regridding at base region " << base_id << " but grids unchanged " << std::endl;
             return;
         }
     }
@@ -2300,8 +2300,8 @@ Amr::regrid (Array<int> base_id,
     for(; !it.isFinished(); ++it)
     {
         // Configure id's.
-        Array<int> id = it.getID();
-        Array<int> new_id = base_id;
+        ID id = it.getID();
+        ID new_id = base_id;
         new_id.resize(id.size() + lbase);
         for (int i = 1; i < id.size(); i++)
             new_id[lbase+i] = id[i];
@@ -2318,8 +2318,7 @@ Amr::regrid (Array<int> base_id,
             // NOTE: The initData function may use a fillPatch, and so needs to
             //       be officially inserted into the hierarchy prior to the call.
             //
-            Array<int> parent_id = new_id;
-            parent_id.resize(parent_id.size()-1);
+            ID parent_id = new_id.parent();
             amr_regions.addChildToNode(parent_id,a);
             a->initData();
         }
@@ -2344,8 +2343,7 @@ Amr::regrid (Array<int> base_id,
         //
         if (!initial)
         {
-        Array<int> parent_id = new_id;
-        parent_id.resize(parent_id.size()-1);
+        ID parent_id = new_id.parent();
         amr_regions.addChildToNode(parent_id,a);
         }
         if (lev > 0)
@@ -2937,8 +2935,8 @@ Amr::bldFineLevels (Real strt_time)
     //
     // Setup data that will help us create the "Tree"
     // 
-    Array<int> parent_id = ROOT_ID;
-    Array<int> new_id = parent_id;
+    ID parent_id = ROOT_ID;
+    ID new_id = parent_id;
     std::list<int> structure;
     structure.push_back(1);
     structure.push_back(0);
@@ -2946,7 +2944,7 @@ Amr::bldFineLevels (Real strt_time)
     {
         int new_finest;
         PArray<AmrRegion> active_levels;
-        Array<int> id;
+        ID id;
         Array<DistributionMapping> dms(finest_level + 1);
         active_levels.resize(finest_level+1);
         for (int i = 0; i <= finest_level; i++)
@@ -3179,10 +3177,10 @@ Amr::initPltAndChk(ParmParse * pp)
 //}
 
 bool
-Amr::okToRegrid (Array<int> region_id)
+Amr::okToRegrid (ID region_id)
 {
     bool ok = true;
-    int level = region_id.size() - 1;
+    int level = region_id.level();
     if (level == max_level)
         return false;
     ok = ok && amr_regions.getData(region_id).okToRegrid();
@@ -3204,8 +3202,8 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     Real dt;
     Real work;
     int limit = 1;
-    Array<int> id;
-    Array<int> parent_id;
+    ID id;
+    ID parent_id;
     // This provides a memory efficient way to test all candidates
     TreeIterator<int> ptic = cycle_max.getIteratorAtRoot();
     for (; !ptic.isFinished(); ++ptic)
@@ -3251,15 +3249,14 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         //get the id for this node
         id = pti.getID();
         //get the parent id by cutting the last digit.
-        parent_id = id;
-        parent_id.resize(parent_id.size()-1);
+        parent_id = id.parent();
         best.setData(id,best.getData(id)/best.getData(parent_id));
     }
     return best_dt;
 }
 
 void
-Amr::setRestrictedSubcycling(Array<int>  base_region,
+Amr::setRestrictedSubcycling(ID  base_region,
                              Tree<int>&   ncycle, 
                              Tree<Real>& dtregion, 
                              Tree<Real>& dt_max, 
@@ -3267,8 +3264,8 @@ Amr::setRestrictedSubcycling(Array<int>  base_region,
 {
     
     TreeIterator<int> it = ncycle.getIteratorAtNode(base_region, -1, Prefix);
-    Array<int> id;
-    Array<int> parent_id;
+    ID id;
+    ID parent_id;
     // Limit dt_max by the fully iterated child dts.
     TreeIterator<Real> dt_it = dt_max.getIteratorAtNode(base_region);
     for ( ; !dt_it.isFinished(); ++dt_it)
@@ -3301,8 +3298,8 @@ void
 Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
 {
     Tree<Real> dt_max(dt_level);
-    Array<int> id;
-    Array<int> parent_id;
+    ID id;
+    ID parent_id;
     TreeIterator<Real> dt_it = dt_max.getIteratorAtRoot(-1,Postfix);
     for (;!dt_it.isFinished(); ++dt_it)
     {
@@ -3372,7 +3369,7 @@ Amr::build_blank_region()
 }
 
 void
-Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
+Amr::aggregate_descendants(const ID id, PArray<AmrRegion>& aggregates)
 {
     int base_level = id.size()-1;
     int num_levels = finest_level - base_level + 1;
@@ -3406,7 +3403,7 @@ Amr::aggregate_descendants(const Array<int> id, PArray<AmrRegion>& aggregates)
     }
 }
 
-Array<int>
+ID
 Amr::whichRegion(int level, IntVect cell)
 {
     RegionIterator it = amr_regions.getIteratorAtRoot(level);
@@ -3420,7 +3417,7 @@ Amr::whichRegion(int level, IntVect cell)
 }
 
 MultiFab* 
-Amr::createMultiFab(Array<int>     base_region, 
+Amr::createMultiFab(ID     base_region, 
                             int             lev, 
                             ExecutionTree*  exec_tree, 
                             int             ncomp,
@@ -3438,7 +3435,7 @@ Amr::createMultiFab(Array<int>     base_region,
 }
 
 DistributionMapping
-Amr::createDM(Array<int>     base_region, 
+Amr::createDM(ID     base_region, 
                             int             lev)
 {
     Array<DistributionMapping> da;

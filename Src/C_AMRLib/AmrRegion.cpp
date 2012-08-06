@@ -54,7 +54,7 @@ AmrRegion::AmrRegion ()
 }
 
 AmrRegion::AmrRegion (Amr&            papa,
-                    Array<int>      id,
+                    ID      id,
                     const Geometry& level_geom,
                     const BoxArray& ba,
                     Real            time)
@@ -67,8 +67,7 @@ AmrRegion::AmrRegion (Amr&            papa,
     master = &papa;
     if (level > 0)
     {
-        Array<int> parent_id = m_id;
-        parent_id.resize(level);
+        ID parent_id = m_id.parent();
         parent_region = &master->getRegion(parent_id);
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
@@ -1152,8 +1151,7 @@ AmrRegion::FillCoarsePatch (MultiFab& mf,
     const StateDescriptor&  desc    = desc_lst[index];
     const Box&              pdomain = state[index].getDomain();
     const BoxArray&         mf_BA   = mf.boxArray();
-    Array<int> parent_id = m_id;
-    parent_id.resize(level);
+    ID parent_id = m_id.parent();
     AmrRegion&               clev    = master->getRegion(parent_id);
 
     std::vector< std::pair<int,int> > ranges  = desc.sameInterps(scomp,ncomp);
@@ -1553,7 +1551,7 @@ AmrRegion::define(RegionList& regions, Amr* papa)
 }
 
 
-Array<int>
+ID
 AmrRegion::getID() const
 {
     return m_id;
@@ -1580,7 +1578,7 @@ AmrRegion::restructure(std::list<int> structure)
 }
 
 void 
-AmrRegion::computeRestrictedDt (Array<int>  base_region,
+AmrRegion::computeRestrictedDt (ID  base_region,
                                 Tree<int>&  n_cycle,
                                 Tree<Real>& dt_region)
 {

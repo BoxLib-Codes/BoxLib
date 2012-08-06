@@ -31,6 +31,9 @@ C$(BOXLIB_BASE)_headers += BLFort.H
 # Container classes.
 #
 T_headers += Array.H PArray.H PList.H Pointers.H Tuple.H PTree.H Tree.H
+# ID class for Tree accesses
+C${BOXLIB_BASE}_headers += ID.H
+C${BOXLIB_BASE}_sources += ID.cpp
 
 #
 # FAB I/O stuff.
