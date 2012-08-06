@@ -39,7 +39,7 @@ bool                   Amr::first_plotfile;
 
 namespace
 {
-    const std::string CheckPointVersion("CheckPointVersion_1.0");
+    const std::string CheckPointVersion("Region_CheckPointVersion_1.0");
 
     bool initialized = false;
 }
@@ -1511,6 +1511,13 @@ Amr::checkPoint ()
     if (ParallelDescriptor::IOProcessor())
         if (!BoxLib::UtilCreateDirectory(ckfile, 0755))
             BoxLib::CreateDirectoryFailed(ckfile);
+    //Create the Level directories for the Region data
+    for (int i = 0; i < finest_level; i++)
+    {
+        std::string levfile = BoxLib::Concatenate(ckfile+"/Level_", i, 1);
+        if (!BoxLib::UtilCreateDirectory(levfile, 0755))
+            BoxLib::CreateDirectoryFailed(levfile);
+    }
     //
     // Force other processors to wait till directory is built.
     //
@@ -1541,30 +1548,42 @@ Amr::checkPoint ()
         HeaderFile << CheckPointVersion << '\n'
                    << BL_SPACEDIM       << '\n'
                    << cumtime           << '\n'
-                   << max_level         << '\n'
-                   << finest_level      << '\n';
+                   << max_level         << '\n';
+        // We output the region tree structure in list form. 
+        // (See the tree classes for details)
+        std::list<int> structure = amr_regions.getStructure();
+        for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); ++it)
+        {
+            HeaderFile << *it << ' ';
+        }
+        HeaderFile << '\n';
         //
         // Write out problem domain.
         //
-        ///TODO/DEBUG: Fix when we have chk/restart
         for (i = 0; i <= max_level; i++) HeaderFile << geom[i]        << ' ';
         HeaderFile << '\n';
         for (i = 0; i < max_level; i++)  HeaderFile << ref_ratio[i]   << ' ';
         HeaderFile << '\n';
-        //for (i = 0; i <= max_level; i++) HeaderFile << dt_level[i]    << ' ';
+        TreeIterator<Real> rit = dt_region.getIteratorAtRoot(-1,Prefix);
+        for (; !rit.isFinished(); ++rit)
+            HeaderFile << *rit  << ' ';
         HeaderFile << '\n';
-        //for (i = 0; i <= max_level; i++) HeaderFile << dt_min[i]      << ' ';
+        for (rit = dt_reg_min.getIteratorAtRoot(-1,Prefix); !rit.isFinished(); ++rit)
+            HeaderFile << *rit  << ' ';
         HeaderFile << '\n';
-        //for (i = 0; i <= max_level; i++) HeaderFile << n_cycle[i]     << ' ';
+        TreeIterator<int> iit = n_cycle.getIteratorAtRoot(-1,Prefix);
+        for ( ; !iit.isFinished(); ++iit)
+            HeaderFile << *iit  << ' ';
         HeaderFile << '\n';
-        //for (i = 0; i <= max_level; i++) HeaderFile << level_steps[i] << ' ';
+        for (iit = region_steps.getIteratorAtRoot(-1,Prefix); !iit.isFinished(); ++iit)
+            HeaderFile << *iit  << ' ';
         HeaderFile << '\n';
-        //for (i = 0; i <= max_level; i++) HeaderFile << level_count[i] << ' ';
+        for (iit = region_count.getIteratorAtRoot(-1,Prefix); !iit.isFinished(); ++iit)
+            HeaderFile << *iit  << ' ';
         HeaderFile << '\n';
     }
 
-    ///TODO/DEBUG: Upgrade this along with the restart code.
-    RegionIterator it = amr_regions.getIteratorAtRoot();
+    RegionIterator it = amr_regions.getIteratorAtRoot(-1, Prefix);
     for ( ; !it.isFinished(); ++it)
     {
         (*it)->checkPoint(ckfile, HeaderFile);

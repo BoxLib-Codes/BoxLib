@@ -237,6 +237,7 @@ AmrRegion::checkPoint (const std::string& dir,
     // The directory is relative the the directory containing the Header file.
     //
     std::string Level = BoxLib::Concatenate("Level_", level, 1);
+    std::string Region = "Region_" + m_id.toString();
     //
     // Now for the full pathname of that directory.
     //
@@ -245,7 +246,7 @@ AmrRegion::checkPoint (const std::string& dir,
     {
         FullPath += '/';
     }
-    FullPath += Level;
+    FullPath += Level + '/' + Region;
     //
     // Only the I/O processor makes the directory if it doesn't already exist.
     //
@@ -259,7 +260,7 @@ AmrRegion::checkPoint (const std::string& dir,
 
     if (ParallelDescriptor::IOProcessor())
     {
-        os << level << '\n' << geom  << '\n';
+        os << m_id << '\n' << geom  << '\n';
         grids.writeOn(os);
         os << ndesc << '\n';
     }
@@ -276,7 +277,7 @@ AmrRegion::checkPoint (const std::string& dir,
         //
         // There is only one MultiFab written out at each level in HyperCLaw.
         //
-        std::string PathNameInHdr = BoxLib::Concatenate(Level    + "/SD_", i, 1);
+        std::string PathNameInHdr = BoxLib::Concatenate(Level + '/' + Region + "/SD_", i, 1);
         std::string FullPathName  = BoxLib::Concatenate(FullPath + "/SD_", i, 1);
 
         state[i].checkPoint(PathNameInHdr, FullPathName, os, how, dump_old);

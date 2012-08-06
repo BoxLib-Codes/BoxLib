@@ -272,6 +272,8 @@ public:
     // If "only_valid" is true it only counts valid particles.
     //
     long NumberOfParticlesAtLevel (int level, bool only_valid = true) const;
+    
+    long NumberOfParticlesInRegion (ID region_id, bool only_valid = true) const;
 
     void MoveRandom ();
 
@@ -421,6 +423,41 @@ ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
                     nparticles += pbox.size();
                 }
             }
+        }
+    }
+
+    ParallelDescriptor::ReduceLongSum(nparticles);
+
+    return nparticles;
+}
+
+template <int N>
+long
+ParticleContainer<N>::NumberOfParticlesInRegion (ID region_id,
+                                                bool only_valid) const
+{
+    long nparticles = 0;
+    const PMap& pmap = m_particles.getData(region_id);
+
+    for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end();
+         pmap_it != End;
+         ++pmap_it)
+    {
+        const PBox& pbox = pmap_it->second;
+
+        if (only_valid)
+        {
+            for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end();
+                 it != pboxEnd;
+                 ++it)
+            {
+                if (it->m_id > 0)
+                    nparticles++;
+            }
+        }
+        else
+        {
+            nparticles += pbox.size();
         }
     }
 
@@ -4838,13 +4875,6 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
     const Real strttime = ParallelDescriptor::second();
     
     //
-    // Here we temporarily aggregate the regions to use their combined statedata
-    // This is probably overly costly.
-    //
-    PArray<AmrRegion> aggregated_levels(PArrayManage);
-    m_amr->aggregate_descendants(ROOT_ID, aggregated_levels);
-    
-    //
     // We store the particles in a subdirectory of "dir".
     //
     std::string pdir = dir;
@@ -4932,16 +4962,22 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         //
         HdrFile << maxnextid << '\n';
         //
-        // Then the finest level of the AMR hierarchy.
+        // Then the region tree structure.
         //
-        HdrFile << m_amr->finestLevel() << '\n';
-        //
-        // Then the number of grids at each level.
-        //
-        for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
+        std::list<int> structure = m_amr->getRegions().getStructure();
+        for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); ++it)
         {
-            HdrFile << m_amr->boxArray(lev).size() << '\n';
+            HdrFile << *it << ' ';
         }
+        HdrFile << '\n';
+        //
+        // Then the number of grids in each region.
+        //
+        for (RegionIterator it = m_amr->getRegionIterator(); !it.isFinished(); ++it)
+        {
+            HdrFile << (*it)->boxArray().size() << ' ';
+        }
+        HdrFile << '\n';
     }
     //
     // We want to write the data out in parallel.
@@ -4973,9 +5009,31 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
             //
             ParallelDescriptor::Barrier();
         }
+    }
+    
+    for(RegionIterator it = m_amr->getRegionIterator(-1,Prefix); !it.isFinished(); ++it)
+    {
+        std::string RegionDir = pdir;
+        ID region_id = it.getID();
+        const MultiFab& state = m_amr->getRegion(region_id).get_new_data(0);
+        const bool gotsome = (NumberOfParticlesInRegion(region_id) > 0);
+        
+        if (gotsome)
+        {
+            if (!RegionDir.empty() && RegionDir[RegionDir.size()-1] != '/')
+                RegionDir += '/';
 
-        ///TODO/DEBUG: Upgrade
-        const MultiFab& state = aggregated_levels[lev].get_new_data(0);
+            RegionDir = BoxLib::Concatenate(RegionDir + "Level_", region_id.level(), 1);
+            RegionDir = RegionDir + "Region_" + region_id.toString();
+
+            if (ParallelDescriptor::IOProcessor())
+                if (!BoxLib::UtilCreateDirectory(RegionDir, 0755))
+                    BoxLib::CreateDirectoryFailed(RegionDir);
+            //
+            // Force other processors to wait till directory is built.
+            //
+            ParallelDescriptor::Barrier();
+        }
         //
         // We eventually want to write out the file name and the offset
         // into that file into which each grid of particles is written.
@@ -4987,7 +5045,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         if (gotsome)
         {
             const int   FileNumber   = MyProc % nOutFiles;
-            std::string FullFileName = LevelDir;
+            std::string FullFileName = RegionDir;
 
             FullFileName += '/';
             FullFileName += ParticleBase::DataPrefix();
@@ -5033,7 +5091,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                     // for the start of writing of each block of data.
                     //
                     ///TODO/DEBUG: FIX THIS WHOLE THING
-                    WriteParticles(ROOT_ID, ParticleFile, FileNumber, which, count, where);
+                    WriteParticles(region_id, ParticleFile, FileNumber, which, count, where);
 
                     ParticleFile.flush();
 
@@ -5092,7 +5150,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                 {
                     if (cnt[i] == 0)
                     {
-                        std::string FullFileName = LevelDir;
+                        std::string FullFileName = RegionDir;
 
                         FullFileName += '/';
                         FullFileName += ParticleBase::DataPrefix();
@@ -5136,11 +5194,8 @@ ParticleContainer<N>::WriteParticles (ID     region_id,
 {
     const PMap&     pmap  = m_particles.getData(region_id);
     int lev = region_id.size() - 1;
-    ///TODO/DEBUG: Upgrade this.
     const MultiFab& state = m_amr->getRegions().getData(region_id).get_new_data(0);
     
-    ///TODO/DEBUG: Upgrade this.
-
     for (MFIter mfi(state); mfi.isValid(); ++mfi)
     {
         const int grid = mfi.index();
