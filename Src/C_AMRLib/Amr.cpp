@@ -2027,12 +2027,6 @@ Amr::restructure(ID base_region, std::list<int> structure, bool do_regions)
     n_cycle.clearChildrenOfNode(base_region);
     n_cycle.buildFromStructure(base_region, structure);
     
-    ///Should there be a print message here?
-    //if (verbose > 0 && ParallelDescriptor::IOProcessor())
-    //{
-        //std::cout << "Restructured from base region " << base_region <<"\n";
-        //std::cout << "New Hierarchy:\n"
-    //}
     structure = n_cycle.getStructure(base_region);
     TreeIterator<int> iit = n_cycle.getIteratorAtNode(base_region, -1 , Prefix);
     for (++iit; !iit.isFinished(); ++iit)
@@ -2173,6 +2167,7 @@ Amr::regrid (ID base_id,
         }
     }
     
+    std::list<int> old_structure = amr_regions.getStructure(base_id);
     //
     // We now remove the descendants from the hierarchy without deleting them
     // and put them in evictees.
@@ -2221,10 +2216,6 @@ Amr::regrid (ID base_id,
         {
             clusters.push_back(new_grid_places[lev]);
         }
-        int num_regions = clusters.size();
-        
-        if (verbose > 0 && ParallelDescriptor::IOProcessor())
-            std::cout << "Creating " << num_regions << " Regions at Level " << lev << "\n";
         for (std::list<BoxArray>::iterator clust_it = clusters.begin(); clust_it != clusters.end(); ++clust_it)
         {
             BoxArray cba = *clust_it;
@@ -2249,6 +2240,26 @@ Amr::regrid (ID base_id,
     // Restructure to reflect the new hierarchy
     // 
     restructure(base_id, grid_tree.getStructure(), false);
+    
+    std::list<int> new_structure = n_cycle.getStructure(base_id);
+    
+    //
+    // Check to see if the structure has changed. Note, this check only
+    // recognizes identical trees--if the leaves have been re-ordered
+    // it may think it's a new structure.
+    // This could be updated to check for fully isometric structures.
+    //
+    if(old_structure != new_structure)
+    {
+        if (verbose > 0 && ParallelDescriptor::IOProcessor())
+        {
+            Tree<std::string> st_tree;
+            st_tree.buildFromStructure(n_cycle.getStructure());
+            for(TreeIterator<std::string> sit = st_tree.getIteratorAtRoot(); !sit.isFinished(); ++sit)
+                *sit = sit.getID().toString();
+            std::cout << "Region Structure Changed--New Structure:\n" << st_tree.toString();
+        }
+    }
     
     //
     // Define the new grids
