@@ -1557,20 +1557,6 @@ AmrRegion::getID() const
     return m_id;
 }
 
-
-std::string
-AmrRegion::getIDString() const
-{
-    std::ostringstream convert;
-    convert << m_id[0];
-    for (int i = 1; i <= level; ++i)
-    {
-        convert << "_";
-        convert << m_id[i];
-    }
-    return convert.str();
-}
-
 void 
 AmrRegion::restructure(std::list<int> structure)
 {

@@ -50,22 +50,6 @@ public:
     //
     virtual void init (Real strt_time, Real stop_time);
     //
-    // Set the timestep on each level.
-    //
-    void setDtLevel (const Array<Real>& dt_lev);
-    //
-    // Set the timestep at one level.
-    //
-    void setDtLevel (Real dt, int lev);
-    //
-    // Set the dtmin on each level.
-    //
-    void setDtMin (const Array<Real>& dt_lev);
-    //
-    // Set the cycle count on each level.
-    //
-    void setNCycle (const Array<int>& mss);
-    //
     // return blocking_factor
     //
     int blockingFactor (int lev) const;
@@ -502,6 +486,7 @@ protected:
     Tree<int>        region_steps;  // Number of time steps at this level.
     Tree<int>        region_count;
     Tree<int>        n_cycle;
+    Array<int>       manual_n_cycle;
     std::string      subcycling_mode; //Type of subcycling to use.
     Tree<Real>       dt_reg_min; 
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?

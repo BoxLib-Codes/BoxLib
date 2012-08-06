@@ -232,21 +232,6 @@ Amr::boxArray (ID region_id) const
     return amr_regions.getData(region_id).boxArray();
 }
 
-///TODO/DEBUG: deprecated for the time being. It can be recreated if necessary.
-//void
-//Amr::setDtMin (const Array<Real>& dt_min_in)
-//{
-    //for (int i = 0; i <= finest_level; i++)
-        //dt_min[i] = dt_min_in[i];
-//}
-
-
-//PList<AmrRegion> &
-//Amr::getRegions (int level)
-//{
-    //return amr_level[level];
-//}
-
 long
 Amr::cellCount (int lev)
 {
@@ -781,25 +766,6 @@ Amr::setRecordDataInfo (int i, const std::string& filename)
     ParallelDescriptor::Barrier();
 }
 
-///TODO/DEBUG: Deprecated. Can be hacked in if necessary.
-//void
-//Amr::setDtLevel (const Array<Real>& dt_lev)
-//{
-    //for (int i = 0; i <= finest_level; i++)
-        //dt_level[i] = dt_lev[i];
-//}
-
-void
-Amr::setDtLevel (Real dt, int lev)
-{
-    if (multi_region)
-        BoxLib::Abort("Called setDtLevel on multi-region level");
-    ID id(lev+1);
-    for (int i = 0; i <= lev; i++)
-        id[i] = 0;
-    dt_region.setData(id,dt);
-}
-
 Real
 Amr::dtLevel (int level) const
 {
@@ -810,14 +776,6 @@ Amr::dtLevel (int level) const
         id[i] = 0;
     return dt_region.getData(id);
 }
-
-///Deprecated for now.
-//void
-//Amr::setNCycle (const Array<int>& ns)
-//{
-    //for (int i = 0; i <= finest_level; i++)
-        //n_cycle[i] = ns[i];
-//}
 
 long
 Amr::cellCount ()
@@ -1177,7 +1135,6 @@ Amr::initialInit (Real strt_time,
     if (max_level > 0)
         bldFineLevels(strt_time);
     
-    ///TODO/DEBUG: This may be a bad thing--re-calling computeInitialDt
     //
     // Compute dt and set time levels of all grid data.
     //
@@ -1707,8 +1664,11 @@ Amr::timeStep (AmrRegion& base_region,
             a->init(coarseRegion());
             amr_regions.clearData(ROOT_ID);
             amr_regions.setRoot( a);
-            ///TODO/DEBUG: Update parent pointers in regions.
-            BL_ASSERT(false);
+            // Updated everyone's ancestors
+            for(RegionIterator it = getRegionIterator(); !it.isFinished(); ++it)
+            {
+                (*it)->get_ancestors().set(0,a);
+            }
 
             coarseRegion().post_regrid(ROOT_ID,0);
 
@@ -1777,7 +1737,7 @@ Amr::timeStep (AmrRegion& base_region,
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
         std::cout << "ADVANCE grids in region "
-                  << base_region.getIDString()
+                  << base_id
                   << " at level "
                   << level
                   << " with dt = "
@@ -1788,7 +1748,6 @@ Amr::timeStep (AmrRegion& base_region,
     }
     
     
-    ///TODO/DEBUG: upgrade
     Real my_dt = dt_region.getData(base_id);
     
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
@@ -1801,10 +1760,10 @@ Amr::timeStep (AmrRegion& base_region,
 
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
-        std::cout << "Advanced " ///TODO/DEBUG: upgrade
+        std::cout << "Advanced " 
                   << cellCount(base_id)
                   << " cells in region "
-                  << base_region.getIDString()
+                  << base_id
                   << std::endl;
     }
 
@@ -2084,8 +2043,14 @@ Amr::restructure(ID base_region, std::list<int> structure, bool do_regions)
         {
             (*iit) = MaxRefRatio(iit.getLevel()-1);
         }
+        else if (subcycling_mode == "Manual")
+        {
+            (*iit) = manual_n_cycle[iit.getLevel()];
+        }
         else
-            BoxLib::Abort("Other subcycling modes (including manual) aren't supported by regions");
+        {
+            BoxLib::Abort("Invalid Subcycling mode");
+        }
     }
     
     region_count.clearChildrenOfNode(base_region);
@@ -2227,7 +2192,6 @@ Amr::regrid (ID base_id,
     for (RegionList::iterator it = evictees.begin(); it != evictees.end(); it++)
             (*it)->removeOldData();
 
-    ///TODO/DEBUG: check this logic.
     finest_level = new_finest;
 
     if (lbase == 0)
@@ -2318,7 +2282,7 @@ Amr::regrid (ID base_id,
             amr_regions.addChildToNode(parent_id,a);
             a->initData();
         }
-        else if (active_levels.defined(lev)) /// TODO/DEBUG: Is this correct?
+        else if (active_levels.defined(lev))
         {
             //
             // Init with data from old structure then remove old structure.
@@ -2422,7 +2386,6 @@ Amr::printGridInfo (std::ostream& os,
         long                      ncells  = cellCount(lev);
         double                    ntot    = geom[lev].Domain().d_numPts();
         Real                      frac    = 100.0*(Real(ncells) / ntot);
-        ///TODO/DEBUG: upgrade -- this should accurately give levels, but not regions
 
         os << "  Level "
            << lev
@@ -3041,8 +3004,6 @@ Amr::initSubcycle (ParmParse * pp)
     }
     else if (subcycling_mode == "Manual")
     {
-        ///TODO/DEBUG: Fix
-            BoxLib::Error("Specifying Manual subcycles is disabled for regions for now");
         int cnt = pp->countval("subcycling_iterations");
 
         if (cnt == 1)
@@ -3053,22 +3014,21 @@ Amr::initSubcycle (ParmParse * pp)
             int cycles = 0;
 
             pp->get("subcycling_iterations",cycles);
-
-            n_cycle.setRoot(1); // coarse level is always 1 cycle
-            TreeIterator<int> it = n_cycle.getIteratorAtRoot();
-            for (; !it.isFinished(); ++it)
+            manual_n_cycle.resize(max_level);
+            manual_n_cycle[0] = 1; // coarse level is always 1 cycle
+            for (int i = 1; i <=max_level; i++)
             {
-                (*it) = cycles;
+                manual_n_cycle[i] = cycles;
             }
         }
         else if (cnt > 1)
         {
             //
-            // Otherwise we expect a vector of max_grid_size values.
+            // Otherwise we expect a vector of max_level values.
             //
             
-            //pp->getarr("subcycling_iterations",n_cycle,0,max_level+1);
-            if (n_cycle.getRoot() != 1)
+            pp->getarr("subcycling_iterations",manual_n_cycle,0,max_level+1);
+            if (manual_n_cycle[0] != 1)
             {
                 BoxLib::Error("First entry of subcycling_iterations must be 1");
             }
@@ -3077,13 +3037,19 @@ Amr::initSubcycle (ParmParse * pp)
         {
             BoxLib::Error("Must provide a valid subcycling_iterations if mode is Manual");
         }
+        // Check validity
+        for (int i = 1; i <=max_level; i++)
+        {
+            if (manual_n_cycle[i] > MaxRefRatio(i-1))
+                BoxLib::Error("subcycling iterations must always be <= ref_ratio");
+            if (manual_n_cycle[i] <= 0)
+                BoxLib::Error("subcycling iterations must always be > 0");
+        }
+        // Set n_cycle from manual n_cycle
         TreeIterator<int> it = n_cycle.getIteratorAtRoot(-1,Prefix);
         for (++it; !it.isFinished(); ++it)
         {
-            if (*it > MaxRefRatio(it.getLevel()-1))
-                BoxLib::Error("subcycling iterations must always be <= ref_ratio");
-            if (*it <= 0)
-                BoxLib::Error("subcycling iterations must always be > 0");
+            *it = manual_n_cycle[it.getLevel()];
         }
     }
     else if (subcycling_mode == "Auto")

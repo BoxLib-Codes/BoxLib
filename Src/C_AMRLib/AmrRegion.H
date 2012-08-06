@@ -384,7 +384,6 @@ public:
     // Returns the full id of this region.
     //
     ID getID() const;
-    std::string getIDString() const ;
 
     AmrRegion* Parent();
 protected:
