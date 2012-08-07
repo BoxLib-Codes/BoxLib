@@ -54,10 +54,10 @@ AmrRegion::AmrRegion ()
 }
 
 AmrRegion::AmrRegion (Amr&            papa,
-                    ID      id,
-                    const Geometry& level_geom,
-                    const BoxArray& ba,
-                    Real            time)
+                      ID              id,
+                      const Geometry& level_geom,
+                      const BoxArray& ba,
+                      Real            time)
     :
     geom(level_geom),
     grids(ba),
@@ -98,7 +98,6 @@ AmrRegion::AmrRegion (Amr&            papa,
 
     state.resize(desc_lst.size());
 
-    ///TODO/DEBUG: Check use of dt at some point
     for (int i = 0; i < state.size(); i++)
     {
         state[i].define(geom.Domain(),
@@ -1516,7 +1515,7 @@ AmrRegion::define(RegionList& regions, Amr* papa)
     geom = first->Geom();
     master = papa;
     // Resize ancestor array. This array is not set in define, it must
-    // be initialized elsewhere TODO/DEBUG: should this change?
+    // be initialized elsewhere
     ancestor_regions.resize(level + 1);
     // Initialize ratios.
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);

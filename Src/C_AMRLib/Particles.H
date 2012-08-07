@@ -1894,7 +1894,6 @@ ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(lev >= 0);
-    ///TODO/DEBUG: Any other assertions needed?
     ID base_region;
     if (base_region_ptr == 0)
     {
@@ -5378,9 +5377,8 @@ template <int N>
 void
 ParticleContainer<N>::Restructure (ID base_region, std::list<int> new_structure)
 {
-    ///TODO/DEBUG: Figure out an assert to add here so that we don't kill innocent orphans.
-    //There should probably be some asserts here.
-    //BL_ASSERT(orphan_particles.empty());
+    // The setData method contains asserts that will fail if we try to
+    // overwrite existing orphans.
     m_particles.extractChildrenOfNode(base_region, orphan_particles);
     m_particles.buildFromStructure(base_region, new_structure);
     PTreeIterator<PMap> pmit = m_particles.getIteratorAtNode(base_region, -1, Prefix);
@@ -5846,11 +5844,10 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     //
     long nparticles = 0;
 
-    ///TODO/DEBUG: Upgrade -- this in no way works
-    for (int lev = 0; lev < m_amr->finestLevel(); lev++)
+    PTreeIterator<PMap> it = m_particles.getIteratorAtRoot(-1, Prefix);
+    for ( ; !it.isFinished(); ++it)
     {
-        ///TODO/DEBUG: Upgrade -- this in no way works
-        const PMap& pmap = m_particles.getData(ROOT_ID);
+        const PMap& pmap = m_particles.getData(it.getID());
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -5917,10 +5914,10 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
             if (!File.good())
                 BoxLib::FileOpenFailed(filename);
             
-            for (int lev = 0; lev < m_amr->finestLevel(); lev++)
+            PTreeIterator<PMap> it = m_particles.getIteratorAtRoot(-1, Prefix);
+            for ( ; !it.isFinished(); ++it)
             {
-                ///TODO/DEBUG: Upgrade -- this in no way works
-                const PMap& pmap = m_particles.getData(ROOT_ID);
+                const PMap& pmap = m_particles.getData(it.getID());
 
                 for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
                 {

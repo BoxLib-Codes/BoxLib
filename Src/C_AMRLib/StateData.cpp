@@ -57,7 +57,6 @@ StateData::StateData (PArray<StateData>& sds)
         new_data = 0;
     }
     
-    ///TODO/DEBUG: check these more carefully.
     //
     // Set state descriptor
     // It might be worth adding some sort of consistency test on the 

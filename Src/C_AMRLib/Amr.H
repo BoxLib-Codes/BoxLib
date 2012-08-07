@@ -244,7 +244,11 @@ public:
                             ExecutionTree*  exec_tree, 
                             int             ncomp,
                             int             ngrow);
-                            
+    
+    //
+    // Creates a Distribution Mapping to represent the aggregated
+    // distribution maps at the specified level.
+    //
     DistributionMapping createDM(ID     base_region, 
                                  int             lev);
     //
@@ -252,11 +256,6 @@ public:
     // Only allowed when multi_region = 0
     //
     AmrRegion&  getLevel (int lev);
-    //
-    // Search the specified level for the region containing
-    // The specified boxArray;
-    //
-    AmrRegion&  getParent (int lev, const BoxArray& ba);
     //
     // Total number of cells.
     //

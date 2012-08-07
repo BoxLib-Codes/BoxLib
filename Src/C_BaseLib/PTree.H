@@ -137,8 +137,8 @@ public:
     //
     // Returns the finest level (defined) in the tree. Try to avoid this in general,
     //
-    int getFinestLevel();
-    int getFinestLevelAtNode(ID base_node);
+    int getFinestLevel() const;
+    int getFinestLevelAtNode(ID base_node) const;
     
     //
     // Extracts a list representing the structure of the subtree rooted at the specified id.
@@ -487,9 +487,9 @@ PTree<T>::getConstIteratorAtNode(const ID id, int restrict_level, IteratorMode m
 
 template <class T>
 int
-PTree<T>::getFinestLevel()
+PTree<T>::getFinestLevel() const
 {
-    PTreeIterator<T> it = getIteratorAtRoot(-1,Postfix, true);
+    PTreeConstIterator<T> it = getConstIteratorAtRoot(-1,Postfix, true);
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {
@@ -501,9 +501,9 @@ PTree<T>::getFinestLevel()
 
 template <class T>
 int
-PTree<T>::getFinestLevelAtNode(ID base_node)
+PTree<T>::getFinestLevelAtNode(ID base_node) const
 {
-    PTreeIterator<T> it = getIteratorAtNode(base_node, -1,Postfix, true);
+    PTreeConstIterator<T> it = getConstIteratorAtNode(base_node, -1,Postfix, true);
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {

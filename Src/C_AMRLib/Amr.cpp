@@ -152,21 +152,6 @@ Amr::levelCount (int lev) const
     return region_count.getData(id);
 }
 
-///TODO/DEBUG: DEPRECATED--remove once restart has been redone
-AmrRegion&  
-Amr::getParent (int lev, const BoxArray& ba)
-{
-    RegionIterator it = amr_regions.getIteratorAtRoot(lev);
-    for ( ; !it.isFinished(); ++it)
-    {
-        if ((*it)->boxArray().contains(ba))
-            return *(*it);
-    }
-    BoxLib::Abort("Unable to find parent for specified BoxArray");
-    return *(*it); // Someone should remove this line--it's just there to avoid
-                   // warnings. It does nothing.
-}
-
 bool Amr::Plot_Files_Output () { return plot_files_output; }
 
 std::ostream&
@@ -190,14 +175,7 @@ Amr::RegridOnRestart () const
 BoxArray
 Amr::boxArray (int lev) const
 {
-    BoxList bl;
-    PTreeConstIterator<AmrRegion> it = amr_regions.getConstIteratorAtRoot(lev);
-    for ( ; !it.isFinished(); ++it)
-    {
-        bl.join((*it)->boxArray().boxList());
-    }
-    const BoxArray ba(bl);
-    return ba;
+    return boxArray(ROOT_ID, lev);
 }
 
 BoxArray
