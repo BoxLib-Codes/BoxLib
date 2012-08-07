@@ -96,9 +96,9 @@ public:
     TreeIterator<T> getIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix);
 
     //
-    // A hack I'm currently using to compute the finest level. Shouldn't be used in general.
+    // Returns the finest level (defined) in the tree. Try to avoid this in general,
     //
-    int DeprecatedGetFinestLevel();
+    int getFinestLevel();
     
     //
     // Extracts a list representing the structure of the subtree rooted at the specified id.
@@ -366,14 +366,14 @@ Tree<T>::getIteratorAtNode(const ID id, int restrict_level, IteratorMode mode)
 
 template <class T>
 int
-Tree<T>::DeprecatedGetFinestLevel()
+Tree<T>::getFinestLevel()
 {
     TreeIterator<T> it = getIteratorAtRoot();
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {
-        if ((*it)->Level() > flev)
-            flev = (*it)->Level() ;
+        if (it.getLevel() > flev)
+            flev = it.getLevel() ;
     }
     return flev;
 }

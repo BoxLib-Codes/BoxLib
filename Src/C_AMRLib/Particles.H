@@ -361,12 +361,12 @@ protected:
     //
     // Helper functions for Restart().
     //
-    void Restart_OneDotZero (const std::string& fullname,
+    void Restart_Region_OneDotZero (const std::string& fullname,
                              std::ifstream&     HdrFile);
 
     void ReadParticles_OneDotZero (int            cnt,
                                    int            grd,
-                                   int            lev,
+                                   ID             region_id,
                                    std::ifstream& ifs);
     //
     // The data.
@@ -4965,6 +4965,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         // Then the region tree structure.
         //
         std::list<int> structure = m_amr->getRegions().getStructure();
+        HdrFile << structure.size() <<'\n';
         for (std::list<int>::iterator it = structure.begin(); it!= structure.end(); ++it)
         {
             HdrFile << *it << ' ';
@@ -4973,7 +4974,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         //
         // Then the number of grids in each region.
         //
-        for (RegionIterator it = m_amr->getRegionIterator(); !it.isFinished(); ++it)
+        for (RegionIterator it = m_amr->getRegionIterator(-1, Prefix); !it.isFinished(); ++it)
         {
             HdrFile << (*it)->boxArray().size() << ' ';
         }
@@ -5024,7 +5025,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                 RegionDir += '/';
 
             RegionDir = BoxLib::Concatenate(RegionDir + "Level_", region_id.level(), 1);
-            RegionDir = RegionDir + "Region_" + region_id.toString();
+            RegionDir = RegionDir + "/Region_" + region_id.toString();
 
             if (ParallelDescriptor::IOProcessor())
                 if (!BoxLib::UtilCreateDirectory(RegionDir, 0755))
@@ -5090,7 +5091,6 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
                     // Do it grid block by grid block remembering the seek offset
                     // for the start of writing of each block of data.
                     //
-                    ///TODO/DEBUG: FIX THIS WHOLE THING
                     WriteParticles(region_id, ParticleFile, FileNumber, which, count, where);
 
                     ParticleFile.flush();
@@ -5351,7 +5351,7 @@ ParticleContainer<N>::Restart (const std::string& dir,
 
     if (version == ParticleBase::Version())
     {
-        Restart_OneDotZero(fullname,HdrFile);
+        Restart_Region_OneDotZero(fullname,HdrFile);
     }
     else
     {
@@ -5371,6 +5371,7 @@ ParticleContainer<N>::Restart (const std::string& dir,
             std::cout << "ParticleContainer<N>::Restart() time: " << stoptime << '\n';
         }
     }
+    
 }
 
 template <int N>
@@ -5392,10 +5393,11 @@ ParticleContainer<N>::Restructure (ID base_region, std::list<int> new_structure)
 
 template <int N>
 void
-ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
+ParticleContainer<N>::Restart_Region_OneDotZero (const std::string& fullname,
                                           std::ifstream&     HdrFile)
 {
     BL_ASSERT(!fullname.empty());
+    
 
     const int IOProc = ParallelDescriptor::IOProcessorNumber();
     //
@@ -5455,35 +5457,54 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
     //
     ParticleBase::NextID(maxnextid);
     //
-    // Then the finest level of the AMR hierarchy.
+    // Then the Structure of the AMR hierarchy
     //
-    int finest_level;
-
+    Array<int> structure_array;
+    int num_regions;
     if (ParallelDescriptor::IOProcessor())
     {
-        HdrFile >> finest_level;
-
-        BL_ASSERT(finest_level >= 0);
+        HdrFile >> num_regions;
     }
-    ParallelDescriptor::Bcast(&finest_level, 1, IOProc);
-    //
-    // Then the number of grids at each level.
-    //
-    Array<int> ngrids(finest_level+1);
-
-    BL_ASSERT(finest_level == m_amr->finestLevel());
+    ParallelDescriptor::Bcast(&num_regions, 1, IOProc);
+        
+    structure_array.resize(num_regions);
+        
+    if (ParallelDescriptor::IOProcessor())
+    {
+        for (int i = 0; i < num_regions; i++)
+        {
+            HdrFile >> structure_array[i];
+        }
+    }   
     
-    // Sets the structure of m_particles to match the region hierarchy.
-    m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
+    ParallelDescriptor::Bcast(structure_array.dataPtr(), structure_array.size(), IOProc);
+    std::list<int> structure;
+    for (int i = 0; i < structure_array.size(); i++)
+        structure.push_back(structure_array[i]);
+    
+    
+    BL_ASSERT(structure == m_amr->getRegions().getStructure());
+    m_particles.buildFromStructure(structure);
+    PTreeIterator<PMap> pit = m_particles.getIteratorAtRoot(-1, Prefix);
+    for(++pit; !pit.isFinished(); ++pit)
+        m_particles.setData(pit.getID(), new PMap());
+    
+    //
+    // Then the number of grids at each region. We store it in array
+    // form for ease of communication.
+    //
+    Array<int> ngrids(structure.size());
 
     if (ParallelDescriptor::IOProcessor())
     {
-        for (int lev = 0; lev <= finest_level; lev++)
+        int idx = 0;
+        for(PTreeIterator<PMap> it = m_particles.getIteratorAtRoot(-1, Prefix); !it.isFinished(); ++it)
         {
-            HdrFile >> ngrids[lev];
+            HdrFile >> ngrids[idx];
 
-            BL_ASSERT(ngrids[lev] > 0);
-            BL_ASSERT(ngrids[lev] == m_amr->boxArray(lev).size());
+            BL_ASSERT(ngrids[idx] > 0);
+            BL_ASSERT(ngrids[idx] == m_amr->boxArray(it.getID()).size());
+            idx++;
         }
     }
     ParallelDescriptor::Bcast(ngrids.dataPtr(), ngrids.size(), IOProc);
@@ -5492,23 +5513,26 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
     //
     //   which count offset
     //
-    // One for each grid at each level from 0 -> finest_level.
+    // One for each grid at each region in Prefix Ordering
     //
     // We rebuild the filename from which and level.
     //
     
-    for (int lev = 0; lev <= finest_level; lev++)
+    int idx = 0;
+    for (PTreeIterator<PMap> it = m_particles.getIteratorAtRoot(-1, Prefix); !it.isFinished(); ++it)
     {
+        ID id = it.getID();
+        int lev = id.level();
         //
         // Read in the which, count & offset info for this level.
         //
-        Array<int>  which(ngrids[lev]);
-        Array<int>  count(ngrids[lev]);
-        Array<long> where(ngrids[lev]);
+        Array<int>  which(ngrids[idx]);
+        Array<int>  count(ngrids[idx]);
+        Array<long> where(ngrids[idx]);
 
         if (ParallelDescriptor::IOProcessor())
         {
-            for (int i = 0; i < ngrids[lev]; i++)
+            for (int i = 0; i < ngrids[idx]; i++)
             {
                 HdrFile >> which[i] >> count[i] >> where[i];
             }
@@ -5518,7 +5542,7 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
         ParallelDescriptor::Bcast(where.dataPtr(), where.size(), IOProc);
 
 
-        const MultiFab& state = m_amr->getLevel(lev).get_new_data(0);
+        const MultiFab& state = m_amr->getRegion(id).get_new_data(0);
 
         for (MFIter mfi(state); mfi.isValid(); ++mfi)
         {
@@ -5535,10 +5559,10 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
 
             name += "Level_";
             name += BoxLib::Concatenate("", lev, 1);
-            name += '/';
+            name +=  + "/Region_" + id.toString() + '/';
             name += ParticleBase::DataPrefix();
             name += BoxLib::Concatenate("", which[grid], 4);
-
+            
             std::ifstream ParticleFile;
 
             ParticleFile.open(name.c_str(), std::ios::in);
@@ -5548,13 +5572,14 @@ ParticleContainer<N>::Restart_OneDotZero (const std::string& fullname,
 
             ParticleFile.seekg(where[grid], std::ios::beg);
 
-            ReadParticles_OneDotZero(count[grid],grid,lev,ParticleFile);
+            ReadParticles_OneDotZero(count[grid],grid,id,ParticleFile);
 
             ParticleFile.close();
 
             if (!ParticleFile.good())
                 BoxLib::Abort("ParticleContainer<N>::Restart(): problem reading particles");
         }
+        idx++;
     }
 
     BL_ASSERT(OK());
@@ -5564,12 +5589,13 @@ template <int N>
 void
 ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
                                                 int            grd,
-                                                int            lev,
+                                                ID             region_id,
                                                 std::ifstream& ifs)
 {
     BL_ASSERT(cnt > 0);
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0 && lev <= m_amr->finestLevel());
-    BL_ASSERT(grd >= 0 && grd < m_amr->boxArray(lev).size());
+    BL_ASSERT(grd >= 0 && grd < m_amr->boxArray(region_id).size());
     //
     // First read in the integer data in binary.  We do not store
     // the m_lev and m_grid data on disk.  We can easily recreate
@@ -5593,8 +5619,7 @@ ParticleContainer<N>::ReadParticles_OneDotZero (int            cnt,
     //
     int*         iptr = istuff.dataPtr();
     Real*        rptr = rstuff.dataPtr();
-    ///TODO/DEBUG: upgrade -- this in no way works
-    PBox&        pbox = m_particles.getData(ROOT_ID )[grd];
+    PBox&        pbox = m_particles.getData(region_id )[grd];
     ParticleType p;
 
     for (int i = 0; i < cnt; i++)

@@ -119,6 +119,9 @@ AmrRegion::restart (Amr&          papa,
     master = &papa;
 
     is >> level;
+    m_id.resize(level+1);
+    for (int i = 0; i <= level; i++)
+        is >> m_id[i];
     is >> geom;
 
     fine_ratio = IntVect::TheUnitVector(); fine_ratio.scale(-1);
@@ -150,12 +153,7 @@ AmrRegion::restart (Amr&          papa,
     // set up ancestors
     if (level > 0)
     {
-        BoxArray cba = grids;
-        cba.coarsen(master->refRatio(level-1));
-        parent_region = &papa.getParent(level - 1, cba);
-        m_id = parent_region->getID();
-        m_id.resize(level+1);
-        m_id[level] = master->getRegions().countChildrenOfNode(parent_region->getID());
+        parent_region = &master->getRegion(m_id.parent());
         ancestor_regions.resize(level+1);
         AmrRegion* temp_region = this;
         for (int i = level; i >= 0; i--)
@@ -167,8 +165,6 @@ AmrRegion::restart (Amr&          papa,
     else
     {
         parent_region = this;
-        m_id.resize(1);
-        m_id[0] = 0;
         ancestor_regions.resize(1);
         ancestor_regions.set(0,this);
     }
@@ -260,7 +256,10 @@ AmrRegion::checkPoint (const std::string& dir,
 
     if (ParallelDescriptor::IOProcessor())
     {
-        os << m_id << '\n' << geom  << '\n';
+        os << level << "\n";
+        for (int i = 0; i <= level; i++)
+            os << m_id[i] << ' ';
+        os << '\n' << geom  << '\n';
         grids.writeOn(os);
         os << ndesc << '\n';
     }

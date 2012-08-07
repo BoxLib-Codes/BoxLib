@@ -136,7 +136,6 @@ public:
 
     //
     // Returns the finest level (defined) in the tree. Try to avoid this in general,
-    // but sometimes *cough* Nyx *cough* it is necessary.
     //
     int getFinestLevel();
     int getFinestLevelAtNode(ID base_node);
