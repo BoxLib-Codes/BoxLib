@@ -566,7 +566,7 @@ ParticleBase::Where (ParticleBase& p,
 
     std::vector< std::pair<int,Box> > isects;
 
-    PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIteratorAtNode(base_region);
+    PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIterator(base_region);
     for ( ; !it.isFinished(); ++it)
     {
         if (!it.isDefined()) // for use in initial redistributes.
@@ -617,7 +617,7 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
     {
         std::vector< std::pair<int,Box> > isects;
 
-        PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIteratorAtNode(base_region);
+        PTreeConstIterator<AmrRegion> it = amr->getRegions().getConstIterator(base_region);
         for ( ; !it.isFinished(); ++it)
         {
             int lev = it.getLevel();

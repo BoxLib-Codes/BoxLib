@@ -92,8 +92,11 @@ public:
     // Returns a TreeIterator to root or the specified node. If restrict_level
     // is set, the iterator will skip over all but nodes at the specified level.
     //
-    TreeIterator<T> getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix);
-    TreeIterator<T> getIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix);
+    TreeIterator<T> getIterator (const ID id, IteratorMode mode, int restrict_level = -1);
+    TreeIterator<T> getIterator (const ID id, int restrict_level = -1);
+    TreeIterator<T> getIterator (IteratorMode mode, int restrict_level = -1);
+    TreeIterator<T> getIterator (int restrict_level = -1);
+    
 
     //
     // Returns the finest level (defined) in the tree. Try to avoid this in general,
@@ -191,7 +194,7 @@ protected:
   will automatically skip nodes not at the proper level.
    
   Standard usage is looks something like:
-    for (TreeIterator<T> it = myTree.getIteratorAtNode(id); !it.isFinished(); it++)
+    for (TreeIterator<T> it = myTree.getIterator(id); !it.isFinished(); it++)
     {
         ...
     }
@@ -242,7 +245,7 @@ Tree<T>::Tree(Tree<T>& old_tree)
     ID id;
     buildFromStructure(root_id, old_tree.getStructure(root_id));
     // This initialization method is pretty inefficient. We could do better if we want.
-    TreeIterator<T> it = old_tree.getIteratorAtRoot();
+    TreeIterator<T> it = old_tree.getIterator();
     for ( ; !it.isFinished(); ++it)
     {
         id = it.getID();
@@ -351,24 +354,37 @@ Tree<T>::clearChildrenOfNode(const ID id)
 
 template <class T>
 TreeIterator<T>
-Tree<T>::getIteratorAtRoot(int restrict_level, IteratorMode mode)
+Tree<T>::getIterator (const ID id, IteratorMode mode, int restrict_level)
 {
-    TreeIterator<T> new_it(root, restrict_level,mode);
-    return new_it;
+    return TreeIterator<T>(getNode(id), restrict_level,mode);
 }
 
 template <class T>
 TreeIterator<T>
-Tree<T>::getIteratorAtNode(const ID id, int restrict_level, IteratorMode mode)
+Tree<T>::getIterator (const ID id, int restrict_level)
 {
-    return TreeIterator<T>(getNode(id), restrict_level,mode);
+    return TreeIterator<T>(getNode(id), restrict_level,Postfix);
+}
+
+template <class T>
+TreeIterator<T>
+Tree<T>::getIterator (IteratorMode mode, int restrict_level)
+{
+    return TreeIterator<T>(root, restrict_level,mode);
+}
+
+template <class T>
+TreeIterator<T>
+Tree<T>::getIterator ( int restrict_level)
+{
+    return TreeIterator<T>(root, restrict_level,Postfix);
 }
 
 template <class T>
 int
 Tree<T>::getFinestLevel()
 {
-    TreeIterator<T> it = getIteratorAtRoot();
+    TreeIterator<T> it = getIterator();
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {
@@ -428,7 +444,7 @@ template <class T>
 int
 Tree<T>::numElements() const
 {
-    TreeIterator<T> ptree_it = getIteratorAtRoot();
+    TreeIterator<T> ptree_it = getIterator();
     int cnt = 0;
     for( ; !ptree_it.isFinished(); ++ptree_it)
         cnt++;
@@ -722,8 +738,10 @@ public:
     //
     void prune();
     
-    ExecutionTreeIterator getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix);
-    ExecutionTreeIterator getIteratorAtNode(const ID id, int restrict_level = -1 , IteratorMode mode = Postfix);
+    ExecutionTreeIterator getIterator ( IteratorMode mode, int restrict_level = -1);
+    ExecutionTreeIterator getIterator ( int restrict_level = -1);
+    ExecutionTreeIterator getIterator (const ID id, IteratorMode mode , int restrict_level = -1 );
+    ExecutionTreeIterator getIterator (const ID id, int restrict_level = -1);
     
 };
 
@@ -757,23 +775,37 @@ ExecutionTree::ExecutionTree(ID root_id)
 
 inline
 ExecutionTreeIterator
-ExecutionTree::getIteratorAtRoot(int restrict_level, IteratorMode mode)
+ExecutionTree::getIterator (int restrict_level)
 {
-    return ExecutionTreeIterator(root, restrict_level,mode);
+    return ExecutionTreeIterator(root, restrict_level, Postfix);
 }
 
 inline
 ExecutionTreeIterator
-ExecutionTree::getIteratorAtNode(const ID id, int restrict_level, IteratorMode mode)
+ExecutionTree::getIterator (IteratorMode mode, int restrict_level)
 {
-    return ExecutionTreeIterator(getNode(id), restrict_level,mode);
+    return ExecutionTreeIterator(root, restrict_level, mode);
+}
+
+inline
+ExecutionTreeIterator
+ExecutionTree::getIterator (const ID id, IteratorMode mode, int restrict_level)
+{
+    return ExecutionTreeIterator(getNode(id), restrict_level, mode);
+}
+
+inline
+ExecutionTreeIterator
+ExecutionTree::getIterator (const ID id, int restrict_level)
+{
+    return ExecutionTreeIterator(getNode(id), restrict_level, Postfix);
 }
 
 inline
 void
 ExecutionTree::prune()
 {
-    ExecutionTreeIterator it = getIteratorAtRoot(-1, Prefix);
+    ExecutionTreeIterator it = getIterator(Prefix);
     for ( ; !it.isFinished() ; ++it)
     {
         Node* c_node = getNode(it.getID());

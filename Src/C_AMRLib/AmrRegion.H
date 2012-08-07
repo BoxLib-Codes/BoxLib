@@ -415,7 +415,7 @@ protected:
     static DescriptorList desc_lst;     // List of state variables.
     AmrRegion*            parent_region;    // The coarser region containing this region.
     PArray<AmrRegion>     ancestor_regions;
-    ID            m_id;         // The node region_id specifying the region's id 
+    ID                    m_id;         // The node region_id specifying the region's id 
                                         // relative to its parents
 #ifdef USE_SLABSTAT
     static SlabStatList   slabstat_lst; // List of SlabStats.

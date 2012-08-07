@@ -129,10 +129,14 @@ public:
     // this is primarily for use in Nyx's silly multilevel regridding; generally your data
     // should all be defined if you're iterating for use.
     //
-    PTreeIterator<T> getIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false);
-    PTreeConstIterator<T> getConstIteratorAtRoot(int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false) const;
-    PTreeIterator<T> getIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false);
-    PTreeConstIterator<T> getConstIteratorAtNode(const ID id, int restrict_level = -1, IteratorMode mode = Postfix, bool skip_undefined = false) const;
+    PTreeIterator<T> getIterator (const ID id, IteratorMode mode, int restrict_level = -1, bool skip_undefined = false);
+    PTreeIterator<T> getIterator (const ID id, int restrict_level = -1, bool skip_undefined = false);
+    PTreeIterator<T> getIterator (IteratorMode mode , int restrict_level = -1, bool skip_undefined = false);
+    PTreeIterator<T> getIterator (int restrict_level = -1, bool skip_undefined = false);
+    PTreeConstIterator<T> getConstIterator (const ID id, IteratorMode mode , int restrict_level = -1, bool skip_undefined = false) const;
+    PTreeConstIterator<T> getConstIterator (const ID id, int restrict_level = -1, bool skip_undefined = false) const;
+    PTreeConstIterator<T> getConstIterator (IteratorMode mode , int restrict_level = -1, bool skip_undefined = false) const;
+    PTreeConstIterator<T> getConstIterator (int restrict_level = -1, bool skip_undefined = false) const;
 
     //
     // Returns the finest level (defined) in the tree. Try to avoid this in general,
@@ -233,7 +237,7 @@ protected:
   will automatically skip nodes not at the proper level.
    
   Standard usage is looks something like:
-    for (PTreeIterator<T> it = myTree.getIteratorAtNode(id); !it.isFinished(); it++)
+    for (PTreeIterator<T> it = myTree.getIterator(id); !it.isFinished(); it++)
     {
         ...
     }
@@ -456,40 +460,65 @@ PTree<T>::clearChildrenOfNode(const ID id)
     getNode(id)->clearChildren();
 }
 
+
 template <class T>
 PTreeIterator<T>
-PTree<T>::getIteratorAtRoot(int restrict_level, IteratorMode mode, bool skip_undefined)
+PTree<T>::getIterator (const ID id, IteratorMode mode, int restrict_level, bool skip_undefined)
 {
-    PTreeIterator<T> new_it(root, restrict_level,mode, skip_undefined);
-    return new_it;
+    return PTreeIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
+}
+template <class T>
+PTreeIterator<T>
+PTree<T>::getIterator (const ID id, int restrict_level,  bool skip_undefined)
+{
+    return PTreeIterator<T>(getNode(id), restrict_level,Postfix, skip_undefined);
+}
+template <class T>
+PTreeIterator<T>
+PTree<T>::getIterator (IteratorMode mode, int restrict_level, bool skip_undefined)
+{
+    return PTreeIterator<T>(root, restrict_level,mode, skip_undefined);
+}
+template <class T>
+PTreeIterator<T>
+PTree<T>::getIterator (int restrict_level,  bool skip_undefined)
+{
+    return PTreeIterator<T>(root, restrict_level,Postfix, skip_undefined);
 }
 
 template <class T>
 PTreeConstIterator<T>
-PTree<T>::getConstIteratorAtRoot(int restrict_level, IteratorMode mode, bool skip_undefined) const
+PTree<T>::getConstIterator (const ID id, IteratorMode mode, int restrict_level, bool skip_undefined) const
+{
+    return PTreeConstIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
+}
+
+template <class T>
+PTreeConstIterator<T>
+PTree<T>::getConstIterator (const ID id,  int restrict_level, bool skip_undefined) const
+{
+    return PTreeConstIterator<T>(getNode(id), restrict_level, Postfix, skip_undefined);
+}
+
+template <class T>
+PTreeConstIterator<T>
+PTree<T>::getConstIterator (IteratorMode mode, int restrict_level, bool skip_undefined) const
 {
     return PTreeConstIterator<T>(root, restrict_level,mode, skip_undefined);
 }
 
 template <class T>
-PTreeIterator<T>
-PTree<T>::getIteratorAtNode(const ID id, int restrict_level, IteratorMode mode, bool skip_undefined)
-{
-    return PTreeIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
-}
-
-template <class T>
 PTreeConstIterator<T>
-PTree<T>::getConstIteratorAtNode(const ID id, int restrict_level, IteratorMode mode, bool skip_undefined) const
+PTree<T>::getConstIterator ( int restrict_level, bool skip_undefined) const
 {
-    return PTreeConstIterator<T>(getNode(id), restrict_level,mode, skip_undefined);
+    return PTreeConstIterator<T>(root, restrict_level, Postfix, skip_undefined);
 }
 
 template <class T>
 int
 PTree<T>::getFinestLevel() const
 {
-    PTreeConstIterator<T> it = getConstIteratorAtRoot(-1,Postfix, true);
+    PTreeConstIterator<T> it = getConstIterator(-1, true);
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {
@@ -503,7 +532,7 @@ template <class T>
 int
 PTree<T>::getFinestLevelAtNode(ID base_node) const
 {
-    PTreeConstIterator<T> it = getConstIteratorAtNode(base_node, -1,Postfix, true);
+    PTreeConstIterator<T> it = getConstIterator(base_node, Postfix, -1, true);
     int flev = 0;
     for ( ; !it.isFinished(); ++it)
     {
@@ -563,7 +592,7 @@ template <class T>
 int
 PTree<T>::numElements() const
 {
-    PTreeConstIterator<T> ptree_it = getConstIteratorAtRoot();
+    PTreeConstIterator<T> ptree_it = getConstIterator();
     int cnt = 0;
     for( ; !ptree_it.isFinished(); ++ptree_it)
         cnt++;

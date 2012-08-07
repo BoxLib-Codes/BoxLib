@@ -310,7 +310,7 @@ StationData::findGrid (const PTree<AmrRegion>& regions,
     //
     const int MyProc = ParallelDescriptor::MyProc();
 
-    for (RegionIterator it = regions.getIteratorAtRoot(), !it.isFinished(); ++it)
+    for (RegionIterator it = regions.getIterator(), !it.isFinished(); ++it)
     {
         if (it.isDefined();)
         {

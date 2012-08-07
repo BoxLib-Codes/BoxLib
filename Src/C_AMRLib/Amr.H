@@ -729,14 +729,14 @@ inline
 RegionIterator
 Amr::getRegionIterator(int lev, IteratorMode mode)
 {
-    return amr_regions.getIteratorAtRoot(lev, mode);
+    return amr_regions.getIterator(mode, lev);
 }
 
 inline
 RegionIterator
 Amr::getRegionIterator(const ID region_id, int lev, IteratorMode mode)
 {
-    return amr_regions.getIteratorAtNode(region_id, lev, mode);
+    return amr_regions.getIterator(region_id, mode, lev);
 }
 
 #endif /*_Amr_H_*/
