@@ -1381,14 +1381,9 @@ Amr::restart (const std::string& filename)
     
     for (RegionIterator it = getRegionIterator(Prefix); !it.isFinished(); ++it)
     { 
-        std::cout << "DEBUG: restarting region " << it.getID() << "\n";
         amr_regions.setData(it.getID(), (*levelbld)());
         amr_regions.getData(it.getID()).restart(*this, is);
-        std::cout << "DEBUG: region restarted " << it.getID() << "\n";
-        std::cout << "DEBUG: ns " << amr_regions.getStructure().size() << "\n";
-        std::cout << "DEBUG: Restart Structure: \n " << region_count.toString() <<"\n";
     }
-    std::cout << "DEBUG: Done Restarting\n";
     //
     // Build any additional data structures.
     // 
