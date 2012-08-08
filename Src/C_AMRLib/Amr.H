@@ -369,6 +369,7 @@ public:
     PTree<AmrRegion>& getRegions();
     const PTree<AmrRegion>& getRegions() const;
     
+    RegionIterator getRegionIterator(IteratorMode mode);
     RegionIterator getRegionIterator(int lev = -1, IteratorMode mode = Postfix);
     RegionIterator getRegionIterator(const ID region_id, int lev = -1, IteratorMode mode = Postfix);
     
@@ -730,6 +731,13 @@ RegionIterator
 Amr::getRegionIterator(int lev, IteratorMode mode)
 {
     return amr_regions.getIterator(mode, lev);
+}
+
+inline
+RegionIterator
+Amr::getRegionIterator(IteratorMode mode)
+{
+    return amr_regions.getIterator(mode);
 }
 
 inline
