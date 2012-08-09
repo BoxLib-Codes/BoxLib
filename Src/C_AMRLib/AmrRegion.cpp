@@ -1395,9 +1395,15 @@ AmrRegion::getBCArray (int State_Type,
 }
 
 int
-AmrRegion::okToRegrid (int iteration)
+AmrRegion::okToRegrid ()
 {
     return true;
+}
+
+int
+AmrRegion::okToRegrid (int iteration)
+{
+    return okToRegrid();
 }
 
 void
@@ -1568,4 +1574,10 @@ AmrRegion::computeRestrictedDt (ID  base_region,
                                 Tree<Real>& dt_region)
 {
     BoxLib::Abort("You must overload computeRestrictedDt if your simulation uses Optimal Subcycling\n");
+}
+
+void 
+AmrRegion::cluster(ID base_region, int lev, BoxArray new_grids, std::list<BoxArray> clusters)
+{
+    BoxLib::Abort("You must overload cluster() to use region_creation = Application\n");
 }

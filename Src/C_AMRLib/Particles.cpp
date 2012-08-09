@@ -514,20 +514,9 @@ ParticleBase::Where (ParticleBase& p,
                      const Amr*    amr,
                      ID&    region_id,
                      bool          update,
-                     ID*    base_region_ptr)
+                     ID    base_region)
 {
     BL_ASSERT(amr != 0);
-
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region.resize(1);
-        base_region[0] = 0;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
     
     if (update)
     {

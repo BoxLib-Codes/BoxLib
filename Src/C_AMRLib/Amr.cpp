@@ -306,7 +306,6 @@ Amr::Amr ()
     record_grid_info       = false;
     file_name_digits       = 5;
     record_run_info_terse  = false;
-    multi_region           = false;
     
     int i;
     for (i = 0; i < BL_SPACEDIM; i++)
@@ -376,22 +375,16 @@ Amr::Amr ()
     //
     pp.query("restart", restart_file);
     //
-    // Allow multiple regions per level?
-    //
-    pp.query("multi_region", multi_region);
-    //
     // Read max_level and alloc memory for container objects.
     //
     pp.get("max_level", max_level);
     int nlev     = max_level+1;
     geom.resize(nlev);
-    //level_steps.resize(nlev);
-    //level_count.resize(nlev);
-    //n_cycle.resize(nlev);
-    //dt_min.resize(nlev);
     blocking_factor.resize(nlev);
     max_grid_size.resize(nlev);
     n_error_buf.resize(nlev);
+    
+    initRegions(&pp);
     //
     // Set bogus values.
     //
@@ -2053,6 +2046,8 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
+    if (multi_region)
+        BoxLib::Abort("Calling lbase regrid in a multiregion simulation\n");
     ID region_id(lbase+1);
     regrid(region_id, time, initial);
 }
@@ -2072,6 +2067,7 @@ Amr::regrid (ID base_id,
 
     // This list tracks all regions that need to call post_regrid.
     RegionList touched_regions;
+    
     //
     // Create the level hierarchy with the data we can see.
     //
@@ -2093,7 +2089,6 @@ Amr::regrid (ID base_id,
         active_levels.set(i,&descendants[i-lbase]);
         active_levels[i].set_ancestors(active_levels);
     }
-    
     for(int i = 0; i < finest_level; i++)
         dms[i] = active_levels[i].get_distribution_map();
 
@@ -2105,7 +2100,7 @@ Amr::regrid (ID base_id,
     Array<BoxArray> new_grid_places(max_level+1);
     
     if (lbase <= std::min(finest_level,max_level-1))
-      grid_places(lbase, active_levels, dms, time, new_finest, new_grid_places);
+        grid_places(lbase, active_levels, dms, time, new_finest, new_grid_places);
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != coarseRegion().boxArray()) && (!initial);
     const int start = regrid_level_zero ? 0 : lbase+1;
@@ -2171,15 +2166,24 @@ Amr::regrid (ID base_id,
         grid_tree.setRoot(base_region.boxArray());
     for (int lev = lbase + 1; lev <= new_finest; lev++) 
     {
+        // Cluster the new grids into regions
         std::list<BoxArray> clusters;
-        if (multi_region)
+        if (region_creation == "FOF")
         {
             FOFCluster(0,new_grid_places[lev],clusters);
         }
-        else
+        else if (region_creation == "Single")
         {
             clusters.push_back(new_grid_places[lev]);
         }
+        else if (region_creation == "Application")
+        {
+            coarseRegion().cluster(base_id, lev, new_grid_places[lev], clusters);
+        }
+        else
+            BoxLib::Abort("Unrecognized Region creation mode\n");
+            
+        // Build the new clusters into a tree
         for (std::list<BoxArray>::iterator clust_it = clusters.begin(); clust_it != clusters.end(); ++clust_it)
         {
             BoxArray cba = *clust_it;
@@ -2329,8 +2333,8 @@ Amr::regrid (ID base_id,
 
         std::cout << "TIME = "
                   << time
-                  << " : REGRID  with lbase = "
-                  << lbase
+                  << " : REGRID  with base region = "
+                  << base_id
                   << std::endl;
                   
         if (verbose > 1)
@@ -3093,19 +3097,18 @@ Amr::initPltAndChk(ParmParse * pp)
     }
 }
 
-
-///Deprecated for now.
-//bool
-//Amr::okToRegrid (int level)
-//{
-    //bool ok = true;
-    //RegionIterator it = amr_regions.getIterator(level);
-    //for ( ; !it.isFinished(); ++it)
-    //{
-        //ok = ok && (*it)->okToRegrid();
-    //}
-    //return level_count[level] >= regrid_int[level] && ok;
-//}
+void
+Amr::initRegions(ParmParse * pp)
+{
+    multi_region = false;
+    pp->query("multi_region", multi_region);
+    region_creation = "FOF";
+    pp->query("region_creation", region_creation);
+    if (region_creation != "FOF" && region_creation != "Single" && region_creation != "Application" )
+        BoxLib::Error("Unrecognized region creation mode\n");
+    if (!multi_region)
+        region_creation = "Single";
+}
 
 bool
 Amr::okToRegrid (ID region_id, int iteration)

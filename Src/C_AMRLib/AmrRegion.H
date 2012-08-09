@@ -172,7 +172,13 @@ public:
     // This test is only evaluated when level_count >= regrid_int
     // as well. Defaults to true.
     //
-    virtual  int okToRegrid (int iteration = 0);
+    virtual  int okToRegrid ();
+    //
+    // This okToRegrid is for applications (Nyx) for which the iteration
+    // number dictates whether or not regridding is allowed. Defaults to 
+    // returning okToRegrid();
+    //
+    virtual  int okToRegrid (int iteration);
     //
     // Init grid data at problem start-up.
     // This is a pure virtual function and hence MUST be
@@ -358,28 +364,26 @@ public:
     //
     virtual Real estimateWork();
     //
+    // Application specific routine for clustering grids into regions.
+    // Called when region_creation = "Application". 
+    // Aborts by default unless overwritten.
+    //
+    virtual void cluster(ID base_region, int lev, BoxArray new_grids, std::list<BoxArray> clusters);
+    //
     // Returns one the TimeLevel enums.
     // Asserts that time is between AmrOldTime and AmrNewTime.
     // 
     TimeLevel which_time (int  state_indx,
                           Real time) const;
-                          
     // 
     // Sets/Gets the ancester list. Currently only needed for a regridding hack.
     //
     void set_ancestors(PArray<AmrRegion>& ancs);
     PArray<AmrRegion>& get_ancestors();
-    
-    ////
-    //// Gets the aggregated ancestors of this region.
-    ////
-    //void get_descendants(int finest_level, PArray<AmrRegion>& descendants);
-    
     //
     // Initializes a blank AmrRegion as an aggregate of a list of regions.
     //
     void define(PList<AmrRegion>& regions, Amr* papa);
-    
     //
     // Returns the full id of this region.
     //

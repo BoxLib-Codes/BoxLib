@@ -55,7 +55,7 @@ struct ParticleBase
     // Checks/sets a particles location on levels lev_min and higher.
     // Returns false if the particle does not exist on that level.
     //
-    static bool Where (ParticleBase& prt, const Amr* amr, ID& region_id, bool update = false, ID* base_region_ptr = 0);
+    static bool Where (ParticleBase& prt, const Amr* amr, ID& region_id, bool update = false, ID base_region = ROOT_ID);
     //
     // Checks/sets whether the particle has crossed a periodic boundary in such a way
     // that it is on levels lev_min and higher.
@@ -224,18 +224,18 @@ public:
     void InitCosmo  (MultiFab& mf, const Real vel_fac[], const Array<int> n_part, const Real particleMass, const Real shift[]);
     void InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const Real particleMass);
 
-    Real sumParticleMass (const MultiFab& mf, int level, ID* base_region_ptr = 0) const;
-    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, ID* base_region_ptr = 0) const;
+    Real sumParticleMass (const MultiFab& mf, int level, ID base_region = ROOT_ID) const;
+    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, ID base_region = ROOT_ID) const;
 
-    void Increment (MultiFab& mf, int level, ID* base_region_ptr = 0);
+    void Increment (MultiFab& mf, int level, ID base_region = ROOT_ID);
 
-    long IncrementWithTotal (MultiFab& mf, int level, ID* base_region_ptr = 0);
+    long IncrementWithTotal (MultiFab& mf, int level, ID base_region = ROOT_ID);
 
     void AssignDensitySingleRegion (MultiFab& mf, ID region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
-    void AssignDensity (PArray<MultiFab>& mf, ID* base_region_ptr = 0, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
+    void AssignDensity (PArray<MultiFab>& mf, ID base_region = ROOT_ID, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
 
-    void AssignDensityAndVels (PArray<MultiFab>& mf, ID* base_region_ptr = 0) const;
+    void AssignDensityAndVels (PArray<MultiFab>& mf, ID base_region = ROOT_ID) const;
 
     void AssignDensityDoit (PArray<MultiFab>& mf, PBox& data, int ncomp,  int lev_min) const;
 
@@ -245,7 +245,7 @@ public:
 
     void Redistribute (bool where_already_called = false,
                        bool full_where           = false,
-                       ID* base_region_ptr = 0, 
+                       ID base_region = ROOT_ID, 
                        int  nGrow                = 0);
                        
     void RedistributePBox(PBox& pbox, 
@@ -263,7 +263,7 @@ public:
     // These flags are used to do proper checking for subcycling particles
     // the default values are fine for non-subcycling methods
     //
-    bool OK (bool full_where = false,  ID* base_region_ptr = 0 , int ngrow = 0) const;
+    bool OK (bool full_where = false,  ID base_region = ROOT_ID , int ngrow = 0) const;
 
     void ByteSpread () const;
     //
@@ -1726,27 +1726,18 @@ template <int N>
 void
 ParticleContainer<N>::Increment (MultiFab& mf,
                                  int       lev,
-                                 ID* base_region_ptr) 
+                                 ID base_region) 
 {
-    IncrementWithTotal(mf,lev, base_region_ptr);
+    IncrementWithTotal(mf,lev, base_region);
 }
 
 template <int N>
 long
 ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
                                           int       lev,
-                                          ID* base_region_ptr)
+                                          ID base_region)
 {
-    BL_ASSERT(OK(false, base_region_ptr));
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
+    BL_ASSERT(OK(false, base_region));
 
     BL_ASSERT(lev >= 0);
 
@@ -1895,19 +1886,10 @@ template <int N>
 Real
 ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
                                        int             lev,
-                                       ID* base_region_ptr) const
+                                       ID base_region) const
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(lev >= 0);
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
 
     Real msum = 0;
 
@@ -1946,20 +1928,10 @@ void
 ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
                                            int             lev,
                                            Real*           mom,
-                                           ID* base_region_ptr) const
+                                           ID base_region) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
-    
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
     
     D_TERM(mom[0] = 0;, mom[1] = 0;, mom[2] = 0;);
     
@@ -2140,15 +2112,15 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
 
 template <int N>
 void
-ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, ID* base_region_ptr) const
+ParticleContainer<N>::AssignDensityAndVels (PArray<MultiFab>& mf, ID base_region) const
 {
-    AssignDensity(mf, base_region_ptr, BL_SPACEDIM+1);
+    AssignDensity(mf, base_region, BL_SPACEDIM+1);
 }
 
 template <int N>
 void
 ParticleContainer<N>::AssignDensity (PArray<MultiFab>&  mf, 
-                                     ID*        base_region_ptr, 
+                                     ID        base_region, 
                                      int                ncomp, 
                                      int                finest_level, 
                                      ExecutionTree*     exec_tree) const
@@ -2157,15 +2129,6 @@ ParticleContainer<N>::AssignDensity (PArray<MultiFab>&  mf,
     BL_ASSERT(N >= ncomp);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
 
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
     if (exec_tree == 0)
     {
         exec_tree = new ExecutionTree(base_region);
@@ -4353,7 +4316,7 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
         {
             if (!where_already_called)
             {
-                if (!ParticleBase::Where(p,m_amr, region_id, false, &base_region))
+                if (!ParticleBase::Where(p,m_amr, region_id, false, base_region))
                 {                           
                     if (full_where) // Lengthier checks for subcycling.
                     {
@@ -4447,24 +4410,13 @@ template <int N>
 void
 ParticleContainer<N>::Redistribute (bool where_already_called,
                                     bool full_where,
-                                    ID* base_region_ptr,
+                                    ID base_region,
                                     int  nGrow)
 {
     
     const int MyProc   = ParallelDescriptor::MyProc();
     Real      strttime = ParallelDescriptor::second();
     
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
-    
-
     //
     // The valid particles that we don't own.
     //
@@ -4519,7 +4471,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
     if (NProcs == 1)
     {
-        BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
+        BL_ASSERT(OK(full_where, base_region, nGrow));
         BL_ASSERT(notowned.empty());
 
         if (m_verbose > 1)
@@ -4565,7 +4517,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         // There's no parallel work to do.
         //
 //        BL_ASSERT(OK());
-        BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
+        BL_ASSERT(OK(full_where, base_region, nGrow));
         return;
     }
 
@@ -4773,7 +4725,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         }
     }
 
-    BL_ASSERT(OK(full_where, base_region_ptr, nGrow));
+    BL_ASSERT(OK(full_where, base_region, nGrow));
 
     if (m_verbose > 1)
     {
@@ -4792,18 +4744,9 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 template <int N>
 bool
 ParticleContainer<N>::OK (bool full_where,
-                          ID* base_region_ptr,
+                          ID base_region,
                           int  ngrow) const
 {
-    ID base_region;
-    if (base_region_ptr == 0)
-    {
-        base_region = ROOT_ID;
-    }
-    else
-    {
-        base_region = *base_region_ptr;
-    }
     //
     // Check that the integer data in each valid particle is what it should be.
     // This includes checking that particles are in the proper place in the particle
@@ -4836,7 +4779,7 @@ ParticleContainer<N>::OK (bool full_where,
                     const IntVect cell  = p.m_cell;
 
                     ID region_id;
-                    if (!ParticleBase::Where(p,m_amr, region_id, false, &base_region))
+                    if (!ParticleBase::Where(p,m_amr, region_id, false, base_region))
                     {
                         if (full_where)
                         {
