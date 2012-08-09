@@ -512,6 +512,7 @@ ParticleBase::Index (const ParticleBase& p,
 bool
 ParticleBase::Where (ParticleBase& p,
                      const Amr*    amr,
+                     ID&    region_id,
                      bool          update,
                      ID*    base_region_ptr)
 {
@@ -582,7 +583,7 @@ ParticleBase::Where (ParticleBase& p,
             p.m_lev  = lev;
             p.m_grid = isects[0].first;
             p.m_cell = iv;
-
+            region_id = it.getID();
             return true;
         }
     }
@@ -592,6 +593,7 @@ ParticleBase::Where (ParticleBase& p,
 bool
 ParticleBase::PeriodicWhere (ParticleBase& p,
                              const Amr*    amr,
+                             ID&    region_id,
                              ID    base_region)
 {
     BL_ASSERT(amr != 0);
@@ -636,7 +638,7 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
                 p.m_lev  = lev;
                 p.m_grid = isects[0].first;
                 p.m_cell = iv;
-
+                region_id = it.getID();
                 return true;
             }
         }
@@ -760,7 +762,8 @@ ParticleBase::Reset (ParticleBase& p,
 {
     BL_ASSERT(amr != 0);
 
-    if (!ParticleBase::Where(p,amr,update))
+    ID region_id;
+    if (!ParticleBase::Where(p,amr,region_id,update))
     {
         //
         // Here's where we need to deal with boundary conditions.
@@ -771,7 +774,7 @@ ParticleBase::Reset (ParticleBase& p,
         //
         ParticleBase::PeriodicShift(p,amr);
 
-        if (!ParticleBase::Where(p,amr))
+        if (!ParticleBase::Where(p,amr, region_id))
         {
 #ifdef _OPENMP
 #pragma omp critical(reset_lock)

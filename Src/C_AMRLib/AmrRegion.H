@@ -172,7 +172,7 @@ public:
     // This test is only evaluated when level_count >= regrid_int
     // as well. Defaults to true.
     //
-    virtual  int okToRegrid ();
+    virtual  int okToRegrid (int iteration = 0);
     //
     // Init grid data at problem start-up.
     // This is a pure virtual function and hence MUST be

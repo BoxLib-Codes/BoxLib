@@ -1395,7 +1395,7 @@ AmrRegion::getBCArray (int State_Type,
 }
 
 int
-AmrRegion::okToRegrid ()
+AmrRegion::okToRegrid (int iteration)
 {
     return true;
 }

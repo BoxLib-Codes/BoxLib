@@ -287,7 +287,7 @@ public:
     //
     // Should we regrid this region?
     //
-    bool okToRegrid (ID region_id);
+    bool okToRegrid (ID region_id, int iteration = 0);
     //
     // Do a complete integration cycle.
     //

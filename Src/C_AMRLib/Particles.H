@@ -55,12 +55,12 @@ struct ParticleBase
     // Checks/sets a particles location on levels lev_min and higher.
     // Returns false if the particle does not exist on that level.
     //
-    static bool Where (ParticleBase& prt, const Amr* amr, bool update = false, ID* base_region_ptr = 0);
+    static bool Where (ParticleBase& prt, const Amr* amr, ID& region_id, bool update = false, ID* base_region_ptr = 0);
     //
     // Checks/sets whether the particle has crossed a periodic boundary in such a way
     // that it is on levels lev_min and higher.
     //
-    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, ID base_region);
+    static bool PeriodicWhere (ParticleBase& prt, const Amr* amr, ID& region_id, ID base_region);
     //
     // Checks/sets whether a particle is within its grid (including grow cells).
     //
@@ -643,12 +643,13 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
                 msg += ") failed @ 2";
                 BoxLib::Error(msg.c_str());
             }
-
-            if (!ParticleBase::Where(p,m_amr))
+            
+            ID region_id;
+            if (!ParticleBase::Where(p,m_amr, region_id))
             {
                 ParticleBase::PeriodicShift(p,m_amr);
 
-                if (!ParticleBase::Where(p,m_amr))
+                if (!ParticleBase::Where(p,m_amr, region_id))
                 {
                     std::cout << "BAD PARTICLE ID WOULD BE " << ParticleBase::NextID() << '\n';
 
@@ -699,10 +700,10 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
                             for (int n = 0; n < extradata; n++)
                                 p_rep.m_data[n] = p.m_data[n];
 
-                            if (!ParticleBase::Where(p_rep,m_amr))
+                            if (!ParticleBase::Where(p_rep,m_amr, region_id))
                             {
                                 ParticleBase::PeriodicShift(p_rep,m_amr);
-                                if (!ParticleBase::Where(p_rep,m_amr))
+                                if (!ParticleBase::Where(p_rep,m_amr, region_id))
                                 {
                                     std::cout << "BAD REPLICATED PARTICLE ID WOULD BE " << ParticleBase::NextID() << std::endl;
                                     BoxLib::Abort("ParticleContainer<N>::InitFromAsciiFile(): invalid replicated particle");
@@ -1030,11 +1031,12 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file, int extradata
                 BoxLib::Error(msg.c_str());
             }
 
-            if (!ParticleBase::Where(p,m_amr))
+            ID region_id;
+            if (!ParticleBase::Where(p,m_amr, region_id))
             {
                 ParticleBase::PeriodicShift(p,m_amr);
 
-                if (!ParticleBase::Where(p,m_amr))
+                if (!ParticleBase::Where(p,m_amr, region_id))
                 {
                     std::cout << "BAD PARTICLE ID WOULD BE " << ParticleBase::NextID() << '\n';
 
@@ -1212,11 +1214,12 @@ ParticleContainer<N>::InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const R
 	            p.m_id      = ParticleBase::NextID();
 	            p.m_cpu     = MyProc;
 	
-	            if (!ParticleBase::Where(p,m_amr))
+                ID region_id;
+	            if (!ParticleBase::Where(p,m_amr, region_id))
                     {
       		        ParticleBase::PeriodicShift(p,m_amr);
 
-                        if (!ParticleBase::Where(p,m_amr))
+                        if (!ParticleBase::Where(p,m_amr, region_id))
                             BoxLib::Abort("ParticleContainer<N>::InitCosmo(): invalid particle");
 		    }
 
@@ -1224,7 +1227,7 @@ ParticleContainer<N>::InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const R
 	            //
 	            // Add it to the appropriate PBox at the appropriate level.
 	            //
-	            (* m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell)) )[p.m_grid].push_back(p);
+	            (* m_particles.getData(region_id) )[p.m_grid].push_back(p);
                 }
             }
         }
@@ -1334,12 +1337,12 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
 	                p.m_data[0] = particleMass;
 	                p.m_id      = ParticleBase::NextID();
 	                p.m_cpu     = MyProc;
-
-	                if (!ParticleBase::Where(p,m_amr))
+                    ID region_id;
+	                if (!ParticleBase::Where(p,m_amr, region_id))
                         {
       		            ParticleBase::PeriodicShift(p,m_amr);
 
-                            if (!ParticleBase::Where(p,m_amr))
+                            if (!ParticleBase::Where(p,m_amr, region_id))
                                 BoxLib::Abort("ParticleContainer<N>::InitCosmo(): invalid particle");
 		        }
 
@@ -1347,7 +1350,7 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
 	                //
 	                // Add it to the appropriate PBox at the appropriate level.
 	                //
-	                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+	                m_particles.getData(region_id)[p.m_grid].push_back(p);
 		    }
 	        }
 	    }
@@ -1411,12 +1414,13 @@ ParticleContainer<N>::InitCosmo  (MultiFab& mf, const Real vel_fac[], const Arra
             D_TERM(p.m_data[1] = vel_fac[0]*disp[0];,
                    p.m_data[2] = vel_fac[1]*disp[1];,
                    p.m_data[3] = vel_fac[2]*disp[2];);
-
-            if (!ParticleBase::Where(p,m_amr))
+            
+            ID region_id;
+            if (!ParticleBase::Where(p,m_amr, region_id))
             {
 	        ParticleBase::PeriodicShift(p,m_amr);
 
-                if (!ParticleBase::Where(p,m_amr))
+                if (!ParticleBase::Where(p,m_amr, region_id))
                     BoxLib::Abort("ParticleContainer<N>::InitCosmo(): invalid particle");
 	    }
 
@@ -1527,14 +1531,14 @@ ParticleContainer<N>::InitRandom (long          icount,
                     p.m_data[i] = 0;
             }
 
-            if (!ParticleBase::Where(p,m_amr))
+            ID region_id;
+            if (!ParticleBase::Where(p,m_amr, region_id))
             {
                 BoxLib::Abort("ParticleContainer<N>::InitRandom(): invalid particle");
             }
 
             BL_ASSERT(p.m_lev >= 0 && p.m_lev <= m_amr->finestLevel());
 
-            ID region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
             const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
 
             if (who == MyProc)
@@ -1545,7 +1549,7 @@ ParticleContainer<N>::InitRandom (long          icount,
                 p.m_id  = ParticleBase::NextID();
                 p.m_cpu = MyProc;
 
-                m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+                m_particles.getData(region_id)[p.m_grid].push_back(p);
 
                 cnt++;
             }
@@ -1600,7 +1604,8 @@ ParticleContainer<N>::InitRandom (long          icount,
             p.m_id  = ParticleBase::NextID();
             p.m_cpu = MyProc;
 
-            if (!ParticleBase::Where(p,m_amr))
+            ID region_id;
+            if (!ParticleBase::Where(p,m_amr, region_id))
             {
                 BoxLib::Abort("ParticleContainer<N>::InitRandom(): invalid particle");
             }
@@ -1609,7 +1614,7 @@ ParticleContainer<N>::InitRandom (long          icount,
             //
             // Add it to the appropriate PBox at the appropriate level.
             //
-            m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p); 
+            m_particles.getData(region_id)[p.m_grid].push_back(p); 
         }
         //
         // Let Redistribute() sort out where the particles belong.
@@ -1732,7 +1737,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
                                           int       lev,
                                           ID* base_region_ptr)
 {
-    BL_ASSERT(OK());
+    BL_ASSERT(OK(false, base_region_ptr));
     ID base_region;
     if (base_region_ptr == 0)
     {
@@ -1748,7 +1753,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
     long num_particles_in_domain = 0;
     std::vector< std::pair<int,Box> > scratch_space;
     
-    PTreeIterator<PMap> ptree_it = m_particles.getIterator(lev);
+    PTreeIterator<PMap> ptree_it = m_particles.getIterator(base_region, lev);
     for( ; !ptree_it.isFinished(); ++ptree_it)
     {
         PMap& pmap = **ptree_it;
@@ -4342,21 +4347,28 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
     for (typename PBox::iterator it = pbox.begin(), End = pbox.end(); it != End; )
     {
         ParticleType& p = *it;
+        
 
         if (p.m_id > 0)
         {
             if (!where_already_called)
             {
-                if (!ParticleBase::Where(p,m_amr, false, &base_region))
-                {                                
+                if (!ParticleBase::Where(p,m_amr, region_id, false, &base_region))
+                {                           
                     if (full_where) // Lengthier checks for subcycling.
                     {
-                        if (!ParticleBase::PeriodicWhere(p, m_amr, base_region))
+                        if (!ParticleBase::PeriodicWhere(p, m_amr, region_id, base_region))
                         {
                             if (lev_min != 0) // RestrictedWhere should be unnecessary at top level.
                             {
                                 if (!ParticleBase::RestrictedWhere(p, m_amr, base_region, nGrow))
+                                {
                                     BoxLib::Abort("ParticleContainer<N>::Redistribute(): invalid particle at non-coarse step");
+                                }
+                                else
+                                {
+                                    region_id = base_region;
+                                }
                             }
                             else
                             {
@@ -4375,11 +4387,14 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                     }
                 }
             }
+            else
+            {
+                region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
+            }
             //
             // The owner of the particle is the CPU owning the finest grid
             // in state data that contains the particle.
             //
-            region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
             const int who = m_amr->getRegion(region_id).get_new_data(0).DistributionMap()[p.m_grid];
             if (who == MyProc)
             {
@@ -4435,6 +4450,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
                                     ID* base_region_ptr,
                                     int  nGrow)
 {
+    
     const int MyProc   = ParallelDescriptor::MyProc();
     Real      strttime = ParallelDescriptor::second();
     
@@ -4447,6 +4463,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     {
         base_region = *base_region_ptr;
     }
+    
 
     //
     // The valid particles that we don't own.
@@ -4818,11 +4835,12 @@ ParticleContainer<N>::OK (bool full_where,
                     const int     lgrid = p.m_grid;
                     const IntVect cell  = p.m_cell;
 
-                    if (!ParticleBase::Where(p,m_amr, false, &base_region))
+                    ID region_id;
+                    if (!ParticleBase::Where(p,m_amr, region_id, false, &base_region))
                     {
                         if (full_where)
                         {
-                            if (!ParticleBase::PeriodicWhere(p, m_amr, base_region)) 
+                            if (!ParticleBase::PeriodicWhere(p, m_amr, region_id, base_region)) 
                             {
                                 if (!ParticleBase::RestrictedWhere(p, m_amr, base_region, ngrow))
                                     return false;
@@ -4973,7 +4991,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         //
         // Then the number of grids in each region.
         //
-        for (RegionIterator it = m_amr->getRegionIterator(-1, Prefix); !it.isFinished(); ++it)
+        for (RegionIterator it = m_amr->getRegionIterator(Prefix); !it.isFinished(); ++it)
         {
             HdrFile << (*it)->boxArray().size() << ' ';
         }

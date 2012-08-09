@@ -1664,7 +1664,8 @@ Amr::timeStep (AmrRegion& base_region,
         for ( ; !it.isFinished(); ++it)
         {
             //const int old_finest = finest_level;
-            if (okToRegrid(it.getID()))
+            int subiteration = it.getID() == base_id ? iteration : 1;
+            if (okToRegrid(it.getID(), subiteration))
             {
                 regrid(it.getID(),time);
 
@@ -2120,7 +2121,6 @@ Amr::regrid (ID base_id,
         for (int lev = start; lev <= finest_level && grids_unchanged; lev++)
         {
             if (new_grid_places[lev] != boxArray(lev)) grids_unchanged = false;
-            //if (new_grid_places[lev] != getLevel(lev).boxArray()) grids_unchanged = false;
         }
         if (grids_unchanged) 
         {
@@ -2284,12 +2284,6 @@ Amr::regrid (ID base_id,
         }
         if (lev > 0)
             touched_regions.push_back(a);
-    }
-    
-    TreeIterator<int> rit = region_count.getIterator(base_id);
-    for (; !rit.isFinished(); ++rit)
-    {
-        region_count.setData(rit.getID(),0);
     }
     
     //
@@ -3114,13 +3108,13 @@ Amr::initPltAndChk(ParmParse * pp)
 //}
 
 bool
-Amr::okToRegrid (ID region_id)
+Amr::okToRegrid (ID region_id, int iteration)
 {
     bool ok = true;
     int level = region_id.level();
     if (level == max_level)
         return false;
-    ok = ok && amr_regions.getData(region_id).okToRegrid();
+    ok = ok && amr_regions.getData(region_id).okToRegrid(iteration);
     return region_count.getData(region_id) >= regrid_int[level] && ok;
 }
 
@@ -3180,11 +3174,12 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     //
     // Now we convert best back to n_cycles format
     //
-    TreeIterator<int> pti = cycle_max.getIterator(Prefix);
-    for ( ++pti; !pti.isFinished(); ++pti)
+    TreeIterator<int> pti = cycle_max.getIterator();
+    for (; !pti.isFinished(); ++pti)
     {
         //get the id for this node
         id = pti.getID();
+        if (id.level() == 0) break;
         //get the parent id by cutting the last digit.
         parent_id = id.parent();
         best.setData(id,best.getData(id)/best.getData(parent_id));
