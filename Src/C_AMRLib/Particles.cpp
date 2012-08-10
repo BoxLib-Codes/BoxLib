@@ -494,6 +494,8 @@ ParticleBase::Index (const ParticleBase& p,
                      const Amr*          amr)
 {
     BL_ASSERT(amr != 0);
+    if (!(lev >= 0 && lev <= amr->finestLevel()))
+        std::cout << "DEBUG: Bad access " << lev << " " << amr->finestLevel() << " " <<p.m_lev << " " << p.m_cell << "\n";
     BL_ASSERT(lev >= 0 && lev <= amr->finestLevel());
 
     IntVect iv;
@@ -530,10 +532,14 @@ ParticleBase::Where (ParticleBase& p,
         const IntVect iv = ParticleBase::Index(p,p.m_lev,amr);
 
         if (p.m_cell == iv)
+        {
             //
             // The particle hasn't left its cell.
             //
+            region_id = base_region;
             return true;
+        }
+            
 
         if (p.m_lev == amr->finestLevel())
         {
@@ -612,9 +618,9 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
         for ( ; !it.isFinished(); ++it)
         {
             int lev = it.getLevel();
-            const IntVect iv = ParticleBase::Index(p,lev,amr);
+            const IntVect iv = ParticleBase::Index(p_prime,lev,amr);
 
-            amr->boxArray((*it)->getID()).intersections(Box(iv,iv),isects);
+            amr->boxArray(it.getID()).intersections(Box(iv,iv),isects);
 
             if (!isects.empty())
             {
@@ -631,6 +637,7 @@ ParticleBase::PeriodicWhere (ParticleBase& p,
                 return true;
             }
         }
+        BoxLib::Error("Periodic Shifted particle not found under closer examination\n");
     }
 
     return false;

@@ -250,7 +250,8 @@ public:
     // distribution maps at the specified level.
     //
     DistributionMapping createDM(ID     base_region, 
-                                 int             lev);
+                                 int             lev,
+                                 ExecutionTree* exec_tree = 0);
     //
     // gets the AmrRegion at a given level. 
     // Only allowed when multi_region = 0
@@ -342,7 +343,7 @@ public:
     // to identify clusters in boxes. Distance is computed as the minimum '
     // distance between cells in the 2 boxes.
     // 
-    static void FOFCluster(int d, BoxArray boxes, std::list<BoxArray>& cluster_list);
+    void FOFCluster(int d, int level, BoxArray boxes, std::list<BoxArray>& cluster_list);
     
     AmrRegion* build_blank_region();
     

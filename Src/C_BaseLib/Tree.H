@@ -767,7 +767,7 @@ ExecutionTree::ExecutionTree(ID root_id)
     Tree<int>()
 {
     root->m_id = root_id;
-    int level = root_id.size() - 1;
+    int level = root_id.level();
     root->m_level = level;
     root->m_data = 1;
     // I don't think we need to set index or parent here.

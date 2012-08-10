@@ -1781,7 +1781,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
                                    Real            cfl) const
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0);
 
     const Real      strttime         = ParallelDescriptor::second();
@@ -1983,7 +1983,7 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
 {
     BL_ASSERT(N >= 1);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(mf.boxArray() == m_amr->getRegion(region_id).boxArray());
 
 
@@ -3146,7 +3146,7 @@ ParticleContainer<N>::movePredict (const MultiFab& gv,
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real strttime = ParallelDescriptor::second();
@@ -3210,7 +3210,7 @@ ParticleContainer<N>::moveCorrect (const MultiFab& gv_old,
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real strttime = ParallelDescriptor::second();
@@ -3284,7 +3284,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
                                      Real            a_half) 
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0);
 
     const Real strttime      = ParallelDescriptor::second();
@@ -3379,7 +3379,7 @@ ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
                                 Real            a_half) 
 {
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0);
 
     const Real strttime  = ParallelDescriptor::second();
@@ -3458,7 +3458,7 @@ ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real      strttime      = ParallelDescriptor::second();
@@ -3563,7 +3563,7 @@ ParticleContainer<N>::moveKick (PArray<MultiFab>& grav_vector,
 {
     BL_ASSERT(OK());
     BL_ASSERT(N >= BL_SPACEDIM+1);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0 && lev < m_amr->finestLevel());
 
     const Real      strttime  = ParallelDescriptor::second();
@@ -4098,7 +4098,9 @@ ParticleContainer<N>::CreateGhostParticles (ID region_id,
                                             PBox& ghosts) const
 {
     BL_ASSERT(ghosts.empty());
+    // The level of the child region, not the parent
     int level = region_id.level();
+    BL_ASSERT(level > 0);
 
     //
     // Copy and grow the box array for the finer level.
@@ -4125,7 +4127,7 @@ ParticleContainer<N>::CreateGhostParticles (ID region_id,
             //
             // Find particle location on the finer level.
             //
-            const IntVect iv = ParticleBase::Index(*it,level+1,m_amr);
+            const IntVect iv = ParticleBase::Index(*it,level,m_amr);
             //
             // Is it in the grown finer level?
             //
@@ -4146,7 +4148,7 @@ ParticleContainer<N>::CreateGhostParticles (ID region_id,
                 //
                 // Set its position.
                 //
-                p.m_lev  = level + 1;
+                p.m_lev  = level;
                 p.m_grid = 0; // m_grid is unreliable--it will be set during the call.
                 p.m_cell = iv;
                 //
@@ -4169,7 +4171,7 @@ ParticleContainer<N>::AdvectWithUmac (const MultiFab* umac,
                                       Real            dt,
                                       const int       vcomp)
 {
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(OK(true, lev, umac[0].nGrow()-1));
     BL_ASSERT(vcomp >= 0);
     BL_ASSERT(N >= vcomp + 2*BL_SPACEDIM);
@@ -4340,6 +4342,8 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                                 // This typically only happens on a coarse timestep.
                                 //
                                 p.m_id = -1;
+                                // could make this assert more specific
+                                BL_ASSERT(!m_amr->Geom(0).isAllPeriodic());
                             }
                         }
                     }
@@ -4349,11 +4353,13 @@ ParticleContainer<N>::RedistributePBox(PBox& pbox,
                         BoxLib::Abort("ParticleContainer<N>::Redistribute(): invalid particle in basic check");
                     }
                 }
+                    
             }
             else
             {
                 region_id = m_amr->whichRegion(p.m_lev, p.m_cell);
             }
+            BL_ASSERT(region_id.size() != 0);
             //
             // The owner of the particle is the CPU owning the finest grid
             // in state data that contains the particle.
@@ -4466,7 +4472,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         }
     }
     orphan_particles.clear();
-
+    
     const int NProcs = ParallelDescriptor::NProcs();
 
     if (NProcs == 1)
@@ -4489,6 +4495,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         return;
     }
 
+    ParallelDescriptor::Barrier();
 #if BL_USE_MPI
     //
     // We may now have particles that are rightfully owned by another CPU.
@@ -4802,6 +4809,10 @@ ParticleContainer<N>::OK (bool full_where,
                         std::cout << "POS IS ";
                         for (int i = 0; i < BL_SPACEDIM; i++)
                             std::cout << p.m_pos[i] << ' ';
+                        std::cout << "\n";
+                        
+                        std::cout << "PMap region: " << ptree_it.getID();
+                        std::cout <<" particle region " << region_id << "\n";
 
                         if (lev != p.m_lev || lev != llev)
                            std::cout << "BAD LEV  " << lev  << " " << p.m_lev << '\n';
@@ -5153,7 +5164,7 @@ ParticleContainer<N>::WriteParticles (ID     region_id,
                                       Array<long>&   where) const
 {
     const PMap&     pmap  = m_particles.getData(region_id);
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     const MultiFab& state = m_amr->getRegions().getData(region_id).get_new_data(0);
     
     for (MFIter mfi(state); mfi.isValid(); ++mfi)
@@ -5629,7 +5640,7 @@ ParticleContainer<N>::Timestamp (const std::string&      basename,
     // indices  -> indices into mf that we output
     // vcomp    -> the offset of velocity terms in the particle metadata
     //
-    int lev = region_id.size() - 1;
+    int lev = region_id.level();
     BL_ASSERT(lev >= 0);
     BL_ASSERT(time >= 0);
     BL_ASSERT(vcomp >= 0);

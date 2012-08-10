@@ -63,7 +63,7 @@ AmrRegion::AmrRegion (Amr&            papa,
     grids(ba),
     m_id(id)
 {
-    level  = m_id.size() - 1;
+    level  = m_id.level();
     master = &papa;
     if (level > 0)
     {

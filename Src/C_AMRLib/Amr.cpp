@@ -2007,7 +2007,7 @@ Amr::restructure (ID base_region, std::list<int> structure, bool do_regions)
     region_count.clearChildrenOfNode(base_region);
     region_count.buildFromStructure(base_region, structure);
     iit = region_count.getIterator(base_region, Prefix);
-    for (++iit; !iit.isFinished(); ++iit)
+    for (; !iit.isFinished(); ++iit)
     {
         (*iit) = 0;
     }
@@ -2170,7 +2170,7 @@ Amr::regrid (ID base_id,
         std::list<BoxArray> clusters;
         if (region_creation == "FOF")
         {
-            FOFCluster(0,new_grid_places[lev],clusters);
+            FOFCluster(0, lev, new_grid_places[lev], clusters);
         }
         else if (region_creation == "Single")
         {
@@ -2245,7 +2245,7 @@ Amr::regrid (ID base_id,
         new_id.resize(id.size() + lbase);
         for (int i = 1; i < id.size(); i++)
             new_id[lbase+i] = id[i];
-        int lev = new_id.size() - 1;
+        int lev = new_id.level();
         
         //
         // Construct skeleton of new level.
@@ -3249,11 +3249,13 @@ Amr::FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level)
 }
 
 void
-Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxArray>& cluster_list )
+Amr::FOFCluster (int d, int level, BoxArray boxes, std::list<BoxArray>& cluster_list )
 {
     std::list<BoxList>::iterator it;
     int N = boxes.size();
     std::list<BoxList> clusters;
+    Array<IntVect> pisect;
+    Geometry& gm = geom[level];
     for (int i = 0;i < N; i++)
     {
         BoxList* cluster_id = 0;
@@ -3264,7 +3266,26 @@ Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxArray>& cluster_list )
         bgrown.grow(d+1);
         for (it = clusters.begin(); it != clusters.end(); it++)
         {
+            pisect.resize(0);
+            bool friends = false;
             if (!BoxLib::intersect(*it, bgrown).isEmpty())
+            {
+                friends = true;
+            }
+            else if (gm.isAnyPeriodic())
+            {
+                for (BoxList::iterator bit = (*it).begin(); bit!=(*it).end(); ++bit)
+                {
+                    gm.periodicShift(bgrown, *bit, pisect);
+                    if (!pisect.empty())
+                    {
+                        friends = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (friends)
             {
                 if (cluster_id == 0)
                 {
@@ -3280,6 +3301,8 @@ Amr::FOFCluster (int d, BoxArray boxes, std::list<BoxArray>& cluster_list )
                     it--;
                 }
             }
+                
+                
         }
         if (cluster_id == 0)
         {
@@ -3371,19 +3394,35 @@ Amr::createMultiFab(ID     base_region,
 
 DistributionMapping
 Amr::createDM(ID     base_region, 
-                            int             lev)
+              int             lev,
+              ExecutionTree* exec_tree)
 {
     Array<DistributionMapping> da;
     int nprocs = ParallelDescriptor::NProcs();
     int box_count = 0;
-    RegionIterator it = amr_regions.getIterator(base_region, lev);
-    for ( ; !it.isFinished(); ++it)
+    if (exec_tree)
     {
-        // inefficient
-        da.resize(da.size() + 1);
-        BoxArray ba = boxArray(it.getID());
-        box_count += ba.size();
-        da[da.size()-1] = DistributionMapping(ba, nprocs);
+        ExecutionTreeIterator it = exec_tree->getIterator(base_region, lev);
+        for ( ; !it.isFinished(); ++it)
+        {
+            // inefficient
+            da.resize(da.size() + 1);
+            BoxArray ba = boxArray(it.getID());
+            box_count += ba.size();
+            da[da.size()-1] = DistributionMapping(ba, nprocs);
+        }
+    }
+    else
+    {
+        RegionIterator it = getRegionIterator(base_region, lev);
+        for ( ; !it.isFinished(); ++it)
+        {
+            // inefficient
+            da.resize(da.size() + 1);
+            BoxArray ba = boxArray(it.getID());
+            box_count += ba.size();
+            da[da.size()-1] = DistributionMapping(ba, nprocs);
+        }
     }
     DistributionMapping dm;
     dm.define(box_count, da);
