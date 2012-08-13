@@ -27,6 +27,12 @@ StateData::StateData (PArray<StateData>& sds)
 {
     int N = sds.size();
     BL_ASSERT(N > 0);
+    // set grids
+    BoxList bl = sds[0].boxArray().boxList();
+    for (int i = 1; i < N; i++)
+        bl.join(sds[i].boxArray().boxList());
+    grids.define(bl);
+    
     PArray<MultiFab> mfs(N);
     // Set old data
     if (sds[0].hasOldData())

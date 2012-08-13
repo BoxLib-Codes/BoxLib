@@ -852,6 +852,7 @@ Amr::writePlotFile (const std::string& root,
     //
     for (int k = 0; k <= finest_level; k++)
     {
+        plot_levels[k].set_ancestors(plot_levels);
         plot_levels[k].writePlotFile(pltfile, HeaderFile);
     }
 

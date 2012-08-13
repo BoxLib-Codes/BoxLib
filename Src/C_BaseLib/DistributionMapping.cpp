@@ -338,6 +338,7 @@ DistributionMapping::define (int nboxes, Array<DistributionMapping>& dmaps)
         for (int j = 0; j < L; i++, j++)
             m_ref->m_pmap[i] = pmap[j];
     }
+    std::cout << "DEBUG: Post creation, nboxes = " << nboxes << ", i = " << i << "\n";
     //
     // Set sentinel equal to our processor number.
     //

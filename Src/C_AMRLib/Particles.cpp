@@ -494,8 +494,6 @@ ParticleBase::Index (const ParticleBase& p,
                      const Amr*          amr)
 {
     BL_ASSERT(amr != 0);
-    if (!(lev >= 0 && lev <= amr->finestLevel()))
-        std::cout << "DEBUG: Bad access " << lev << " " << amr->finestLevel() << " " <<p.m_lev << " " << p.m_cell << "\n";
     BL_ASSERT(lev >= 0 && lev <= amr->finestLevel());
 
     IntVect iv;
