@@ -1059,7 +1059,7 @@ def testSuite(argv):
        --single_test mytest
           run only the test named mytest
 
-       --tests test1 test2 test3
+       --tests \"test1 test2 test3\"
           run only the tests listsed
 
        --do_temp_run
@@ -2228,7 +2228,7 @@ def testSuite(argv):
         doGITback(suite.sourceDir, suite.srcName, sourceGitBranch)
 
     if extSrcGitHash:
-        doGITback(suite.extSrcDir, suite.extSrcName, extSrcGitHash)
+        doGITback(suite.extSrcDir, suite.extSrcName, extSrcGitBranch)
             
     #--------------------------------------------------------------------------
     # For temporary run, return now without creating suote report.
