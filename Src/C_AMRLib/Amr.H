@@ -320,8 +320,10 @@ public:
     // if ref_ratio[i] = cycle_max[i] = 4, then 1,2,3,4 are all valid 
     // values for n_cycles[i]
     //
-    static Real computeOptimalSubcycling(Tree<int>& best,
-                                         Tree<Real>& dt_max, 
+    // This method is essentially static apart from the verbosity check.
+    //
+    Real computeOptimalSubcycling(Tree<int>& best,
+                                         Tree<Real> dt_max, 
                                          Tree<Real>& est_work, 
                                          Tree<int>& cycle_max);
              

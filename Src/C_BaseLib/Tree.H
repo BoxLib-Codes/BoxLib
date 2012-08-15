@@ -85,7 +85,7 @@ public:
     
     //
     // removes the children of the node(and all descendents).
-    //
+    // 
     void clearChildrenOfNode(const ID id);
     
     //
@@ -119,12 +119,21 @@ public:
     //
     // Returns the number of nodes in the tree
     //
-    int numElements() const;
+    int numElements();
     
     //
     // Returns a printable string representation of the Tree
     //
     std::string toString();
+    
+    //
+    // Writes the tree data to an array. Primarily used for MPI communication.
+    //
+    Array<T> writeToArray();
+    //
+    // Reads the tree data from an array. Primarily used for MPI communication.
+    //
+    void readFromArray(Array<T>& data);
 protected:
     struct Node
     {
@@ -442,7 +451,7 @@ Tree<T>::buildFromStructure(std::list<int> structure)
 
 template <class T>
 int
-Tree<T>::numElements() const
+Tree<T>::numElements()
 {
     TreeIterator<T> ptree_it = getIterator();
     int cnt = 0;
@@ -459,6 +468,33 @@ Tree<T>::toString()
     std::string indent = "";
     root->addToString(ss, indent, true);
     return ss.str();
+}
+
+template <class T>
+Array<T> 
+Tree<T>::writeToArray()
+{
+    int N = numElements();
+    Array<T> data(N);
+    int i = 0;
+    for (TreeIterator<T> it = getIterator(Prefix); !it.isFinished(); ++it)
+    {
+        data[i] = *it;
+        i++;
+    }
+    return data;
+}
+
+template <class T>
+void
+Tree<T>::readFromArray(Array<T>& data)
+{
+    int i = 0;
+    for (TreeIterator<T> it = getIterator(Prefix); !it.isFinished(); ++it)
+    {
+        setData(it.getID(), data[i]);
+        i++;
+    }
 }
 
 ////////////////////////// Begin Node Methods ///////////////////////////

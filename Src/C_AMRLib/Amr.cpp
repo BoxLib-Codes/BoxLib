@@ -3123,7 +3123,7 @@ Amr::okToRegrid (ID region_id, int iteration)
 }
 
 Real
-Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& est_work, Tree<int>& cycle_max)
+Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real> dt_max, Tree<Real>& est_work, Tree<int>& cycle_max)
 {
     BL_ASSERT(best.getStructure() == cycle_max.getStructure());
     // internally these represent the total number of steps at a level, 
@@ -3132,41 +3132,78 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
     cycles.buildFromStructure(best.getStructure());
     cycles.setRoot(1);
     Real best_ratio = 1e200;
+    int nprocs = ParallelDescriptor::NProcs();
     Real best_dt = 0;
     Real ratio;
     Real dt;
     Real work;
+    Real cur_dt;
+    int cur_cyc;
+    int cur_max;
+    int par_cyc;
     int limit = 1;
     ID id;
     ID parent_id;
+    
+    const Real strttime = ParallelDescriptor::second();
+    
+    // Limit dt_max by the fully iterated child dts.
+    TreeIterator<Real> dt_it = dt_max.getIterator();
+    for ( ; !dt_it.isFinished(); ++dt_it)
+    {
+        id = dt_it.getID();
+        if (id.level() == 0)
+            break;
+        parent_id = dt_it.getParentID();
+        dt_max.setData(id, std::min(dt_max.getData(id), dt_max.getData(parent_id)));
+        Real cmax = dt_max.getData(id)*cycle_max.getData(id);
+        dt_max.setData(parent_id, std::min(dt_max.getData(parent_id), cmax));
+    }
+    
     // This provides a memory efficient way to test all candidates
+    TreeIterator<int> pti = cycle_max.getIterator(Prefix);
+    long temp_cand;
     TreeIterator<int> ptic = cycle_max.getIterator();
     for (; !ptic.isFinished(); ++ptic)
         limit *= *ptic;
-    for (int candidate = 0; candidate < limit; candidate++)
+    // We do the next part in parallel.
+    int m_start = (limit * ParallelDescriptor::MyProc() ) / nprocs;
+    int m_end = (limit * (ParallelDescriptor::MyProc() + 1)) / nprocs;
+    for (int candidate = m_start; candidate < m_end; candidate++)
     {
-        long temp_cand = candidate;
-        id.resize(1);
-        id[0] = 0;
+        temp_cand = candidate;
         dt = dt_max.getRoot();
         work = est_work.getRoot();
-        TreeIterator<int> pti = cycle_max.getIterator(Prefix);
+        pti = cycle_max.getIterator(Prefix);
         for (++pti; !pti.isFinished(); ++pti)
         {
             //get the id for this node
             id = pti.getID();
             parent_id = pti.getParentID();
-            // grab the relevant "digit" and shift over.
+            
             // All this gettin is probably inefficient. It can be streamlined if needed.
-            cycles.setData(id,(1 + temp_cand%cycle_max.getData(id)) * cycles.getData(parent_id));
-            temp_cand /= cycle_max.getData(id);
-            dt = std::min(dt, cycles.getData(id) * dt_max.getData(id));
-            work += cycles.getData(id) * est_work.getData(id);
+            par_cyc = cycles.getData(parent_id);
+            cur_dt = dt_max.getData(id);
+            cur_max = cycle_max.getData(id);
+            
+            // grab the relevant "digit" and shift over.
+            cur_cyc = (1 + temp_cand%cur_max) * par_cyc;
+            temp_cand /= cur_max;
+            // check if we're subcycling too much or too little
+            // This may require more nuance with nosub specific checks.
+            if ( (cur_dt * (cur_cyc-1) >= dt) || ((cur_cyc < cur_max) && ((cur_cyc+1) * cur_dt <= dt)) )
+            {
+                work = 1e100;
+                break;
+            }
+            cycles.setData(id,cur_cyc);
+            dt = std::min(dt, cur_cyc * cur_dt);
+            work += cur_cyc * est_work.getData(id);
         }
         ratio = work/dt;
         if (ratio < best_ratio) 
         {
-            for (TreeIterator<int> pti = cycle_max.getIterator(); !pti.isFinished(); ++pti)
+            for (pti = cycle_max.getIterator(); !pti.isFinished(); ++pti)
             {
                 id = pti.getID();
                 best.setData(id,cycles.getData(id));
@@ -3175,10 +3212,41 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
             best_dt = dt;
         }
     }
+    // Find the best ratio among all processors.
+    Array<Real> ratios(nprocs);
+    int best_proc = 0;
+    ParallelDescriptor::Gather(&best_ratio, 1, ratios.dataPtr(), 1,  ParallelDescriptor::IOProcessorNumber());
+    if (ParallelDescriptor::IOProcessor())
+    {
+        Real cur_best = 1e100;
+        for (int i = 0; i < nprocs; i++)
+        {
+            if (ratios[i] < cur_best)
+            {
+                cur_best = ratios[i];
+                best_proc = i;
+            }
+        }
+    }
+    ParallelDescriptor::Bcast(&best_proc, 1, ParallelDescriptor::IOProcessorNumber());
+    // Now have that processor send out its pattern
+    int N = best.numElements();
+    Array<int> best_arr(N);
+    if (best_proc == ParallelDescriptor::MyProc())
+    {
+        best_arr = best.writeToArray();
+        ParallelDescriptor::Bcast(best_arr.dataPtr(), N, best_proc);
+    }
+    else
+    {
+        ParallelDescriptor::Bcast(best_arr.dataPtr(), N, best_proc);
+        best.readFromArray(best_arr);
+    }
+    ParallelDescriptor::Bcast(&best_dt, 1, best_proc);
     //
     // Now we convert best back to n_cycles format
     //
-    TreeIterator<int> pti = cycle_max.getIterator();
+    pti = cycle_max.getIterator();
     for (; !pti.isFinished(); ++pti)
     {
         //get the id for this node
@@ -3187,6 +3255,18 @@ Amr::computeOptimalSubcycling (Tree<int>& best, Tree<Real>& dt_max, Tree<Real>& 
         //get the parent id by cutting the last digit.
         parent_id = id.parent();
         best.setData(id,best.getData(id)/best.getData(parent_id));
+    }
+    
+    if (verbose > 0)
+    {
+        Real stoptime = ParallelDescriptor::second() - strttime;
+
+        ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
+
+        if (ParallelDescriptor::IOProcessor())
+        {
+            std::cout << "computeOptimalSubcycling() time: " << stoptime << '\n';
+        }
     }
     return best_dt;
 }
