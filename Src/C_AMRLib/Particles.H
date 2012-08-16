@@ -3343,7 +3343,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
             // Move the particle to the proper ghost cell  
             //      and remove any *ghost* particles that have gone too far
             // Note that this should only negate ghost particles, not real particles.
-            if (m_amr->subCycle() && !ParticleBase::RestrictedWhere(p,m_amr, grav_vector.nGrow()-2))
+            if (m_amr->subCycle() && !ParticleBase::RestrictedWhere(p,m_amr,region_id,grav_vector.nGrow()-2))
             {
                 // Assert that the particle being removed is a ghost particle;
                 // the ghost particle is no longer in relevant ghost cells for this grid.
@@ -3377,7 +3377,7 @@ ParticleContainer<N>::moveKickDrift (const MultiFab& grav_vector,
 template <int N>
 void
 ParticleContainer<N>::moveKick (const MultiFab& grav_vector,
-                                ID      region_id,
+                                ID              region_id,
                                 Real            dt,
                                 Real            a_new,
                                 Real            a_half) 
@@ -3533,7 +3533,7 @@ ParticleContainer<N>::moveKickDrift (PArray<MultiFab>& grav_vector,
             // We must now go through the regular redistribute channels
             //ParticleBase::Reset(p,m_amr,true);
             // Move the particle to the proper ghost cell.
-            ParticleBase::RestrictedWhere(p,m_amr, grav_vector[0].nGrow() -1);
+            ParticleBase::RestrictedWhere(p, m_amr, region_id, grav_vector[0].nGrow()-1);
         }
     }
 
@@ -4271,7 +4271,7 @@ ParticleContainer<N>::AdvectWithUmac (const MultiFab* umac,
                 }
                 
                 //This assumes enough boundary cells in all directions, it shouldn't be a problem
-                ParticleBase::RestrictedWhere(p,m_amr, umac[0].nGrow()-1); 
+                ParticleBase::RestrictedWhere(p, m_amr, region_id, umac[0].nGrow()-1); 
             }
         }
     }
