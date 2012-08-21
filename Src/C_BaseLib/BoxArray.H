@@ -278,6 +278,8 @@ public:
     //
     void removeOverlap ();
 
+    static bool SameRefs (const BoxArray& lhs, const BoxArray& rhs) { return lhs.m_ref == rhs.m_ref; }
+
 private:
 
     class Ref
@@ -286,7 +288,7 @@ private:
         //
         // Constructors to match those in BoxArray ....
         //
-        Ref ();
+        Ref () {}
 
         Ref (size_t size);
 
@@ -319,6 +321,20 @@ private:
     //
     LnClassPtr<Ref> m_ref;
 };
+
+inline
+BoxArray::BoxArray (const BoxArray& rhs)
+    :
+    m_ref(rhs.m_ref)
+{}
+
+inline
+BoxArray&
+BoxArray::operator= (const BoxArray& rhs)
+{
+    m_ref = rhs.m_ref;
+    return *this;
+}
 
 inline
 int

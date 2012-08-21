@@ -9,20 +9,18 @@
 #include <MultiFab.H>
 #include <FArrayBox.H>
 //
-// The definition of static data members.
+// The definition of some static data members.
 //
 int     Geometry::spherical_origin_fix;
 RealBox Geometry::prob_domain;
 bool    Geometry::is_periodic[BL_SPACEDIM];
-
-Geometry::FPBMMap Geometry::m_FPBCache;
 
 namespace
 {
     bool verbose;
 }
 
-const int fpb_cache_max_size_def = 20; // -1 ==> no maximum size
+const int fpb_cache_max_size_def = 75;
 
 int Geometry::fpb_cache_max_size = fpb_cache_max_size_def;
 
@@ -102,36 +100,46 @@ Geometry::FPB::FPB (const BoxArray&            ba,
     BL_ASSERT(domain.ok());
 }
 
-Geometry::FPB::FPB (const FPB& rhs)
-    :
-    m_cache(rhs.m_cache),
-    m_commdata(rhs.m_commdata),
-    m_pirm(rhs.m_pirm),
-    m_ba(rhs.m_ba),
-    m_dm(rhs.m_dm),
-    m_domain(rhs.m_domain),
-    m_ngrow(rhs.m_ngrow),
-    m_do_corners(rhs.m_do_corners),
-    m_reused(rhs.m_reused)
-{}
-
 Geometry::FPB::~FPB () {}
 
 bool
 Geometry::FPB::operator== (const FPB& rhs) const
 {
     return
-        m_ngrow      == rhs.m_ngrow      &&
-        m_do_corners == rhs.m_do_corners &&
-        m_domain     == rhs.m_domain     &&
-        m_ba         == rhs.m_ba         &&
-        m_dm         == rhs.m_dm;
+        m_ngrow == rhs.m_ngrow && m_do_corners == rhs.m_do_corners && m_domain == rhs.m_domain && m_ba == rhs.m_ba && m_dm == rhs.m_dm;
 }
 
-bool
-Geometry::FPB::operator!= (const FPB& rhs) const
+int
+Geometry::FPB::bytes () const
 {
-    return !operator==(rhs);
+    //
+    // Get a estimate of number of bytes used by a FPB.
+    // This doesn't count any "overhead" in the STL containers.
+    //
+    int cnt = 0;
+
+    cnt += m_LocTags.size()*sizeof(FPBComTag);
+
+    for (FPB::MapOfFPBComTagContainers::const_iterator it = m_SndTags.begin(),
+             m_End = m_SndTags.end();
+         it != m_End;
+         ++it)
+    {
+        cnt += it->second.size()*sizeof(FPBComTag);
+    }
+
+    for (FPB::MapOfFPBComTagContainers::const_iterator it = m_RcvTags.begin(),
+             m_End = m_RcvTags.end();
+         it != m_End;
+         ++it)
+    {
+        cnt += it->second.size()*sizeof(FPBComTag);
+    }
+
+    cnt += 2*m_SndVols.size()*sizeof(int);
+    cnt += 2*m_RcvVols.size()*sizeof(int);
+
+    return cnt;
 }
 
 void
@@ -155,28 +163,6 @@ Geometry::SumPeriodicBoundary (MultiFab&       dstmf,
     BL_ASSERT(dstmf.nComp() >= srcmf.nComp());
 
     SumPeriodicBoundary(dstmf, srcmf, 0, 0, srcmf.nComp());
-}
-
-int
-Geometry::PIRMCacheSize ()
-{
-    return m_FPBCache.size();
-}
-
-void
-Geometry::FlushPIRMCache ()
-{
-    if (ParallelDescriptor::IOProcessor() && !m_FPBCache.empty() && verbose)
-    {
-        int reused = 0;
-
-        for (FPBMMapIter it = m_FPBCache.begin(), End = m_FPBCache.end(); it != End; ++it)
-            if (it->second.m_reused)
-                reused++;
-
-        std::cout << "Geometry::PIRMCache.size() = " << m_FPBCache.size() << ", # reused = " << reused << '\n';
-    }
-    m_FPBCache.clear();
 }
 
 void
@@ -472,7 +458,7 @@ Geometry::Finalize ()
 {
     c_sys = undef;
 
-    Geometry::m_FPBCache.clear();
+    Geometry::FlushPIRMCache();
 }
 
 void
@@ -521,7 +507,7 @@ Geometry::Setup (const RealBox* rb, int coord, int* isper)
     //
     // Set default values here!!!
     //
-    verbose                        = false;
+    verbose                        = true;
     Geometry::spherical_origin_fix = 0;
     Geometry::fpb_cache_max_size   = fpb_cache_max_size_def;
 
@@ -530,6 +516,11 @@ Geometry::Setup (const RealBox* rb, int coord, int* isper)
     pp.query("verbose",              verbose);
     pp.query("spherical_origin_fix", Geometry::spherical_origin_fix);
     pp.query("fpb_cache_max_size",   Geometry::fpb_cache_max_size);
+    //
+    // Don't let the cache size get too small.  This simplifies some logic later.
+    //
+    if (Geometry::fpb_cache_max_size < 1)
+        Geometry::fpb_cache_max_size = 1;
     //
     // Now get periodicity info.
     //
@@ -691,4 +682,239 @@ Geometry::periodicShift (const Box&      target,
         if (ri != 0 && is_periodic[0])
             locsrc.shift(0,-ri*domain.length(0));
     }
+}
+
+//
+// The cache.
+//
+Geometry::FPBMMap Geometry::m_FPBCache;
+
+Geometry::FPBMMapIter
+Geometry::GetFPB (const Geometry&      geom,
+                  const Geometry::FPB& fpb)
+{
+    const BoxArray&            ba     = fpb.m_ba;
+    const DistributionMapping& dm     = fpb.m_dm;
+    const int                  Key    = fpb.m_ngrow + ba.size();
+    const int                  MyProc = ParallelDescriptor::MyProc();
+
+    BL_ASSERT(ba.size()  > 0);
+    BL_ASSERT(fpb.m_ngrow > 0);
+    BL_ASSERT(geom.isAnyPeriodic());
+
+    std::pair<Geometry::FPBMMapIter,Geometry::FPBMMapIter> er_it = m_FPBCache.equal_range(Key);
+    
+    for (Geometry::FPBMMapIter it = er_it.first; it != er_it.second; ++it)
+    {
+        if (it->second->operator==(fpb))
+        {
+            it->second->m_reused = true;
+
+            return it;
+        }
+    }
+
+    if (m_FPBCache.size() >= Geometry::fpb_cache_max_size)
+    {
+        //
+        // Don't let the size of the cache get too big.
+        //
+        for (Geometry::FPBMMapIter it = m_FPBCache.begin(); it != m_FPBCache.end(); )
+        {
+            if (!it->second->m_reused)
+            {
+                //
+                // Don't forget to delete the pointer!
+                //
+                delete it->second;
+
+                m_FPBCache.erase(it++);
+
+                if (m_FPBCache.size() < Geometry::fpb_cache_max_size)
+                    //
+                    // Only delete enough entries to stay under limit.
+                    //
+                    break;
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+        if (m_FPBCache.size() >= Geometry::fpb_cache_max_size)
+        {
+            //
+            // Get rid of first entry which is the one with the smallest key.
+            //
+            Geometry::FPBMMapIter it = m_FPBCache.begin();
+
+            BL_ASSERT(it != m_FPBCache.end());
+            //
+            // Don't forget to delete the pointer!
+            //
+            delete it->second;
+
+            m_FPBCache.erase(it);
+        }
+    }
+    //
+    // Got to build one.  Here's where we allocate memory for the cache.
+    //
+    Geometry::FPBMMapIter cache_it = m_FPBCache.insert(std::make_pair(Key,new FPB(fpb)));
+
+    Box TheDomain = geom.Domain();
+    for (int n = 0; n < BL_SPACEDIM; n++)
+        if (ba[0].ixType()[n] == IndexType::NODE)
+            TheDomain.surroundingNodes(n);
+
+    FPB&                        TheFPB = *cache_it->second;
+    FPBComTag                   tag;
+    Array<IntVect>              pshifts(27);
+    std::map<int,int>::iterator vol_it;
+
+    for (int i = 0, N = ba.size(); i < N; i++)
+    {
+        const int dst_owner = dm[i];
+
+        const Box dest = BoxLib::grow(ba[i],fpb.m_ngrow);
+
+        if (TheDomain.contains(dest)) continue;
+
+        for (int j = 0, N = ba.size(); j < N; j++)
+        {
+            const int src_owner = dm[j];
+
+            if (dst_owner != MyProc && src_owner != MyProc) continue;
+
+            Box src = ba[j] & TheDomain;
+
+            if (fpb.m_do_corners)
+            {
+                for (int i = 0; i < BL_SPACEDIM; i++)
+                {
+                    if (!geom.isPeriodic(i))
+                    {
+                        src.growLo(i,fpb.m_ngrow);
+                        src.growHi(i,fpb.m_ngrow);
+                    }
+                }
+            }
+
+            geom.periodicShift(dest, src, pshifts);
+
+            for (int ii = 0, M = pshifts.size(); ii < M; ii++)
+            {
+                const Box shftbox = src + pshifts[ii];
+
+                tag.dbox = dest & shftbox;
+                tag.sbox = tag.dbox - pshifts[ii];
+
+                const int vol = tag.dbox.numPts();
+
+                if (dst_owner == MyProc)
+                {
+                    tag.dstIndex = i;
+
+                    if (src_owner == MyProc)
+                    {
+                        tag.srcIndex = j;
+
+                        TheFPB.m_LocTags.push_back(tag);
+                    }
+                    else
+                    {
+                        TheFPB.m_RcvTags[src_owner].push_back(tag);
+
+                        vol_it = TheFPB.m_RcvVols.find(src_owner);
+
+                        if (vol_it != TheFPB.m_RcvVols.end())
+                        {
+                            vol_it->second += vol;
+                        }
+                        else
+                        {
+                            TheFPB.m_RcvVols[src_owner] = vol;
+                        }
+                    }
+                }
+                else if (src_owner == MyProc)
+                {
+                    tag.srcIndex = j;
+
+                    TheFPB.m_SndTags[dst_owner].push_back(tag);
+
+                    vol_it = TheFPB.m_SndVols.find(dst_owner);
+
+                    if (vol_it != TheFPB.m_SndVols.end())
+                    {
+                        vol_it->second += vol;
+                    }
+                    else
+                    {
+                        TheFPB.m_SndVols[dst_owner] = vol;
+                    }
+                }
+            }
+        }
+    }
+
+    if (TheFPB.m_LocTags.empty() && TheFPB.m_SndTags.empty() && TheFPB.m_RcvTags.empty())
+    {
+        //
+        // This MPI proc has no work to do.
+        // Don't store in the cache.
+        // And don't forget to delete the pointer!
+        //
+        delete cache_it->second;
+
+        m_FPBCache.erase(cache_it);
+
+        return m_FPBCache.end();
+    }
+
+    return cache_it;
+}
+
+void
+Geometry::FlushPIRMCache ()
+{
+    int stats[3] = {0,0,0}; // size, reused, bytes
+
+    stats[0] = m_FPBCache.size();
+
+    for (FPBMMapIter it = m_FPBCache.begin(), End = m_FPBCache.end(); it != End; ++it)
+    {
+        stats[2] += it->second->bytes();
+        if (it->second->m_reused)
+            stats[1]++;
+        //
+        // Don't forget to delete the pointer!
+        //
+        delete it->second;
+    }
+
+    if (verbose)
+    {
+        ParallelDescriptor::ReduceIntMax(&stats[0], 3, ParallelDescriptor::IOProcessorNumber());
+
+        if (stats[0] > 0 && ParallelDescriptor::IOProcessor())
+        {
+            std::cout << "Geometry::TheFPBCache: max size: "
+                      << stats[0]
+                      << ", max # reused: "
+                      << stats[1]
+                      << ", max bytes used: "
+                      << stats[2]
+                      << std::endl;
+        }
+    }
+
+    m_FPBCache.clear();
+}
+
+int
+Geometry::PIRMCacheSize ()
+{
+    return m_FPBCache.size();
 }

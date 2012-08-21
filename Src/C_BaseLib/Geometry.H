@@ -194,7 +194,7 @@ public:
     //
     static int PIRMCacheSize ();
     //
-    // Src/dest box pairs used by FillPeriodicBoundary() and SumPeriodicBoundary().
+    // Used by SumPeriodicBoundary().
     //
     struct PIRec
     {
@@ -217,7 +217,17 @@ public:
     //
     typedef std::vector<PIRec> PIRMVector;
     //
-    // Used in caching PIRMVectors && FabArrayBase::CommData.
+    // Used by FillPeriodicBoundary().
+    //
+    struct FPBComTag
+    {
+        Box sbox;
+        Box dbox;
+        int srcIndex;
+        int dstIndex;
+    };
+    //
+    // Used in caching FillPeriodicBoundary().
     //
     struct FPB
     {
@@ -229,31 +239,49 @@ public:
              int                        ngrow,
              bool                       do_corners);
 
-        FPB (const FPB& rhs);
-
         ~FPB ();
 
         bool operator== (const FPB& rhs) const;
-        bool operator!= (const FPB& rhs) const;
 
-        Array<int>                  m_cache;    // Snds cached for CollectData().
-        FabArrayBase::CommDataCache m_commdata; // Yet another cache for CollectData().
-        PIRMVector                  m_pirm;
-        BoxArray                    m_ba;
-        DistributionMapping         m_dm;
-        Box                         m_domain;
-        int                         m_ngrow;
-        bool                        m_do_corners;
-        bool                        m_reused;
+        bool operator!= (const FPB& rhs) const { return !operator==(rhs); }
+
+        int bytes () const;
+
+        BoxArray            m_ba;
+        DistributionMapping m_dm;
+        Box                 m_domain;
+        int                 m_ngrow;
+        bool                m_do_corners;
+        bool                m_reused;
+        //
+        // Some useful typedefs.
+        //
+        typedef std::deque<FPBComTag> FPBComTagsContainer;
+
+        typedef std::map<int,FPBComTagsContainer> MapOfFPBComTagContainers;
+        //
+        // The cache of local and send/recv info per FabArray::copy().
+        //
+        FPBComTagsContainer      m_LocTags;
+        MapOfFPBComTagContainers m_SndTags;
+        MapOfFPBComTagContainers m_RcvTags;
+        std::map<int,int>        m_SndVols;
+        std::map<int,int>        m_RcvVols;
     };
-
-    typedef std::multimap<int,Geometry::FPB> FPBMMap;
+    //
+    // Some useful typedefs for the FPB cache.
+    //
+    typedef std::multimap<int,Geometry::FPB*> FPBMMap;
 
     typedef FPBMMap::iterator FPBMMapIter;
 
     static FPBMMap m_FPBCache;
 
     static int fpb_cache_max_size;
+    //
+    // See if we're got an approprite FPB cached.
+    //
+    static Geometry::FPBMMapIter GetFPB (const Geometry& geom, const Geometry::FPB& fpb);
 
 private:
     //
@@ -400,148 +428,6 @@ Geometry::ProbSize ()
 
 namespace BoxLib
 {
-    //
-    // Template functions used in implementing FillPeriodicBoundary().
-    //
-    template <class FAB>
-    Geometry::FPB&
-    BuildFPB (FabArray<FAB>&       mf,
-              const Geometry&      geom,
-              const Geometry::FPB& fpb)
-    {
-        BL_ASSERT(mf.size()  > 0);
-        BL_ASSERT(mf.nGrow() > 0);
-        BL_ASSERT(geom.isAnyPeriodic());
-
-        const int             key  = mf.nGrow() + mf.size();
-        Geometry::FPBMMapIter it   = Geometry::m_FPBCache.insert(std::make_pair(key,fpb));
-        Geometry::PIRMVector& pirm = it->second.m_pirm;
-
-        Array<IntVect> pshifts(27);
-
-        Box TheDomain = geom.Domain();
-        for (int n = 0; n < BL_SPACEDIM; n++)
-            if (mf.boxArray()[0].ixType()[n] == IndexType::NODE)
-                TheDomain.surroundingNodes(n);
-
-        for (MFIter mfi(mf); mfi.isValid(); ++mfi)
-        {
-            const Box& dest = mf[mfi].box();
-
-            BL_ASSERT(dest == BoxLib::grow(mfi.validbox(), mf.nGrow()));
-
-            if (!TheDomain.contains(dest))
-            {
-                const BoxArray& grids = mf.boxArray();
-
-                for (int j = 0, N = grids.size(); j < N; j++)
-                {
-                    Box src = grids[j] & TheDomain;
-
-                    if (fpb.m_do_corners)
-                    {
-                        for (int i = 0; i < BL_SPACEDIM; i++)
-                        {
-                            if (!geom.isPeriodic(i))
-                            {
-			      src.growLo(i,mf.nGrow());
-			      src.growHi(i,mf.nGrow());
-                            }
-                        }
-                    }
-
-                    geom.periodicShift(dest, src, pshifts);
-
-                    for (int i = 0, M = pshifts.size(); i < M; i++)
-                    {
-                        Box shftbox = src + pshifts[i];
-                        Box dbx     = dest & shftbox;
-                        Box sbx     = dbx - pshifts[i];
-
-                        pirm.push_back(Geometry::PIRec(mfi.index(),j,sbx,dbx));
-                    }
-                }
-            }
-        }
-
-        if (!pirm.empty() && pirm.capacity() > pirm.size())
-        {
-            //
-            // Squish out any spare capacity.
-            //
-            Geometry::PIRMVector tmp(pirm);
-            tmp.swap(pirm);
-        }
-
-        return it->second;
-    }
-
-    template <class FAB>
-    Geometry::FPB&
-    GetFPB (FabArray<FAB>&       mf,
-            const Geometry&      geom,
-            const Geometry::FPB& fpb,
-            int                  scomp,
-            int                  ncomp)
-    {
-        const int key = mf.nGrow() + mf.size();
-
-        std::pair<Geometry::FPBMMapIter,Geometry::FPBMMapIter> er_it = Geometry::m_FPBCache.equal_range(key);
-    
-        for (Geometry::FPBMMapIter it = er_it.first; it != er_it.second; ++it)
-        {
-            if (it->second == fpb)
-            {
-                it->second.m_reused = true;
-                //
-                // Adjust the ncomp & scomp in CommData.
-                //
-                Array<ParallelDescriptor::CommData>& cd = it->second.m_commdata.theCommData();
-
-                if (!cd.empty() && (cd[0].nComp() != ncomp || cd[0].srcComp() != scomp))
-                {
-                    for (int i = 0, N = cd.size(); i < N; i++)
-                    {
-                        cd[i].nComp(ncomp);
-                        cd[i].srcComp(scomp);
-                    }
-                }
-
-                return it->second;
-            }
-        }
-
-        if (Geometry::m_FPBCache.size() >= Geometry::fpb_cache_max_size && Geometry::fpb_cache_max_size != -1)
-        {
-            //
-            // Don't let the size of the cache get too big.
-            //
-            for (Geometry::FPBMMapIter it = Geometry::m_FPBCache.begin(); it != Geometry::m_FPBCache.end(); )
-            {
-                if (!it->second.m_reused)
-                {
-                    Geometry::m_FPBCache.erase(it++);
-                    //
-                    // Only delete enough entries to stay under limit.
-                    //
-                    if (Geometry::m_FPBCache.size() < Geometry::fpb_cache_max_size) break;
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-
-            if (Geometry::m_FPBCache.size() >= Geometry::fpb_cache_max_size)
-                //
-                // Get rid of first entry which is the one with the smallest key.
-                //
-                Geometry::m_FPBCache.erase(Geometry::m_FPBCache.begin());
-        }
-
-        return BoxLib::BuildFPB(mf,geom,fpb);
-    }
-
     template <class FAB>
     void
     FillPeriodicBoundary (const Geometry& geom,
@@ -567,50 +453,198 @@ namespace BoxLib
             if (geom.isPeriodic(n))
                 BL_ASSERT(mf.nGrow() <= geom.Domain().length(n));
 #endif
-        FabArrayCopyDescriptor<FAB> mfcd;
+        const Geometry::FPB fpb(mf.boxArray(),mf.DistributionMap(),geom.Domain(),mf.nGrow(),corners);
 
-        Geometry::FPB TheFPB(mf.boxArray(),mf.DistributionMap(),geom.Domain(),mf.nGrow(),corners);
+        Geometry::FPBMMapIter cache_it = Geometry::GetFPB(geom,fpb);
 
-        const FabArrayId      mfid = mfcd.RegisterFabArray(&mf);
-        Geometry::FPB&        fpb  = BoxLib::GetFPB(mf,geom,TheFPB,scomp,ncomp);
-        Geometry::PIRMVector& pirm = fpb.m_pirm;
-        //
-        // Add boxes we need to collect.
-        //
-        for (Geometry::PIRMVector::iterator it = pirm.begin(), End = pirm.end();
-             it != End;
-             ++it)
+        if (cache_it != Geometry::m_FPBCache.end())
         {
-            it->fbid = mfcd.AddBox(mfid,
-                                   it->srcBox,
-                                   0,
-                                   it->srcId,
-                                   scomp,
-                                   scomp,
-                                   ncomp,
-                                   !corners);
-        }
-
-        int nrecv = pirm.size();
-        ParallelDescriptor::ReduceIntMax(nrecv);
-        if (nrecv == 0)
+            const Geometry::FPB& TheFPB = *cache_it->second;
             //
-            // There's no parallel work to do.
+            // Do local work.
+            //
+            for (Geometry::FPB::FPBComTagsContainer::const_iterator it = TheFPB.m_LocTags.begin(),
+                     End = TheFPB.m_LocTags.end();
+                 it != End;
+                 ++it)
+            {
+                const Geometry::FPBComTag& tag = *it;
+
+                BL_ASSERT(mf.DistributionMap()[tag.dstIndex] == ParallelDescriptor::MyProc());
+                BL_ASSERT(mf.DistributionMap()[tag.srcIndex] == ParallelDescriptor::MyProc());
+
+                mf[tag.dstIndex].copy(mf[tag.srcIndex],tag.sbox,scomp,tag.dbox,scomp,ncomp);
+            }
+        }
+    
+        if (ParallelDescriptor::NProcs() == 1) return;
+
+#ifdef BL_USE_MPI
+        //
+        // Do this before prematurely exiting if running in parallel.
+        // Otherwise sequence numbers will not match across MPI processes.
+        //
+        const int SeqNum = ParallelDescriptor::SeqNum();
+
+        if (cache_it == Geometry::m_FPBCache.end())
+            //
+            // No parallel work to do.
             //
             return;
 
-        mfcd.CollectData(&fpb.m_cache,&fpb.m_commdata);
+        const Geometry::FPB& TheFPB = *cache_it->second;
 
-        for (Geometry::PIRMVector::const_iterator it = pirm.begin(), End = pirm.end();
+        typedef typename FAB::value_type value_type;
+
+        Array<MPI_Status>  stats;
+        Array<int>         recv_from, index;
+        Array<value_type*> recv_data, send_data;
+        Array<MPI_Request> recv_reqs, send_reqs;
+        //
+        // Post rcvs. Allocate one chunk of space to hold'm all.
+        //
+        int total_rcvs_volume = 0;
+
+        for (std::map<int,int>::const_iterator it = TheFPB.m_RcvVols.begin(),
+                 End = TheFPB.m_RcvVols.end();
              it != End;
              ++it)
         {
-            BL_ASSERT(it->fbid.box() == it->srcBox);
-            BL_ASSERT(it->srcBox.sameSize(it->dstBox));
-            BL_ASSERT(mf.DistributionMap()[it->mfid] == ParallelDescriptor::MyProc());
-
-            mfcd.FillFab(mfid, it->fbid, mf[it->mfid], it->dstBox);
+            total_rcvs_volume += it->second;
         }
+
+        total_rcvs_volume *= ncomp;
+
+        BL_ASSERT((total_rcvs_volume*sizeof(value_type)) < std::numeric_limits<int>::max());
+
+        value_type* the_recv_data = static_cast<value_type*>(BoxLib::The_Arena()->alloc(total_rcvs_volume*sizeof(value_type)));
+
+        int offset = 0;
+
+        std::map<int,int>::const_iterator vol_it;
+
+        for (Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_RcvTags.begin(),
+                 m_End = TheFPB.m_RcvTags.end();
+             m_it != m_End;
+             ++m_it)
+        {
+            vol_it = TheFPB.m_RcvVols.find(m_it->first);
+
+            BL_ASSERT(vol_it != TheFPB.m_RcvVols.end());
+
+            const int N = vol_it->second*ncomp;
+
+            BL_ASSERT(N < std::numeric_limits<int>::max());
+
+            recv_data.push_back(&the_recv_data[offset]);
+            recv_from.push_back(m_it->first);
+            recv_reqs.push_back(ParallelDescriptor::Arecv(recv_data.back(),N,m_it->first,SeqNum).req());
+
+            offset += N;
+        }
+        //
+        // Send the FAB data.
+        //
+        FAB fab;
+
+        for (Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_SndTags.begin(),
+                 m_End = TheFPB.m_SndTags.end();
+             m_it != m_End;
+             ++m_it)
+        {
+            vol_it = TheFPB.m_SndVols.find(m_it->first);
+
+            BL_ASSERT(vol_it != TheFPB.m_SndVols.end());
+
+            const int N = vol_it->second*ncomp;
+
+            BL_ASSERT(N < std::numeric_limits<int>::max());
+
+            value_type* data = static_cast<value_type*>(BoxLib::The_Arena()->alloc(N*sizeof(value_type)));
+            value_type* dptr = data;
+
+            for (Geometry::FPB::FPBComTagsContainer::const_iterator it = m_it->second.begin(),
+                     End = m_it->second.end();
+                 it != End;
+                 ++it)
+            {
+                const Box& bx = it->sbox;
+                fab.resize(bx, ncomp);
+                fab.copy(mf[it->srcIndex],bx,scomp,bx,0,ncomp);
+                const int Cnt = bx.numPts()*ncomp;
+                memcpy(dptr, fab.dataPtr(), Cnt*sizeof(value_type));
+                dptr += Cnt;
+            }
+            BL_ASSERT(data+N == dptr);
+
+            if (FabArrayBase::do_async_sends)
+            {
+                send_data.push_back(data);
+                send_reqs.push_back(ParallelDescriptor::Asend(data,N,m_it->first,SeqNum).req());
+            }
+            else
+            {
+                ParallelDescriptor::Send(data,N,m_it->first,SeqNum);
+                BoxLib::The_Arena()->free(data);
+            }
+        }
+        //
+        // Now receive and unpack FAB data as it becomes available.
+        //
+        Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it;
+
+        const int N_rcvs = TheFPB.m_RcvTags.size();
+
+        index.resize(N_rcvs);
+        stats.resize(N_rcvs);
+
+        for (int NWaits = N_rcvs, completed; NWaits > 0; NWaits -= completed)
+        {
+            ParallelDescriptor::Waitsome(recv_reqs, completed, index, stats);
+
+            for (int k = 0; k < completed; k++)
+            {
+                const value_type* dptr = recv_data[index[k]];
+
+                BL_ASSERT(dptr != 0);
+
+                m_it = TheFPB.m_RcvTags.find(recv_from[index[k]]);
+
+                BL_ASSERT(m_it != TheFPB.m_RcvTags.end());
+
+                for (Geometry::FPB::FPBComTagsContainer::const_iterator it = m_it->second.begin(),
+                         End = m_it->second.end();
+                     it != End;
+                     ++it)
+                {
+                    const Box& bx = it->dbox;
+                    fab.resize(bx,ncomp);
+                    const int Cnt = bx.numPts()*ncomp;
+                    memcpy(fab.dataPtr(), dptr, Cnt*sizeof(value_type));
+                    mf[it->dstIndex].copy(fab,bx,0,bx,scomp,ncomp);
+                    dptr += Cnt;
+                }
+            }
+        }
+
+        BoxLib::The_Arena()->free(the_recv_data);
+
+        if (FabArrayBase::do_async_sends && !TheFPB.m_SndTags.empty())
+        {
+            //
+            // Now grok the asynchronous send buffers & free up send buffer space.
+            //
+            const int N_snds = TheFPB.m_SndTags.size();
+
+            stats.resize(N_snds);
+
+            BL_MPI_REQUIRE( MPI_Waitall(N_snds, send_reqs.dataPtr(), stats.dataPtr()) );
+
+            for (int i = 0; i < N_snds; i++)
+                BoxLib::The_Arena()->free(send_data[i]);
+        }
+
+#endif /*BL_USE_MPI*/
     }
 }
 
