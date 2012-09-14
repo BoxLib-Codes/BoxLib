@@ -152,17 +152,97 @@ FluxRegister::SumReg (int comp) const
 void
 FluxRegister::copyTo (FArrayBox& flx,
                       int        dir,
-                      int        src_comp,
-                      int        dest_comp,
-                      int        num_comp)
+                      int        scomp,
+                      int        dcomp,
+                      int        ncomp)
 {
     BL_ASSERT(dir >= 0 && dir < BL_SPACEDIM);
 
     const FabSet& lofabs = bndry[Orientation(dir,Orientation::low)];
     const FabSet& hifabs = bndry[Orientation(dir,Orientation::high)];
 
-    lofabs.copyTo(flx,src_comp,dest_comp,num_comp);
-    hifabs.copyTo(flx,src_comp,dest_comp,num_comp);
+    lofabs.copyTo(flx,scomp,dcomp,ncomp);
+    hifabs.copyTo(flx,scomp,dcomp,ncomp);
+}
+
+struct Rec
+{
+    Rec (int         dIndex,
+         int         sIndex,
+         Orientation face,
+         FillBoxId   fbid)
+        :
+        m_dIndex(dIndex),
+        m_sIndex(sIndex),
+        m_face(face),
+        m_fbid(fbid) {}
+
+    Rec (const IntVect& shift,
+         int            dIndex,
+         int            sIndex,
+         Orientation    face,
+         FillBoxId      fbid)
+        :
+        m_shift(shift),
+        m_dIndex(dIndex),
+        m_sIndex(sIndex),
+        m_face(face),
+        m_fbid(fbid) {}
+
+    IntVect     m_shift;
+    int         m_dIndex;
+    int         m_sIndex;
+    Orientation m_face;
+    FillBoxId   m_fbid;
+};
+
+static
+void
+RefluxIt (const Rec&       rf,
+          Real             scale,
+          const Real*      multf,
+          const BoxArray&  grids,
+          MultiFab&        S,
+          const MultiFab&  volume,
+          const FabSet*    bndry,
+          const FArrayBox& reg,
+          int              scomp,
+          int              dcomp,
+          int              ncomp)
+{
+    BL_ASSERT(S.DistributionMap()[rf.m_dIndex] == ParallelDescriptor::MyProc());
+    BL_ASSERT(volume.DistributionMap()[rf.m_dIndex] == ParallelDescriptor::MyProc());
+
+    Real mult;
+    if (multf == 0)
+        mult = rf.m_face.isLow() ? -scale : scale;
+    else
+        mult = (*multf)*scale;
+
+    FArrayBox&       fab_S      = S[rf.m_dIndex];
+    const FArrayBox& fab_volume = volume[rf.m_dIndex];
+    Real*            s_dat      = fab_S.dataPtr(dcomp);
+    const int*       slo        = fab_S.loVect();
+    const int*       shi        = fab_S.hiVect();
+    const Real*      vol_dat    = fab_volume.dataPtr();
+    const Box        fine_face  = BoxLib::adjCell(grids[rf.m_sIndex],rf.m_face);
+    const Box        sftbox     = S.box(rf.m_dIndex) + rf.m_shift;
+    const Box        ovlp       = sftbox & fine_face;
+    const int*       lo         = ovlp.loVect();
+    const int*       hi         = ovlp.hiVect();
+    const int*       rlo        = fine_face.loVect();
+    const int*       rhi        = fine_face.hiVect();
+    const int*       shft       = rf.m_shift.getVect();
+    const int*       vlo        = fab_volume.loVect();
+    const int*       vhi        = fab_volume.hiVect();
+    const Real*      reg_dat    = reg.dataPtr(scomp);
+
+    BL_ASSERT(ovlp.ok());
+
+    FORT_FRREFLUX(s_dat,ARLIM(slo),ARLIM(shi),
+                  vol_dat,ARLIM(vlo),ARLIM(vhi),
+                  reg_dat,ARLIM(rlo),ARLIM(rhi),
+                  lo,hi,shft,&ncomp,&mult);
 }
 
 void
@@ -175,21 +255,15 @@ FluxRegister::Reflux (MultiFab&       S,
                       const Geometry& geom,
 		      const Real*     multf)
 {
-    FabSetCopyDescriptor fscd;
+    BoxArray ba = grids; ba.grow(1);
 
-    FabSetId fsid[2*BL_SPACEDIM];
+    FabSetId                          fsid[2*BL_SPACEDIM];
+    std::deque<Rec>                   Recs;
+    FabSetCopyDescriptor              fscd;
+    std::vector< std::pair<int,Box> > isects;
 
     for (OrientationIter fi; fi; ++fi)
-    {
         fsid[fi()] = fscd.RegisterFabSet(&bndry[fi()]);
-    }
-
-    std::deque<FluxRegister::Rec> Recs;
-
-    BoxArray ba = grids;
-    ba.grow(1);
-
-    std::vector< std::pair<int,Box> > isects;
 
     for (MFIter mfi(S); mfi.isValid(); ++mfi)
     {
@@ -238,64 +312,50 @@ FluxRegister::Reflux (MultiFab&       S,
 
         for (MFIter mfi(S); mfi.isValid(); ++mfi)
         {
-            const int        idx  = mfi.index();
-            const Box&       vbx  = mfi.validbox();
-            FArrayBox&       sfab = S[mfi];
-            const FArrayBox& vfab = volume[mfi];
+            const int  idx  = mfi.index();
+            const Box& vbx  = mfi.validbox();
 
             for (int k = 0, N = grids.size(); k < N; k++)
             {
                 const Box& bx = ba[k];
 
-                if (!geom.Domain().contains(bx))
+                if (geom.Domain().contains(bx)) continue;
+
+                geom.periodicShift(bx,vbx,pshifts);
+
+                const Box& kgrid = grids[k];
+
+                for (Array<IntVect>::const_iterator it = pshifts.begin(), End = pshifts.end();
+                     it != End;
+                     ++it)
                 {
-                    geom.periodicShift(bx,vbx,pshifts);
+                    const IntVect& iv     = *it;
+                    const Box      sftbox = vbx + iv;
 
-                    const Box& kgrid = grids[k];
+                    BL_ASSERT(bx.intersects(sftbox));
 
-                    for (int iiv = 0, M = pshifts.size(); iiv < M; iiv++)
+                    for (OrientationIter fi; fi; ++fi)
                     {
-                        const IntVect& iv = pshifts[iiv];
-                        sfab.shift(iv);
                         //
-                        // This is a funny situation.  I don't want to permanently
-                        // change vol, but I need to do a shift on it.  I'll shift
-                        // it back later, so the overall change is nil.  But to do
-                        // this, I have to cheat and do a cast.  This is pretty 
-                        // disgusting.
+                        // low (high)  face of fine grid => high (low)
+                        // face of the exterior coarse grid cell updated.
                         //
-                        FArrayBox* cheatvol = const_cast<FArrayBox*>(&vfab);
-                        BL_ASSERT(cheatvol != 0);
-                        cheatvol->shift(iv);
-                        Box sftbox = vbx;
-                        sftbox.shift(iv);
-                        BL_ASSERT(bx.intersects(sftbox));
+                        const Orientation face = fi();
 
-                        for (OrientationIter fi; fi; ++fi)
+                        const Box ovlp = sftbox & BoxLib::adjCell(kgrid,face);
+
+                        if (ovlp.ok())
                         {
-                            //
-                            // low (high)  face of fine grid => high (low)
-                            // face of the exterior coarse grid cell updated.
-                            //
-                            const Orientation face = fi();
+                            FillBoxId fbid = fscd.AddBox(fsid[face],
+                                                         bndry[face].box(k),
+                                                         0,
+                                                         k,
+                                                         src_comp,
+                                                         0,
+                                                         num_comp);
 
-                            const Box ovlp = sftbox & BoxLib::adjCell(kgrid,face);
-
-                            if (ovlp.ok())
-                            {
-                                FillBoxId fbid = fscd.AddBox(fsid[face],
-                                                             bndry[face].box(k),
-                                                             0,
-                                                             k,
-                                                             src_comp,
-                                                             0,
-                                                             num_comp);
-
-                                Recs.push_back(Rec(iv,idx,k,face,fbid));
-                            }
+                            Recs.push_back(Rec(iv,idx,k,face,fbid));
                         }
-                        sfab.shift(-iv);
-                        cheatvol->shift(-iv);
                     }
                 }
             }
@@ -306,592 +366,39 @@ FluxRegister::Reflux (MultiFab&       S,
 
     FArrayBox reg;
 
-    for (std::deque<FluxRegister::Rec>::const_iterator it = Recs.begin(),
-             End = Recs.end();
+    for (std::deque<Rec>::const_iterator it = Recs.begin(), End = Recs.end();
          it != End;
          ++it)
     {
         const Rec&       rf   = *it;
         const FillBoxId& fbid = rf.m_fbid;
 
-        BL_ASSERT(bndry[rf.m_face].box(rf.m_idx) == fbid.box());
-        BL_ASSERT(S.DistributionMap()[rf.m_fabidx] == ParallelDescriptor::MyProc());
-        BL_ASSERT(volume.DistributionMap()[rf.m_fabidx] == ParallelDescriptor::MyProc());
+        BL_ASSERT(bndry[rf.m_face].box(rf.m_sIndex) == fbid.box());
+        BL_ASSERT(S.DistributionMap()[rf.m_dIndex] == ParallelDescriptor::MyProc());
+        BL_ASSERT(volume.DistributionMap()[rf.m_dIndex] == ParallelDescriptor::MyProc());
 
-        FArrayBox&       fab_S      = S[rf.m_fabidx];
-        const FArrayBox& fab_volume = volume[rf.m_fabidx];
-        Real*            s_dat      = fab_S.dataPtr(dest_comp);
-        const int*       slo        = fab_S.loVect();
-        const int*       shi        = fab_S.hiVect();
-        const Real*      vol_dat    = fab_volume.dataPtr();
-        Box              fine_face  = BoxLib::adjCell(grids[rf.m_idx],rf.m_face);
-        const int*       rlo        = fine_face.loVect();
-        const int*       rhi        = fine_face.hiVect();
+        reg.resize(fbid.box(), num_comp);
+        fscd.FillFab(fsid[rf.m_face], fbid, reg);
 
-	Real mult;
-	if (multf == 0)
-	  mult = rf.m_face.isLow() ? -scale : scale;
-	else
-	  mult = (*multf)*scale;
-	  
-        if (!rf.m_shifted)
-        {
-            const Box ovlp = S.box(rf.m_fabidx) & fine_face;
-
-            BL_ASSERT(ovlp.ok());
-
-            reg.resize(fbid.box(), num_comp);
-            fscd.FillFab(fsid[rf.m_face], fbid, reg);
-
-            const Real* reg_dat = reg.dataPtr(0);
-            const int*  vlo     = fab_volume.loVect();
-            const int*  vhi     = fab_volume.hiVect();
-            const int*  lo      = ovlp.loVect();
-            const int*  hi      = ovlp.hiVect();
-
-            FORT_FRREFLUX(s_dat,ARLIM(slo),ARLIM(shi),
-                          vol_dat,ARLIM(vlo),ARLIM(vhi),
-                          reg_dat,ARLIM(rlo),ARLIM(rhi),
-                          lo,hi,&num_comp,&mult);
-        }
-        else
-        {
-            fab_S.shift(rf.m_shift);
-            //
-            // This is a funny situation.  I don't want to permanently
-            // change vol, but I need to do a shift on it.  I'll shift
-            // it back later, so the overall change is nil.  But to do
-            // this, I have to cheat and do a cast.  This is pretty 
-            // disgusting.
-            //
-            FArrayBox* cheatvol = const_cast<FArrayBox*>(&fab_volume);
-            BL_ASSERT(cheatvol != 0);
-            cheatvol->shift(rf.m_shift);
-            Box sftbox = S.box(rf.m_fabidx);
-            sftbox.shift(rf.m_shift);
-            Box ovlp = sftbox & fine_face;
-
-            BL_ASSERT(ovlp.ok());
-
-            reg.resize(fbid.box(), num_comp);
-            fscd.FillFab(fsid[rf.m_face], fbid, reg);
-
-            const Real* reg_dat = reg.dataPtr(0);
-            const int*  vlo      = cheatvol->loVect();
-            const int*  vhi      = cheatvol->hiVect();
-            const int*  lo       = ovlp.loVect();
-            const int*  hi       = ovlp.hiVect();
-
-            FORT_FRREFLUX(s_dat,ARLIM(slo),ARLIM(shi),
-                          vol_dat,ARLIM(vlo),ARLIM(vhi),
-                          reg_dat,ARLIM(rlo),ARLIM(rhi),lo,hi,
-                          &num_comp,&mult);
-            fab_S.shift(-rf.m_shift);
-            cheatvol->shift(-rf.m_shift);
-        }
+        RefluxIt(rf,scale,multf,grids,S,volume,bndry,reg,0,dest_comp,num_comp);
     }
 }
 
 void
 FluxRegister::Reflux (MultiFab&       S,
                       Real            scale,
-                      int             src_comp,
-                      int             dest_comp,
-                      int             num_comp, 
+                      int             scomp,
+                      int             dcomp,
+                      int             ncomp, 
                       const Geometry& geom)
 {
     const Real* dx = geom.CellSize();
 
-    FabSetCopyDescriptor fscd;
+    MultiFab volume(S.boxArray(), 1, S.nGrow());
 
-    FabSetId fsid[2*BL_SPACEDIM];
+    volume.setVal(D_TERM(dx[0],*dx[1],*dx[2]), 0, 1, S.nGrow());
 
-    for (OrientationIter fi; fi; ++fi)
-    {
-        fsid[fi()] = fscd.RegisterFabSet(&bndry[fi()]);
-    }
-
-    std::deque<FluxRegister::Rec> Recs;
-
-    BoxArray ba = grids;
-    ba.grow(1);
-
-    std::vector< std::pair<int,Box> > isects;
-
-    for (MFIter mfi(S); mfi.isValid(); ++mfi)
-    {
-        //
-        // Find flux register that intersect with this grid.
-        //
-        ba.intersections(mfi.validbox(),isects);
-
-        const int  idx = mfi.index();
-        const Box& vbx = mfi.validbox();
-
-        for (int i = 0, N = isects.size(); i < N; i++)
-        {
-            const int  k     = isects[i].first;
-            const Box& kgrid = grids[k];
-
-            for (OrientationIter fi; fi; ++fi)
-            {
-                //
-                // low (high) face of fine grid => high (low)
-                // face of the exterior coarse grid cell updated.
-                //
-                const Box ovlp = vbx & BoxLib::adjCell(kgrid,fi());
-
-                if (ovlp.ok())
-                {
-                    FillBoxId fbid = fscd.AddBox(fsid[fi()],
-                                                 bndry[fi()].box(k),
-                                                 0,
-                                                 k,
-                                                 src_comp,
-                                                 0,
-                                                 num_comp);
-
-                    Recs.push_back(Rec(idx,k,fi(),fbid));
-                }
-            }
-        }
-    }
-    //
-    // Add periodic possibilities.
-    //
-    if (geom.isAnyPeriodic())
-    {
-        Array<IntVect>  pshifts(27);
-
-        for (MFIter mfi(S); mfi.isValid(); ++mfi)
-        {
-            const int  idx = mfi.index();
-            const Box& vbx = mfi.validbox();
-            FArrayBox& sfab = S[mfi];
-
-            for (int k = 0, N = grids.size(); k < N; k++)
-            {
-                const Box& bx = ba[k];
-
-                if (!geom.Domain().contains(bx))
-                {
-                    geom.periodicShift(bx,vbx,pshifts);
-
-                    for (int iiv = 0, M = pshifts.size(); iiv < M; iiv++)
-                    {
-                        const IntVect& iv = pshifts[iiv];
-                        sfab.shift(iv);
-                        Box sftbox = vbx;
-                        sftbox.shift(iv);
-                        BL_ASSERT(bx.intersects(sftbox));
-
-                        for (OrientationIter fi; fi; ++fi)
-                        {
-                            //
-                            // low (high) face of fine grid => high (low)
-                            // face of the exterior coarse grid cell updated.
-                            //
-                            const Box ovlp = sftbox & BoxLib::adjCell(grids[k],fi());
-
-                            if (ovlp.ok())
-                            {
-                                FillBoxId fbid = fscd.AddBox(fsid[fi()],
-                                                             bndry[fi()].box(k),
-                                                             0,
-                                                             k,
-                                                             src_comp,
-                                                             0,
-                                                             num_comp);
-
-                                Recs.push_back(Rec(iv,idx,k,fi(),fbid));
-                            }
-                        }
-                        sfab.shift(-iv);
-                    }
-                }
-            }
-        }
-    }
-
-    fscd.CollectData();
-
-    FArrayBox reg;
-
-    for (std::deque<FluxRegister::Rec>::const_iterator it = Recs.begin(),
-             End = Recs.end();
-         it != End;
-         ++it)
-    {
-        const Rec&       rf   = *it;
-        const FillBoxId& fbid = rf.m_fbid;
-
-        BL_ASSERT(bndry[rf.m_face].box(rf.m_idx) == fbid.box());
-        BL_ASSERT(S.DistributionMap()[rf.m_fabidx] == ParallelDescriptor::MyProc());
-
-        FArrayBox& fab_S     = S[rf.m_fabidx];
-        Box        fine_face = BoxLib::adjCell(grids[rf.m_idx],rf.m_face);
-        Real       mult      = rf.m_face.isLow() ? -scale : scale;
-        const int* rlo       = fine_face.loVect();
-        const int* rhi       = fine_face.hiVect();
-        Real*      s_dat     = fab_S.dataPtr(dest_comp);
-        const int* slo       = fab_S.loVect();
-        const int* shi       = fab_S.hiVect();
-
-        if (!rf.m_shifted)
-        {
-            const Box ovlp = S.box(rf.m_fabidx) & fine_face;
-
-            BL_ASSERT(ovlp.ok());
-
-            reg.resize(fbid.box(), num_comp);
-            fscd.FillFab(fsid[rf.m_face], fbid, reg);
-
-            const Real* reg_dat = reg.dataPtr(0);
-            const int*  lo      = ovlp.loVect();
-            const int*  hi      = ovlp.hiVect();
-
-            FORT_FRCVREFLUX(s_dat,ARLIM(slo),ARLIM(shi),dx,
-                            reg_dat,ARLIM(rlo),ARLIM(rhi),lo,hi,
-                            &num_comp,&mult);
-        }
-        else
-        {
-            fab_S.shift(rf.m_shift);
-            Box sftbox = S.box(rf.m_fabidx);
-            sftbox.shift(rf.m_shift);
-            Box ovlp = sftbox & fine_face;
-
-            BL_ASSERT(ovlp.ok());
-
-            reg.resize(fbid.box(), num_comp);
-            fscd.FillFab(fsid[rf.m_face], fbid, reg);
-
-            const Real* reg_dat = reg.dataPtr(0);
-            const int*  lo      = ovlp.loVect();
-            const int*  hi      = ovlp.hiVect();
-
-            FORT_FRCVREFLUX(s_dat,ARLIM(slo),ARLIM(shi),dx,
-                            reg_dat,ARLIM(rlo),ARLIM(rhi),
-                            lo,hi,&num_comp,&mult);
-
-            fab_S.shift(-rf.m_shift);
-        }
-    }
-}
-
-//
-// Some useful typedefs.
-// These are used by the two CrseInit() routines that take a MultiFab.
-// These types are also used by FabArray::copy() and FillBoundary().
-// I'm trying to keep the number of data structures under control.
-//
-typedef std::deque<FabArrayBase::CopyComTag> CopyComTagsContainer;
-
-typedef std::map<int,CopyComTagsContainer> MapOfCopyComTagContainers;
-
-void
-FluxRegister::CrseInitDoit (const MultiFab& mflx,
-                            const MultiFab* area,
-                            int             dir,
-                            int             srccomp,
-                            int             destcomp,
-                            int             numcomp,
-                            Real            mult,
-                            FrOp            op)
-{
-    const int MyProc = ParallelDescriptor::MyProc();
-
-    FArrayBox                         fab;
-    FabArrayBase::CopyComTag          tag;
-    MapOfCopyComTagContainers         m_SndTags, m_RcvTags;
-    std::map<int,int>                 m_SndVols, m_RcvVols;
-    std::map<int,int>::iterator       vol_it;
-    std::vector< std::pair<int,Box> > isects;
-    const Orientation                 face_lo(dir,Orientation::low);
-    const Orientation                 face_hi(dir,Orientation::high);
-
-    for (int pass = 0; pass < 2; pass++)
-    {
-        const int face = ((pass == 0) ? face_lo : face_hi);
-
-        FabSet&                    fabset  = bndry[face];
-        const BoxArray&            ba      = mflx.boxArray();
-        const DistributionMapping& srcDMap = mflx.DistributionMap();
-        const DistributionMapping& dstDMap = fabset.DistributionMap();
-
-        for (int i = 0, N = fabset.size(); i < N; i++)
-        {
-            ba.intersections(fabset.fabbox(i),isects);
-
-            const int dst_owner = dstDMap[i];
-
-            for (int j = 0, M = isects.size(); j < M; j++)
-            {
-                const Box& bx        = isects[j].second;
-                const int  k         = isects[j].first;
-                const int  src_owner = srcDMap[k];
-
-                if (dst_owner != MyProc && src_owner != MyProc) continue;
-
-                tag.box      = bx;
-                tag.srcIndex = face;
-
-                const int vol = bx.numPts();
-
-                if (dst_owner == MyProc)
-                {
-                    tag.fabIndex = i;
-
-                    if (src_owner == MyProc)
-                    {
-                        //
-                        // Do the local work right here.
-                        //
-                        if (op == COPY)
-                        {
-                            fabset[i].copy(mflx[k],bx,srccomp,bx,destcomp,numcomp);
-                            fabset[i].mult(mult,bx,destcomp,numcomp);
-                            if (area)
-                            {
-                                for (int n = 0; n < numcomp; n++)
-                                    fabset[i].mult((*area)[k],bx,bx,0,destcomp+n,1);
-                            }
-                        }
-                        else
-                        {
-                            fab.resize(bx,numcomp);
-                            fab.copy(mflx[k],bx,srccomp,bx,0,numcomp);
-                            fab.mult(mult);
-                            if (area)
-                            {
-                                for (int n = 0; n < numcomp; n++)
-                                    fab.mult((*area)[k],bx,bx,0,n,1);
-                            }
-                            fabset[i].plus(fab,bx,bx,0,destcomp,numcomp);
-                        }
-                    }
-                    else
-                    {
-                        m_RcvTags[src_owner].push_back(tag);
-
-                        vol_it = m_RcvVols.find(src_owner);
-
-                        if (vol_it != m_RcvVols.end())
-                        {
-                            vol_it->second += vol;
-                        }
-                        else
-                        {
-                            m_RcvVols[src_owner] = vol;
-                        }
-                    }
-                }
-                else if (src_owner == MyProc)
-                {
-                    tag.fabIndex = k;
-
-                    m_SndTags[dst_owner].push_back(tag);
-
-                    vol_it = m_SndVols.find(dst_owner);
-
-                    if (vol_it != m_SndVols.end())
-                    {
-                        vol_it->second += vol;
-                    }
-                    else
-                    {
-                        m_SndVols[dst_owner] = vol;
-                    }
-                }
-            }
-        }
-    }
-
-#ifdef BL_USE_MPI
-    if (ParallelDescriptor::NProcs() == 1) return;
-    //
-    // Do this before prematurely exiting if running in parallel.
-    // Otherwise sequence numbers will not match across MPI processes.
-    //
-    const int SeqNum = ParallelDescriptor::SeqNum();
-
-    if (m_SndTags.empty() && m_RcvTags.empty())
-        //
-        // No parallel work for this MPI process to do.
-        //
-        return;
-    //
-    // If area is defined we'll have one component of area appended to numcomp data.
-    //
-    const int NumCompArea = (area ? numcomp+1 : numcomp);
-
-    Array<MPI_Status>  stats;
-    Array<int>         recv_from, index;
-    Array<double*>     recv_data, send_data;
-    Array<MPI_Request> recv_reqs, send_reqs;
-    //
-    // Post rcvs. Allocate one chunk of space to hold'm all.
-    //
-    int TotalRcvsVolume = 0;
-    for (std::map<int,int>::const_iterator it = m_RcvVols.begin(),
-             End = m_RcvVols.end();
-         it != End;
-         ++it)
-    {
-        TotalRcvsVolume += it->second;
-    }
-    TotalRcvsVolume *= NumCompArea;
-
-    BL_ASSERT((TotalRcvsVolume*sizeof(double)) < std::numeric_limits<int>::max());
-
-    double* the_recv_data = static_cast<double*>(BoxLib::The_Arena()->alloc(TotalRcvsVolume*sizeof(double)));
-
-    int Offset = 0;
-    for (MapOfCopyComTagContainers::const_iterator m_it = m_RcvTags.begin(),
-             m_End = m_RcvTags.end();
-         m_it != m_End;
-         ++m_it)
-    {
-        vol_it = m_RcvVols.find(m_it->first);
-
-        BL_ASSERT(vol_it != m_RcvVols.end());
-
-        const int N = vol_it->second*NumCompArea;
-
-        BL_ASSERT(N < std::numeric_limits<int>::max());
-
-        recv_data.push_back(&the_recv_data[Offset]);
-        recv_from.push_back(m_it->first);
-        recv_reqs.push_back(ParallelDescriptor::Arecv(recv_data.back(),N,m_it->first,SeqNum).req());
-
-        Offset += N;
-    }
-    //
-    // Send the data.
-    //
-    for (MapOfCopyComTagContainers::const_iterator m_it = m_SndTags.begin(),
-             m_End = m_SndTags.end();
-         m_it != m_End;
-         ++m_it)
-    {
-        vol_it = m_SndVols.find(m_it->first);
-
-        BL_ASSERT(vol_it != m_SndVols.end());
-
-        const int N = vol_it->second*NumCompArea;
-
-        BL_ASSERT(N < std::numeric_limits<int>::max());
-
-        double* data = static_cast<double*>(BoxLib::The_Arena()->alloc(N*sizeof(double)));
-        double* dptr = data;
-
-        for (CopyComTagsContainer::const_iterator it = m_it->second.begin(),
-                 End = m_it->second.end();
-             it != End;
-             ++it)
-        {
-            const Box& bx = it->box;
-            fab.resize(bx,numcomp);
-            fab.copy(mflx[it->fabIndex],bx,srccomp,bx,0,numcomp);
-            const int NumPts = bx.numPts(), Cnt = NumPts*numcomp;
-            memcpy(dptr,fab.dataPtr(),Cnt*sizeof(double));
-            dptr += Cnt;
-            if (area)
-            {
-                //
-                // For every box of fab data append one component of area data.
-                //
-                fab.copy((*area)[it->fabIndex],bx,0,bx,0,1);
-                memcpy(dptr,fab.dataPtr(),NumPts*sizeof(double));
-                dptr += NumPts;
-            }
-        }
-        BL_ASSERT(data+N == dptr);
-
-        if (FabArrayBase::do_async_sends)
-        {
-            send_data.push_back(data);
-            send_reqs.push_back(ParallelDescriptor::Asend(data,N,m_it->first,SeqNum).req());
-        }
-        else
-        {
-            ParallelDescriptor::Send(data,N,m_it->first,SeqNum);
-            BoxLib::The_Arena()->free(data);
-        }
-    }
-    //
-    // Now receive and unpack FAB data as it becomes available.
-    //
-    MapOfCopyComTagContainers::const_iterator m_it;
-
-    const int N_rcvs = m_RcvTags.size();
-
-    index.resize(N_rcvs);
-    stats.resize(N_rcvs);
-
-    for (int NWaits = N_rcvs, completed; NWaits > 0; NWaits -= completed)
-    {
-        ParallelDescriptor::Waitsome(recv_reqs, completed, index, stats);
-
-        for (int k = 0; k < completed; k++)
-        {
-            const double* dptr = recv_data[index[k]];
-
-            BL_ASSERT(dptr != 0);
-
-            m_it = m_RcvTags.find(recv_from[index[k]]);
-
-            BL_ASSERT(m_it != m_RcvTags.end());
-
-            for (CopyComTagsContainer::const_iterator it = m_it->second.begin(),
-                     End = m_it->second.end();
-                 it != End;
-                 ++it)
-            {
-                //
-                // Area will be the "numcomp" component in our data.
-                //
-                const Box& bx = it->box;
-                fab.resize(bx,NumCompArea);
-                const int Cnt = bx.numPts()*NumCompArea;
-                memcpy(fab.dataPtr(),dptr,Cnt*sizeof(double));
-                fab.mult(mult,0,numcomp);
-                if (area)
-                {
-                    for (int n = 0; n < numcomp; n++)
-                        fab.mult(fab,bx,bx,numcomp,n,1);
-                }
-
-                if (op == COPY)
-                {
-                    bndry[it->srcIndex][it->fabIndex].copy(fab,bx,0,bx,destcomp,numcomp);
-                }
-                else
-                {
-                    bndry[it->srcIndex][it->fabIndex].plus(fab,bx,bx,0,destcomp,numcomp);
-                }
-                dptr += Cnt;
-            }
-        }
-    }
-
-    BoxLib::The_Arena()->free(the_recv_data);
-
-    if (FabArrayBase::do_async_sends && !m_SndTags.empty())
-    {
-        //
-        // Now grok the asynchronous send buffers & free up send buffer space.
-        //
-        const int N_snds = m_SndTags.size();
-
-        stats.resize(N_snds);
-
-        BL_MPI_REQUIRE( MPI_Waitall(N_snds, send_reqs.dataPtr(), stats.dataPtr()) );
-
-        for (int i = 0; i < N_snds; i++)
-            BoxLib::The_Arena()->free(send_data[i]);
-    }
-#endif /*BL_USE_MPI*/
+    Reflux(S,volume,scale,scomp,dcomp,ncomp,geom);
 }
 
 void
@@ -904,11 +411,44 @@ FluxRegister::CrseInit (const MultiFab& mflx,
                         Real            mult,
                         FrOp            op)
 {
-    BL_ASSERT(mflx.boxArray() == area.boxArray());
     BL_ASSERT(srccomp >= 0 && srccomp+numcomp <= mflx.nComp());
     BL_ASSERT(destcomp >= 0 && destcomp+numcomp <= ncomp);
 
-    CrseInitDoit(mflx,&area,dir,srccomp,destcomp,numcomp,mult,op);
+    const Orientation face_lo(dir,Orientation::low);
+    const Orientation face_hi(dir,Orientation::high);
+ 
+    MultiFab mf(mflx.boxArray(),numcomp,0);
+
+    for (MFIter mfi(mflx); mfi.isValid(); ++mfi)
+    {
+        mf[mfi].copy(mflx[mfi],srccomp,0,numcomp);
+
+        mf[mfi].mult(mult,0,numcomp);
+
+        for (int i = 0; i < numcomp; i++)
+            mf[mfi].mult(area[mfi],0,i,1);
+    }
+
+    for (int pass = 0; pass < 2; pass++)
+    {
+        const Orientation face = ((pass == 0) ? face_lo : face_hi);
+
+        if (op == FluxRegister::COPY)
+        {
+            bndry[face].copyFrom(mf,0,0,destcomp,numcomp);
+        }
+        else
+        {
+            FabSet fs(bndry[face].boxArray(),numcomp);
+
+            fs.setVal(0);
+
+            fs.copyFrom(mf,0,0,0,numcomp);
+
+            for (FabSetIter mfi(fs); mfi.isValid(); ++mfi)
+                bndry[face][mfi].plus(fs[mfi],0,destcomp,numcomp);
+        }
+    }
 }
 
 void
@@ -923,17 +463,21 @@ FluxRegister::CrseInit (const MultiFab& mflx,
     BL_ASSERT(srccomp >= 0 && srccomp+numcomp <= mflx.nComp());
     BL_ASSERT(destcomp >= 0 && destcomp+numcomp <= ncomp);
 
-    CrseInitDoit(mflx,0,dir,srccomp,destcomp,numcomp,mult,op);
+    MultiFab area(mflx.boxArray(), 1, mflx.nGrow());
+
+    area.setVal(1, 0, 1, area.nGrow());
+
+    CrseInit(mflx,area,dir,srccomp,destcomp,numcomp,mult,op);
 }
 
 //
 // Helper function and data for CrseInit()/CrseInitFinish().
 //
 
-static Array<int>                           CIMsgs;
-static std::vector<FabArrayBase::FabComTag> CITags;
-static std::vector<FArrayBox*>              CIFabs;
-static BArena                               CIArena;
+static Array<int>                          CIMsgs;
+static std::deque<FabArrayBase::FabComTag> CITags;
+static std::deque<FArrayBox*>              CIFabs;
+static BArena                              CIArena;
 
 static
 void
@@ -946,13 +490,12 @@ DoIt (Orientation        face,
       int                destcomp,
       int                numcomp,
       Real               mult,
+      FArrayBox&         tmp,
       FluxRegister::FrOp op = FluxRegister::COPY)
 {
-    const DistributionMapping& dMap = bndry[face].DistributionMap();
+    const int owner = bndry[face].DistributionMap()[k];
 
-    FArrayBox tmp;
-
-    if (ParallelDescriptor::MyProc() == dMap[k])
+    if (ParallelDescriptor::MyProc() == owner)
     {
         //
         // Local data.
@@ -974,7 +517,7 @@ DoIt (Orientation        face,
     {
         FabArrayBase::FabComTag tag;
 
-        tag.toProc   = dMap[k];
+        tag.toProc   = owner;
         tag.fabIndex = k;
         tag.box      = bx;
         tag.face     = face;
@@ -989,10 +532,10 @@ DoIt (Orientation        face,
         CITags.push_back(tag);
         CIFabs.push_back(fab);
 
-        if (CIMsgs.size() == 0)
+        if (CIMsgs.empty())
             CIMsgs.resize(ParallelDescriptor::NProcs(), 0);
 
-        CIMsgs[dMap[k]]++;
+        CIMsgs[owner]++;
     }
 }
 
@@ -1012,6 +555,8 @@ FluxRegister::CrseInit (const FArrayBox& flux,
 
     if (ParallelDescriptor::IOProcessor())
         BoxLib::Warning("\n*** FluxRegister::CrseInit(const FArrayBox&,...) is deprecated; please use CrseInit(MultiFab&,...) instead!!");
+
+    FArrayBox tmp;
     
     const Orientation lo(dir,Orientation::low);
 
@@ -1021,7 +566,7 @@ FluxRegister::CrseInit (const FArrayBox& flux,
 
     for (int i = 0, N = isects.size(); i < N; i++)
     {
-        DoIt(lo,isects[i].first,bndry,isects[i].second,flux,srccomp,destcomp,numcomp,mult,op);
+        DoIt(lo,isects[i].first,bndry,isects[i].second,flux,srccomp,destcomp,numcomp,mult,tmp,op);
     }
 
     const Orientation hi(dir,Orientation::high);
@@ -1030,7 +575,7 @@ FluxRegister::CrseInit (const FArrayBox& flux,
 
     for (int i = 0, N = isects.size(); i < N; i++)
     {
-        DoIt(hi,isects[i].first,bndry,isects[i].second,flux,srccomp,destcomp,numcomp,mult,op);
+        DoIt(hi,isects[i].first,bndry,isects[i].second,flux,srccomp,destcomp,numcomp,mult,tmp,op);
     }
 }
 
@@ -1046,28 +591,9 @@ FluxRegister::CrseInitFinish (FrOp op)
     const int MyProc = ParallelDescriptor::MyProc();
     const int NProcs = ParallelDescriptor::NProcs();
 
-    const bool verbose = false;
-
-    if (verbose)
-    {
-        long count = 0;
-
-        for (int i = 0, N = CIFabs.size(); i < N; i++)
-        {
-            count += CIFabs[i]->box().numPts()*CIFabs[i]->nComp()*sizeof(Real);
-        }
-
-        const int IOProc = ParallelDescriptor::IOProcessorNumber();
-
-        ParallelDescriptor::ReduceLongMax(count,IOProc);
-
-        if (ParallelDescriptor::IOProcessor())
-            std::cout << "FluxRegister::CrseInitFinish(): HWM = " << count << std::endl;
-    }
-
     BL_ASSERT(CITags.size() == CIFabs.size());
 
-    if (CIMsgs.size() == 0)
+    if (CIMsgs.empty())
         CIMsgs.resize(ParallelDescriptor::NProcs(),0);
 
     BL_ASSERT(CIMsgs[MyProc] == 0);
@@ -1234,10 +760,11 @@ FluxRegister::CrseInitFinish (FrOp op)
 
     BoxLib::The_Arena()->free(recvbuf);
 
-    CIFabs.erase(CIFabs.begin(), CIFabs.end());
-    CITags.erase(CITags.begin(), CITags.end());
+    CIFabs.clear();
+    CITags.clear();
 
-    for (int i = 0; i < NProcs; i++) CIMsgs[i] = 0;
+    for (int i = 0; i < NProcs; i++)
+        CIMsgs[i] = 0;
 #endif /*BL_USE_MPI*/
 }
 

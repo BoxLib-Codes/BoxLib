@@ -87,11 +87,11 @@ class DistributionMapping
     //
     // Length of the underlying processor map.
     //
-    int size () const;
+    int size () const { return m_ref->m_pmap.size(); }
     //
     // Equivalent to ProcessorMap()[index].
     //
-    int operator[] (int index) const;
+    int operator[] (int index) const { return m_ref->m_pmap[index]; }
     //
     // Set/get the distribution strategy.
     //
@@ -144,7 +144,8 @@ class DistributionMapping
 
     static void Finalize ();
 
-    static bool SameRefs (const DistributionMapping& lhs, const DistributionMapping& rhs) { return lhs.m_ref == rhs.m_ref; }
+    static bool SameRefs (const DistributionMapping& lhs,
+                          const DistributionMapping& rhs) { return lhs.m_ref == rhs.m_ref; }
 
 private:
     //
@@ -232,20 +233,6 @@ private:
     //
     static std::map< int,LnClassPtr<Ref> > m_Cache;
 };
-
-inline
-int
-DistributionMapping::size () const
-{
-    return m_ref->m_pmap.size();
-}
-
-inline
-int
-DistributionMapping::operator[] (int index) const
-{
-    return m_ref->m_pmap[index];
-}
 
 //
 // Our output operator.

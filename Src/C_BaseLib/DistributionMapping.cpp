@@ -160,6 +160,8 @@ DistributionMapping::Finalize ()
 {
     initialized = false;
 
+    DistributionMapping::FlushCache();
+
     DistributionMapping::m_BuildMap = 0;
 
     DistributionMapping::m_Cache.clear();
@@ -1073,15 +1075,15 @@ DistributionMapping::SFCProcessorMap (const BoxArray&          boxes,
 void
 DistributionMapping::CacheStats (std::ostream& os)
 {
-    if (verbose && ParallelDescriptor::IOProcessor() && m_Cache.size())
+    if (ParallelDescriptor::IOProcessor() && m_Cache.size())
     {
         os << "DistributionMapping::m_Cache.size() = "
            << m_Cache.size()
            << " [ (refs,size): ";
 
-        std::map< int,LnClassPtr<Ref> >::const_iterator it;
-
-        for (it = m_Cache.begin(); it != m_Cache.end(); ++it)
+        for (std::map< int,LnClassPtr<Ref> >::const_iterator it = m_Cache.begin();
+             it != m_Cache.end();
+             ++it)
         {
             os << '(' << it->second.linkCount() << ',' << it->second->m_pmap.size()-1 << ") ";
         }

@@ -54,43 +54,46 @@ public:
     //
     // Returns the problem domain.
     //
-    static const RealBox& ProbDomain ();
+    static const RealBox& ProbDomain () { return prob_domain; }
     //
     // Sets the problem domain.
     //
-    static void ProbDomain (const RealBox& rb);
+    static void ProbDomain (const RealBox& rb) { prob_domain = rb; }
     //
     // Returns the lo end of the problem domain in each dimension.
     //
-    static const Real* ProbLo ();
+    static const Real* ProbLo ()  { return prob_domain.lo(); }
     //
     // Returns the hi end of the problem domain in each dimension.
     //
-    static const Real* ProbHi ();
+    static const Real* ProbHi () { return prob_domain.hi(); }
     //
     // Returns the lo end of the problem domain in specified direction.
     //
-    static Real ProbLo (int dir);
+    static Real ProbLo (int dir) { return prob_domain.lo(dir); }
     //
     // Returns the hi end of the problem domain in specified direction.
     //
-    static Real ProbHi (int dir);
+    static Real ProbHi (int dir) { return prob_domain.hi(dir); }
     //
     // Returns the overall size of the domain by multiplying the ProbLength's together
     //
-    static Real ProbSize ();
+    static Real ProbSize ()
+    {
+        return D_TERM(prob_domain.length(0),*prob_domain.length(1),*prob_domain.length(2));
+    }
     //
     // Returns length of problem domain in specified dimension.
     //
-    static Real ProbLength (int dir);
+    static Real ProbLength (int dir) { return prob_domain.length(dir); }
     //
     // Returns our rectangular domain.
     //
-    const Box& Domain () const;
+    const Box& Domain () const { return domain; }
     //
     // Sets our rectangular domain.
     //
-    void Domain (const Box& bx);
+    void Domain (const Box& bx) { domain = bx; }
     //
     // Define a multifab of areas and volumes with given grow factor.
     //
@@ -127,19 +130,25 @@ public:
     //
     // Is the domain periodic in the specified direction?
     //
-    static bool isPeriodic (int dir);
+    static bool isPeriodic (int dir) { return is_periodic[dir] != 0; }
     //
     // Is domain periodic in any direction?
     //
-    static bool isAnyPeriodic ();
+    static bool isAnyPeriodic ()
+    {
+        return D_TERM(isPeriodic(0),||isPeriodic(1),||isPeriodic(2));
+    }
     //
     // Is domain periodic in all directions?
     //
-    static bool isAllPeriodic ();
+    static bool isAllPeriodic ()
+    {
+        return D_TERM(isPeriodic(0),&&isPeriodic(1),&&isPeriodic(2));
+    }
     //
     // What's period in specified direction?
     //
-    int period (int dir) const;
+    int period (int dir) const { BL_ASSERT(is_periodic[dir]); return domain.length(dir); }
     //
     // Compute Array of shifts which will translate src so that it will
     // intersect target with non-zero intersection.  the array will be
@@ -194,29 +203,6 @@ public:
     //
     static int PIRMCacheSize ();
     //
-    // Used by SumPeriodicBoundary().
-    //
-    struct PIRec
-    {
-        PIRec ()
-            :
-            mfid(-1), srcId(-1) {}
-
-        PIRec (int _mfid, int _srcId, const Box& _srcBox, const Box& _dstBox)
-            :
-            mfid(_mfid), srcId(_srcId), srcBox(_srcBox), dstBox(_dstBox) {}
-
-        int       mfid;
-        int       srcId;
-        Box       srcBox;
-        Box       dstBox;
-        FillBoxId fbid;
-    };
-    //
-    // A handy typedef.
-    //
-    typedef std::vector<PIRec> PIRMVector;
-    //
     // Used by FillPeriodicBoundary().
     //
     struct FPBComTag
@@ -242,7 +228,6 @@ public:
         ~FPB ();
 
         bool operator== (const FPB& rhs) const;
-
         bool operator!= (const FPB& rhs) const { return !operator==(rhs); }
 
         int bytes () const;
@@ -262,16 +247,16 @@ public:
         //
         // The cache of local and send/recv info per FabArray::copy().
         //
-        FPBComTagsContainer      m_LocTags;
-        MapOfFPBComTagContainers m_SndTags;
-        MapOfFPBComTagContainers m_RcvTags;
-        std::map<int,int>        m_SndVols;
-        std::map<int,int>        m_RcvVols;
+        FPBComTagsContainer*      m_LocTags;
+        MapOfFPBComTagContainers* m_SndTags;
+        MapOfFPBComTagContainers* m_RcvTags;
+        std::map<int,int>*        m_SndVols;
+        std::map<int,int>*        m_RcvVols;
     };
     //
     // Some useful typedefs for the FPB cache.
     //
-    typedef std::multimap<int,Geometry::FPB*> FPBMMap;
+    typedef std::multimap<int,Geometry::FPB> FPBMMap;
 
     typedef FPBMMap::iterator FPBMMapIter;
 
@@ -279,10 +264,11 @@ public:
 
     static int fpb_cache_max_size;
     //
-    // See if we're got an approprite FPB cached.
+    // See if we've got an approprite FPB cached.
     //
-    static Geometry::FPBMMapIter GetFPB (const Geometry& geom, const Geometry::FPB& fpb);
-
+    static Geometry::FPBMMapIter GetFPB (const Geometry&      geom,
+                                         const Geometry::FPB& fpb,
+                                         const FabArrayBase&  mf);
 private:
     //
     // Helper functions.
@@ -308,124 +294,6 @@ std::ostream& operator<< (std::ostream&, const Geometry&);
 //
 std::istream& operator>> (std::istream&, Geometry&);
 
-inline
-const RealBox&
-Geometry::ProbDomain ()
-{
-    return prob_domain;
-}
-
-inline
-void
-Geometry::ProbDomain (const RealBox& rb)
-{
-    prob_domain = rb;
-}
-
-inline
-const Box&
-Geometry::Domain () const
-{
-    return domain;
-}
-
-inline
-void
-Geometry::Domain (const Box& bx)
-{
-    domain = bx;
-}
-
-inline
-bool
-Geometry::isPeriodic (int dir)
-{
-    return is_periodic[dir] != 0;
-}
-
-inline
-bool
-Geometry::isAnyPeriodic ()
-{
-    return isPeriodic(0)
-#if BL_SPACEDIM>1
-        ||   isPeriodic(1)
-#endif
-#if BL_SPACEDIM>2
-        ||   isPeriodic(2)
-#endif
-        ;
-}
-
-inline
-bool
-Geometry::isAllPeriodic ()
-{
-#if BL_SPACEDIM==1
-    return isPeriodic(0);
-#elif BL_SPACEDIM==2
-    return (isPeriodic(0) && isPeriodic(1));
-#elif BL_SPACEDIM==3
-    return (isPeriodic(0) && isPeriodic(1) && isPeriodic(2));
-#endif
-}
-
-inline
-int
-Geometry::period (int dir) const
-{
-    BL_ASSERT(is_periodic[dir]);
-    return domain.length(dir);
-}
-
-inline
-const Real*
-Geometry::ProbLo ()
-{
-    return prob_domain.lo();
-}
-
-inline
-const Real*
-Geometry::ProbHi ()
-{
-    return prob_domain.hi();
-}
-
-inline
-Real
-Geometry::ProbLo (int dir)
-{
-    return prob_domain.lo(dir);
-}
-
-inline
-Real
-Geometry::ProbHi (int dir)
-{
-    return prob_domain.hi(dir);
-}
-
-inline
-Real
-Geometry::ProbLength (int dir)
-{
-    return prob_domain.length(dir);
-}
-
-inline
-Real
-Geometry::ProbSize ()
-{
-#if (BL_SPACEDIM == 1) 
-    return prob_domain.length(0);
-#elif (BL_SPACEDIM == 2) 
-    return prob_domain.length(0)*prob_domain.length(1);
-#elif (BL_SPACEDIM == 3) 
-    return prob_domain.length(0)*prob_domain.length(1)*prob_domain.length(2);
-#endif
-}
-
 namespace BoxLib
 {
     template <class FAB>
@@ -442,9 +310,6 @@ namespace BoxLib
         for (int n = 0; n < BL_SPACEDIM; n++)
             if (mf.boxArray()[0].ixType()[n] == IndexType::NODE)
                 TheDomain.surroundingNodes(n);
-
-        if (TheDomain.contains(BoxLib::grow(mf.boxArray().minimalBox(), mf.nGrow()))) return;
-
 #ifndef NDEBUG
         //
         // Don't let folks ask for more grow cells than they have valid region.
@@ -455,29 +320,29 @@ namespace BoxLib
 #endif
         const Geometry::FPB fpb(mf.boxArray(),mf.DistributionMap(),geom.Domain(),mf.nGrow(),corners);
 
-        Geometry::FPBMMapIter cache_it = Geometry::GetFPB(geom,fpb);
+        Geometry::FPBMMapIter cache_it = Geometry::GetFPB(geom,fpb,mf);
 
-        if (cache_it != Geometry::m_FPBCache.end())
+        BL_ASSERT(cache_it != Geometry::m_FPBCache.end());
+
+        const Geometry::FPB& TheFPB = cache_it->second;
+
+        if (ParallelDescriptor::NProcs() == 1)
         {
-            const Geometry::FPB& TheFPB = *cache_it->second;
             //
-            // Do local work.
+            // There can only be local work to do.
             //
-            for (Geometry::FPB::FPBComTagsContainer::const_iterator it = TheFPB.m_LocTags.begin(),
-                     End = TheFPB.m_LocTags.end();
+            for (Geometry::FPB::FPBComTagsContainer::const_iterator it = TheFPB.m_LocTags->begin(),
+                     End = TheFPB.m_LocTags->end();
                  it != End;
                  ++it)
             {
                 const Geometry::FPBComTag& tag = *it;
 
-                BL_ASSERT(mf.DistributionMap()[tag.dstIndex] == ParallelDescriptor::MyProc());
-                BL_ASSERT(mf.DistributionMap()[tag.srcIndex] == ParallelDescriptor::MyProc());
-
                 mf[tag.dstIndex].copy(mf[tag.srcIndex],tag.sbox,scomp,tag.dbox,scomp,ncomp);
             }
+
+            return;
         }
-    
-        if (ParallelDescriptor::NProcs() == 1) return;
 
 #ifdef BL_USE_MPI
         //
@@ -486,13 +351,11 @@ namespace BoxLib
         //
         const int SeqNum = ParallelDescriptor::SeqNum();
 
-        if (cache_it == Geometry::m_FPBCache.end())
+        if (TheFPB.m_LocTags->empty() && TheFPB.m_RcvTags->empty() && TheFPB.m_SndTags->empty())
             //
-            // No parallel work to do.
+            // No work to do.
             //
             return;
-
-        const Geometry::FPB& TheFPB = *cache_it->second;
 
         typedef typename FAB::value_type value_type;
 
@@ -503,58 +366,22 @@ namespace BoxLib
         //
         // Post rcvs. Allocate one chunk of space to hold'm all.
         //
-        int total_rcvs_volume = 0;
+        value_type* the_recv_data = 0;
 
-        for (std::map<int,int>::const_iterator it = TheFPB.m_RcvVols.begin(),
-                 End = TheFPB.m_RcvVols.end();
-             it != End;
-             ++it)
-        {
-            total_rcvs_volume += it->second;
-        }
-
-        total_rcvs_volume *= ncomp;
-
-        BL_ASSERT((total_rcvs_volume*sizeof(value_type)) < std::numeric_limits<int>::max());
-
-        value_type* the_recv_data = static_cast<value_type*>(BoxLib::The_Arena()->alloc(total_rcvs_volume*sizeof(value_type)));
-
-        int offset = 0;
-
-        std::map<int,int>::const_iterator vol_it;
-
-        for (Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_RcvTags.begin(),
-                 m_End = TheFPB.m_RcvTags.end();
-             m_it != m_End;
-             ++m_it)
-        {
-            vol_it = TheFPB.m_RcvVols.find(m_it->first);
-
-            BL_ASSERT(vol_it != TheFPB.m_RcvVols.end());
-
-            const int N = vol_it->second*ncomp;
-
-            BL_ASSERT(N < std::numeric_limits<int>::max());
-
-            recv_data.push_back(&the_recv_data[offset]);
-            recv_from.push_back(m_it->first);
-            recv_reqs.push_back(ParallelDescriptor::Arecv(recv_data.back(),N,m_it->first,SeqNum).req());
-
-            offset += N;
-        }
+        FabArrayBase::PostRcvs(*TheFPB.m_RcvTags,*TheFPB.m_RcvVols,the_recv_data,recv_data,recv_from,recv_reqs,ncomp,SeqNum);
         //
         // Send the FAB data.
         //
         FAB fab;
 
-        for (Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_SndTags.begin(),
-                 m_End = TheFPB.m_SndTags.end();
+        for (Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_SndTags->begin(),
+                 m_End = TheFPB.m_SndTags->end();
              m_it != m_End;
              ++m_it)
         {
-            vol_it = TheFPB.m_SndVols.find(m_it->first);
+            std::map<int,int>::const_iterator vol_it = TheFPB.m_SndVols->find(m_it->first);
 
-            BL_ASSERT(vol_it != TheFPB.m_SndVols.end());
+            BL_ASSERT(vol_it != TheFPB.m_SndVols->end());
 
             const int N = vol_it->second*ncomp;
 
@@ -569,10 +396,8 @@ namespace BoxLib
                  ++it)
             {
                 const Box& bx = it->sbox;
-                fab.resize(bx, ncomp);
-                fab.copy(mf[it->srcIndex],bx,scomp,bx,0,ncomp);
+                mf[it->srcIndex].copyToMem(bx,scomp,ncomp,dptr);
                 const int Cnt = bx.numPts()*ncomp;
-                memcpy(dptr, fab.dataPtr(), Cnt*sizeof(value_type));
                 dptr += Cnt;
             }
             BL_ASSERT(data+N == dptr);
@@ -589,11 +414,24 @@ namespace BoxLib
             }
         }
         //
+        // Do the local work.  Hope for a bit of communication/computation overlap.
+        //
+        for (Geometry::FPB::FPBComTagsContainer::const_iterator it = TheFPB.m_LocTags->begin(),
+                 End = TheFPB.m_LocTags->end();
+             it != End;
+             ++it)
+        {
+            const Geometry::FPBComTag& tag = *it;
+
+            BL_ASSERT(mf.DistributionMap()[tag.dstIndex] == ParallelDescriptor::MyProc());
+            BL_ASSERT(mf.DistributionMap()[tag.srcIndex] == ParallelDescriptor::MyProc());
+
+            mf[tag.dstIndex].copy(mf[tag.srcIndex],tag.sbox,scomp,tag.dbox,scomp,ncomp);
+        }
+        //
         // Now receive and unpack FAB data as it becomes available.
         //
-        Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it;
-
-        const int N_rcvs = TheFPB.m_RcvTags.size();
+        const int N_rcvs = TheFPB.m_RcvTags->size();
 
         index.resize(N_rcvs);
         stats.resize(N_rcvs);
@@ -608,20 +446,18 @@ namespace BoxLib
 
                 BL_ASSERT(dptr != 0);
 
-                m_it = TheFPB.m_RcvTags.find(recv_from[index[k]]);
+                Geometry::FPB::MapOfFPBComTagContainers::const_iterator m_it = TheFPB.m_RcvTags->find(recv_from[index[k]]);
 
-                BL_ASSERT(m_it != TheFPB.m_RcvTags.end());
+                BL_ASSERT(m_it != TheFPB.m_RcvTags->end());
 
                 for (Geometry::FPB::FPBComTagsContainer::const_iterator it = m_it->second.begin(),
                          End = m_it->second.end();
                      it != End;
                      ++it)
                 {
-                    const Box& bx = it->dbox;
-                    fab.resize(bx,ncomp);
-                    const int Cnt = bx.numPts()*ncomp;
-                    memcpy(fab.dataPtr(), dptr, Cnt*sizeof(value_type));
-                    mf[it->dstIndex].copy(fab,bx,0,bx,scomp,ncomp);
+                    const Box& bx  = it->dbox;
+                    const int  Cnt = bx.numPts()*ncomp;
+                    mf[it->dstIndex].copyFromMem(bx,scomp,ncomp,dptr);
                     dptr += Cnt;
                 }
             }
@@ -629,20 +465,8 @@ namespace BoxLib
 
         BoxLib::The_Arena()->free(the_recv_data);
 
-        if (FabArrayBase::do_async_sends && !TheFPB.m_SndTags.empty())
-        {
-            //
-            // Now grok the asynchronous send buffers & free up send buffer space.
-            //
-            const int N_snds = TheFPB.m_SndTags.size();
-
-            stats.resize(N_snds);
-
-            BL_MPI_REQUIRE( MPI_Waitall(N_snds, send_reqs.dataPtr(), stats.dataPtr()) );
-
-            for (int i = 0; i < N_snds; i++)
-                BoxLib::The_Arena()->free(send_data[i]);
-        }
+        if (FabArrayBase::do_async_sends && !TheFPB.m_SndTags->empty())
+            FabArrayBase::GrokAsyncSends(TheFPB.m_SndTags->size(),send_reqs,send_data,stats);
 
 #endif /*BL_USE_MPI*/
     }

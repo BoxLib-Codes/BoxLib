@@ -61,7 +61,7 @@ public:
     //
     // Deletes the space used by the old timestep data.
     //
-    void removeOldData ();
+    void removeOldData () { delete old_data; old_data = 0; }
     //
     // Reverts back to initial state.
     //
@@ -137,51 +137,52 @@ public:
     //
     // Returns the StateDescriptor.
     //
-    const StateDescriptor* descriptor () const;
+    const StateDescriptor* descriptor () const { return desc; }
     //
     // Returns the valid domain.
     //
-    const Box& getDomain () const;
+    const Box& getDomain () const { return domain; }
     //
     // Returns the BoxArray.
     //
-    const BoxArray& boxArray () const;
+    const BoxArray& boxArray () const { return grids; }
     //
     // Returns the current time.
     //
-    Real curTime () const;
+    Real curTime () const { return 0.5*(new_time.start + new_time.stop); }
     //
     // Returns the previous time.
     //
-    Real prevTime () const;
-    Real getNewStart() const;
-    Real getNewStop() const;
-    Real getOldStart() const;
-    Real getOldStop() const;
+    Real prevTime () const { return 0.5*(old_time.start + old_time.stop); }
+
+    Real getNewStart() const { return new_time.start; }
+    Real getNewStop() const { return new_time.stop; };
+    Real getOldStart() const { return old_time.start; };
+    Real getOldStop() const { return old_time.stop; };
     //
     // Returns the new data.
     //
-    MultiFab& newData ();
+    MultiFab& newData () { BL_ASSERT(new_data != 0); return *new_data; }
     //
     // Returns the new data.
     //
-    const MultiFab& newData () const;
+    const MultiFab& newData () const { BL_ASSERT(new_data != 0); return *new_data; }
     //
     // Returns the old data.
     //
-    MultiFab& oldData ();
+    MultiFab& oldData () { BL_ASSERT(old_data != 0); return *old_data; }
     //
     // Returns the old data.
     //
-    const MultiFab& oldData () const;
+    const MultiFab& oldData () const { BL_ASSERT(old_data != 0); return *old_data; }
     //
     // Returns the FAB of new data at grid index `i'.
     //
-    FArrayBox& newGrid (int i);
+    FArrayBox& newGrid (int i) { BL_ASSERT(new_data != 0); return (*new_data)[i]; }
     //
     // Returns the FAB of old data at grid index `i'.
     //
-    FArrayBox& oldGrid (int i);
+    FArrayBox& oldGrid (int i) { BL_ASSERT(old_data != 0); return (*old_data)[i]; }
     //
     // Returns boundary conditions of specified component on the specified grid.
     //
@@ -193,11 +194,11 @@ public:
     //
     // True if there is any old data available.
     //
-    bool hasOldData () const;
+    bool hasOldData () const { return old_data != 0; }
     //
     // True if there is any new data available.
     //
-    bool hasNewData () const;
+    bool hasNewData () const { return new_data != 0; }
 
 private:
 
@@ -235,138 +236,5 @@ private:
     //
     MultiFab* old_data;
 };
-
-inline
-void
-StateData::removeOldData ()
-{
-    delete old_data;
-    old_data = 0;
-}
-
-inline
-const StateDescriptor*
-StateData::descriptor () const
-{
-    return desc;
-}
-
-inline
-const Box&
-StateData::getDomain () const
-{
-    return domain;
-}
-
-inline
-const BoxArray&
-StateData::boxArray () const
-{
-    return grids;
-}
-
-inline
-Real
-StateData::curTime () const
-{
-    return 0.5*(new_time.start + new_time.stop);
-}
-
-inline
-Real
-StateData::prevTime () const
-{
-    return 0.5*(old_time.start + old_time.stop);
-}
-
-inline
-Real
-StateData::getNewStart () const
-{
-    return new_time.start;
-}
-
-inline
-Real
-StateData::getNewStop () const
-{
-    return new_time.stop;
-}
-
-inline
-Real
-StateData::getOldStart () const
-{
-    return old_time.start;
-}
-
-inline
-Real
-StateData::getOldStop () const
-{
-    return old_time.stop;
-}
-
-inline
-MultiFab&
-StateData::newData ()
-{
-    BL_ASSERT(new_data != 0);
-    return *new_data;
-}
-
-inline
-const MultiFab&
-StateData::newData () const
-{
-    BL_ASSERT(new_data != 0);
-    return *new_data;
-}
-
-inline
-MultiFab&
-StateData::oldData ()
-{
-    BL_ASSERT(old_data != 0);
-    return *old_data;
-}
-
-inline
-const MultiFab&
-StateData::oldData () const
-{
-    BL_ASSERT(old_data != 0);
-    return *old_data;
-}
-
-inline
-FArrayBox&
-StateData::newGrid (int i)
-{
-    BL_ASSERT(new_data != 0);
-    return (*new_data)[i];
-}
-
-inline
-FArrayBox&
-StateData::oldGrid (int i)
-{
-    BL_ASSERT(old_data != 0);
-    return (*old_data)[i];
-}
-
-inline
-bool
-StateData::hasOldData () const
-{
-    return old_data != 0;
-}
-
-inline
-bool
-StateData::hasNewData () const
-{
-    return new_data != 0;
-}
 
 #endif /*_StateData_H_*/

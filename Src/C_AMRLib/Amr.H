@@ -13,6 +13,7 @@
 #include <PTree.H>
 #include <Tree.H>
 #include <ParmParse.H>
+
 #ifdef USE_STATIONDATA
 #include <StationData.H>
 #endif
@@ -52,48 +53,54 @@ public:
     //
     // return blocking_factor
     //
-    int blockingFactor (int lev) const;
+    int blockingFactor (int lev) const { return blocking_factor[lev]; }
     //
     // Largest allowable grid.
     //
-    int maxGridSize (int lev) const;
+    int maxGridSize (int lev) const { return max_grid_size[lev]; }
     //
     // Subcycle in time?
     //
-    int subCycle () const;
+    int subCycle () const { return sub_cycle; }
     //
     // How are we subcycling?
     //
-    std::string subcyclingMode() const;
+    std::string subcyclingMode() const { return subcycling_mode; }
     //
     // Maximum allowable level.
     //
-    int maxLevel () const;
+    int maxLevel () const { return max_level; }
     //
     // Finest currently existing level.
     //
-    int finestLevel () const;
+    int finestLevel () const { return finest_level; }
     //
     // Physical time.
     //
-    Real cumTime () const;
+    Real cumTime () const { return cumtime; }
+    void setCumTime (Real t) {cumtime = t;}
+    //
+    // Physical time this simulation started
+    //
+    Real startTime () const { return start_time; }
+    void setStartTime (Real t) {start_time = t;}
     //
     // Time step at specified level.
     // Only allowed when multi_region = 0
     //
-    Real dtLevel (int level) const;
+    Real dtLevel (int level) const { return dt_level[level]; }
     //
     // Tree of timesteps at all regions.
     //
-    const Tree<Real>& dtRegion ();
+    const Tree<Real>& dtRegion (); { return dt_region; }
     //
     // Timestep at a specific region.
     //
-    Real dtRegion(ID id) const;
+    Real dtRegion(ID id) const; { return dt_region.getData(id); }
     //
     // Geometry object.
     //
-    const Geometry& Geom (int level) const;
+    const Geometry& Geom (int level) const { return geom[level]; }
     //
     // Number of subcycled time steps.
     // Only allowed when multi_region = 0
@@ -102,11 +109,11 @@ public:
     //
     // Number of subcycled time steps.
     //
-    int nCycle (ID region) const;
+    int nCycle (ID region) const; { return n_cycle.getData(region); }
     //
     // Refinement ratio.
     //
-    IntVect refRatio (int coarse_level) const;
+    IntVect refRatio (int _level) const { return ref_ratio[_level]; }
     //
     // Maximum refinement ratio in any direction.
     //
@@ -114,12 +121,12 @@ public:
     //
     // Refinement ratios between all levels.
     //
-    const Array<IntVect>& refRatio () const;
+    const Array<IntVect>& refRatio () const { return ref_ratio; }
     //
     // Number of time steps at specified level.
     // Only allowed when multi_region = 0
     //
-    int levelSteps (int lev) const;
+    int levelSteps (int lev) const { return level_steps[lev]; }
     //
     // Number of time steps at specified region.
     //
@@ -128,7 +135,7 @@ public:
     // Which step are we at for the specified level?
     // Only allowed when multi_region = 0
     //
-    int levelCount (int lev) const;
+    int levelCount (int lev) const { return level_count[lev]; }
     //
     // Whether to regrid right after restart
     //
@@ -136,29 +143,29 @@ public:
     //
     // Interval between regridding.
     //
-    int regridInt (int lev) const;
+    int regridInt (int lev) const { return regrid_int[lev]; }
     //
     // Number of time steps between checkpoint files.
     //
-    int checkInt () const;
+    int checkInt () const { return check_int; }
     //
     // Time between checkpoint files.
     //
-    Real checkPer() const;
+    Real checkPer() const { return check_per; }
     //
     // Number of time steps between plot files.
     //
-    int plotInt () const;
+    int plotInt () const { return plot_int; }
     //
     // Time between plot files.
     //
-    Real plotPer () const;
+    Real plotPer () const { return plot_per; }
     //
     // The names of state variables to output in the
     // plotfile.  They can be set using the amr.plot_vars variable
     // in a ParmParse inputs file. 
     //
-    static const std::list<std::string>& statePlotVars ();
+    static const std::list<std::string>& statePlotVars () { return state_plot_vars; }
     //
     // Is the string the name of a variable in state_plot_vars?
     //
@@ -189,7 +196,7 @@ public:
     // plotfile.  They can be set using the amr.derive_plot_vars 
     // variable in a ParmParse inputs file.
     //
-    static const std::list<std::string>& derivePlotVars ();
+    static const std::list<std::string>& derivePlotVars () { return derive_plot_vars; }
     //
     // Is the string the name of a variable in derive_plot_vars?
     //
@@ -217,15 +224,15 @@ public:
     //
     // Number of buffer cells in error estimator.
     //
-    int nErrorBuf (int lev) const;
+    int nErrorBuf (int lev) const { return n_error_buf[lev]; }
     //
     // Minimum allowable grid efficiency.
     //
-    Real gridEff () const;
+    Real gridEff () const { return grid_eff; }
     //
     // Number of cells to define proper nesting 
     //
-    int nProper () const;
+    int nProper () const { return n_proper; }
     //
     // List of grids in various portions of the domain.
     //
@@ -303,7 +310,7 @@ public:
     //
     // Name of the restart file.
     //
-    const std::string& theRestartFile () const;
+    const std::string& theRestartFile () const { return restart_file; }
     //
     // The ith datalog file.  Do with it what you want.
     //
@@ -312,7 +319,6 @@ public:
     // How many datalogs have been opened
     //
     int NumDataLogs ();
-    
     //
     // Compute the optimal subcycling pattern.
     // This assumes that anything less than cycle_max[i] is a valid
@@ -323,9 +329,9 @@ public:
     // This method is essentially static apart from the verbosity check.
     //
     Real computeOptimalSubcycling(Tree<int>& best,
-                                         Tree<Real> dt_max, 
-                                         Tree<Real>& est_work, 
-                                         Tree<int>& cycle_max);
+                                  Tree<Real> dt_max, 
+                                  Tree<Real>& est_work, 
+                                  Tree<int>& cycle_max);
              
     //
     // Compute and set a new subcycling pattern for the subtree of base_region.
@@ -378,16 +384,23 @@ public:
     
     void FindMaxDt(Real& dt_0, Tree<int> n_cycle, Tree<Real> dt_level);
                                          
+    //
+    // Write the plot file to be used for visualization.
+    //
+    void writePlotFile ();
+    int stepOfLastPlotFile () const {return last_plotfile;}
+    //
+    // Write current state into a chk* file.
+    //
+    void checkPoint ();
+    int stepOfLastCheckPoint () const {return last_checkpoint;}
+
 protected:
     //
     // Used by grid_places().
     //
     static void ProjPeriodic (BoxList&        bd,
                               const Geometry& geom);
-    //
-    // Write the plot file to be used for visualization.
-    //
-    void writePlotFile (const std::string& root, int num);
     //
     // Initialize grid hierarchy.
     //
@@ -400,10 +413,6 @@ protected:
     // Check for valid input.
     //
     void checkInput ();
-    //
-    // Write current state into a chk* file.
-    //
-    void checkPoint ();
     //
     // Restart from a checkpoint file.
     //
@@ -472,9 +481,10 @@ protected:
     //
     // The following methods contain the parmParse code for their section.
     //
-    void initSubcycle(ParmParse * pp);
-    void initPltAndChk(ParmParse * pp);
-    void initRegions(ParmParse * pp);
+    void initSubcycle();
+    void initPltAndChk();
+    void initRegions();
+
     //
     // The data ...
     //
@@ -485,6 +495,8 @@ protected:
     PTree<AmrRegion> amr_regions;
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
+    Real             start_time;   // Physical time this simulation started.
+
     Tree<Real>       dt_region;     // Timestep for this region.
     ///region steps is unreliable right now--I'm not sure what use it is
     Tree<int>        region_steps;  // Number of time steps at this level.
@@ -493,6 +505,7 @@ protected:
     Array<int>       manual_n_cycle;
     std::string      subcycling_mode; //Type of subcycling to use.
     Tree<Real>       dt_reg_min; 
+
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?
     Array<int>       regrid_int;      // Interval between regridding.
     Array<int>       n_error_buf;     // Buffer cells around each tagged cell.
@@ -585,20 +598,6 @@ const Array<IntVect>&
 Amr::refRatio () const
 {
     return ref_ratio;
-}
-
-inline
-const Tree<Real>&
-Amr::dtRegion() 
-{
-    return dt_region;
-}
-
-inline
-Real
-Amr::dtRegion(ID id) const
-{
-    return dt_region.getData(id);
 }
 
 inline

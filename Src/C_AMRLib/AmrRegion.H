@@ -218,27 +218,27 @@ public:
     //
     // Returns this AmrRegion.
     //
-    int Level () const;
+    int Level () const { return level; }
     //
     // List of grids at this level.
     //
-    const BoxArray& boxArray () const;
+    const BoxArray& boxArray () const { return grids; }
     //
     // Number of grids at this level.
     //
-    int numGrids () const;
+    int numGrids () const { return grids.size(); }
     //
     // Returns the indices defining physical domain.
     //
-    const Box& Domain () const;
+    const Box& Domain () const { return geom.Domain(); }
     //
     // Timestep n at this level.
     //
-    int nStep () const;
+    int nStep () const { return master->regionSteps(m_id); }
     //
     // Returns the geometry object.
     //
-    const Geometry& Geom () const;
+    const Geometry& Geom () const { return geom; }
     //
     // Returns number of cells on level.
     //
@@ -291,23 +291,23 @@ public:
     //
     // State data object.
     //
-    StateData& get_state_data (int state_indx);
+    StateData& get_state_data (int state_indx) { return state[state_indx]; }
     //
     // State data at old time.
     //
-    MultiFab& get_old_data (int state_indx);
+    MultiFab& get_old_data (int state_indx) { return state[state_indx].oldData(); }
     //
     // State data at old time.
     //
-    const MultiFab& get_old_data (int state_indx) const;
+    const MultiFab& get_old_data (int state_indx) const { return state[state_indx].oldData(); }
     //
     // State data at new time.
     //
-    MultiFab& get_new_data (int state_indx);
+    MultiFab& get_new_data (int state_indx) { return state[state_indx].newData(); }
     //
     // State data at new time.
     //
-    const MultiFab& get_new_data (int state_indx) const;
+    const MultiFab& get_new_data (int state_indx) const { return state[state_indx].newData(); }
     //
     // Returns the distribution map for this region's stateData.
     //
@@ -315,11 +315,12 @@ public:
     //
     // Returns list of Descriptors.
     //
-    static const DescriptorList& get_desc_lst ();
+    static const DescriptorList& get_desc_lst () { return desc_lst; }
     //
     // Returns list of derived variables.
     //
     static DeriveList& get_derive_lst ();
+
 #ifdef USE_SLABSTAT
     //
     // Returns list of slab stats.
@@ -389,7 +390,8 @@ public:
     //
     ID getID() const;
 
-    AmrRegion* Parent();
+    AmrRegion* Parent() { return parent_region; };
+
 protected:
     //
     // The constructors -- for derived classes.
@@ -548,94 +550,10 @@ private:
 };
 
 inline
-int
-AmrRegion::Level () const
-{
-    return level;
-}
-
-inline
-const BoxArray&
-AmrRegion::boxArray () const
-{
-    return grids;
-}
-
-inline
-int
-AmrRegion::numGrids () const
-{
-    return grids.size();
-}
-
-inline
-const Box&
-AmrRegion::Domain () const
-{
-    return geom.Domain();
-}
-
-inline
-int
-AmrRegion::nStep () const
-{
-    return master->regionSteps(m_id);
-}
-
-inline
-const Geometry&
-AmrRegion::Geom () const
-{
-    return geom;
-}
-
-inline
-StateData&
-AmrRegion::get_state_data (int state_indx)
-{
-    return state[state_indx];
-}
-
-inline
-MultiFab&
-AmrRegion::get_old_data (int state_indx)
-{
-    return state[state_indx].oldData();
-}
-
-inline
-const MultiFab&
-AmrRegion::get_old_data (int state_indx) const
-{
-    return state[state_indx].oldData();
-}
-
-inline
-MultiFab&
-AmrRegion::get_new_data (int state_indx)
-{
-    return state[state_indx].newData();
-}
-
-inline
 const DistributionMapping& 
 AmrRegion::get_distribution_map(int state_indx) const
 {
     return state[state_indx].newData().DistributionMap();
-}
-
-inline
-const MultiFab&
-AmrRegion::get_new_data (int state_indx) const
-{
-    return state[state_indx].newData();
-}
-
-inline
-const DescriptorList&
-AmrRegion::get_desc_lst ()
-{
-    return desc_lst;
 }
 
 inline
@@ -655,13 +573,5 @@ AmrRegion::get_ancestors()
 {
     return ancestor_regions;
 }
-
-inline
-AmrRegion*
-AmrRegion::Parent()
-{
-    return parent_region;
-}
-
 
 #endif /*_AmrRegion_H_*/
