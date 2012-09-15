@@ -791,7 +791,9 @@ Amr::writePlotFile ()
 
     Real dPlotFileTime0 = ParallelDescriptor::second();
 
-    const std::string pltfile = BoxLib::Concatenate(plot_file_root,level_steps[0],file_name_digits);
+
+    const std::string pltfile = BoxLib::Concatenate(plot_file_root,
+                                                    region_steps.getRoot(),file_name_digits);
 
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "PLOTFILE: file = " << pltfile << '\n';
@@ -854,7 +856,7 @@ Amr::writePlotFile ()
             BoxLib::Error("Amr::writePlotFile() failed");
     }
 
-    last_plotfile = level_steps[0];
+    last_plotfile = region_steps.getRoot();
 
     if (verbose > 0)
     {
@@ -1531,7 +1533,7 @@ Amr::checkPoint ()
             BoxLib::Error("Amr::checkpoint() failed");
     }
 
-    last_checkpoint = level_steps[0];
+    last_checkpoint = region_steps.getRoot();
 
 #ifdef USE_SLABSTAT
     //
@@ -3099,9 +3101,9 @@ Amr::initRegions()
 {
     ParmParse pp("amr");
     multi_region = false;
-    pp->query("multi_region", multi_region);
+    pp.query("multi_region", multi_region);
     region_creation = "FOF";
-    pp->query("region_creation", region_creation);
+    pp.query("region_creation", region_creation);
     if (region_creation != "FOF" && region_creation != "Single" && region_creation != "Application" )
         BoxLib::Error("Unrecognized region creation mode\n");
     if (!multi_region)
