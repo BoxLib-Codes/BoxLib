@@ -92,11 +92,11 @@ public:
     //
     // Tree of timesteps at all regions.
     //
-    const Tree<Real>& dtRegion (); { return dt_region; }
+    const Tree<Real>& dtRegion () { return dt_region; }
     //
     // Timestep at a specific region.
     //
-    Real dtRegion(ID id) const; { return dt_region.getData(id); }
+    Real dtRegion(ID id) const { return dt_region.getData(id); }
     //
     // Geometry object.
     //
@@ -109,7 +109,7 @@ public:
     //
     // Number of subcycled time steps.
     //
-    int nCycle (ID region) const; { return n_cycle.getData(region); }
+    int nCycle (ID region) const { return n_cycle.getData(region); }
     //
     // Refinement ratio.
     //
