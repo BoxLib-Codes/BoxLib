@@ -126,7 +126,7 @@ public:
     // Number of time steps at specified level.
     // Only allowed when multi_region = 0
     //
-    int levelSteps (int lev) const { return level_steps[lev]; }
+    int levelSteps (int lev) const;
     //
     // Number of time steps at specified region.
     //
@@ -135,7 +135,7 @@ public:
     // Which step are we at for the specified level?
     // Only allowed when multi_region = 0
     //
-    int levelCount (int lev) const { return level_count[lev]; }
+    int levelCount (int lev) const;
     //
     // Whether to regrid right after restart
     //
@@ -360,12 +360,12 @@ public:
     //
     // Returns a reference to the coarse region of the simulation.
     //
-    AmrRegion& coarseRegion();
+    AmrRegion& coarseRegion() { return *(amr_regions.getRoot()); }
     
     //
     // Return a reference to the specified region.
     //
-    AmrRegion& getRegion(const ID id);
+    AmrRegion& getRegion(const ID id) { return amr_regions.getData(id); }
     
     //
     // Locate the region that contains the specified cell. Aborts on failure.
@@ -557,167 +557,6 @@ private:
     Amr (const Amr& rhs);
     Amr& operator= (const Amr& rhs);
 };
-
-inline
-int
-Amr::blockingFactor (int lev) const
-{
-    return blocking_factor[lev];
-}
-
-inline
-int
-Amr::maxGridSize (int lev) const
-{
-    return max_grid_size[lev];
-}
-
-inline
-int
-Amr::maxLevel () const
-{
-    return max_level;
-}
-
-inline
-int
-Amr::finestLevel () const
-{
-    return finest_level;
-}
-
-inline
-IntVect
-Amr::refRatio (int level) const
-{
-    return ref_ratio[level];
-}
-
-inline
-const Array<IntVect>&
-Amr::refRatio () const
-{
-    return ref_ratio;
-}
-
-inline
-const Geometry&
-Amr::Geom (int level) const
-{
-    return geom[level];
-}
-
-inline
-int
-Amr::checkInt () const
-{
-    return check_int;
-}
-
-inline
-Real
-Amr::checkPer () const
-{
-    return check_per;
-}
-
-inline
-int
-Amr::plotInt () const
-{
-    return plot_int;
-}
-
-inline
-Real
-Amr::plotPer () const
-{
-    return plot_per;
-}
-
-inline
-const std::list<std::string>&
-Amr::statePlotVars ()
-{
-    return state_plot_vars;
-}
-
-inline
-const std::list<std::string>&
-Amr::derivePlotVars ()
-{
-    return derive_plot_vars;
-}
-
-inline
-Real
-Amr::cumTime () const
-{
-    return cumtime;
-}
-
-inline
-int
-Amr::regridInt (int lev) const
-{
-    return regrid_int[lev];
-}
-
-inline
-int
-Amr::nErrorBuf (int lev) const
-{
-    return n_error_buf[lev];
-}
-
-inline
-Real
-Amr::gridEff () const
-{
-    return grid_eff;
-}
-
-inline
-int
-Amr::subCycle () const
-{
-    return sub_cycle;
-}
-
-inline
-std::string
-Amr::subcyclingMode() const
-{
-    return subcycling_mode;
-}
-
-inline
-int
-Amr::nProper () const
-{
-    return n_proper;
-}
-
-inline
-const std::string&
-Amr::theRestartFile () const
-{
-    return restart_file;
-}
-
-inline
-AmrRegion&
-Amr::coarseRegion()
-{
-    return *(amr_regions.getRoot());
-}
-
-inline
-AmrRegion&
-Amr::getRegion(const ID id)
-{
-    return amr_regions.getData(id);
-}
 
 inline
 PTree<AmrRegion>&
