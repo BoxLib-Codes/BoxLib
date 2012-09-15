@@ -88,7 +88,7 @@ public:
     // Time step at specified level.
     // Only allowed when multi_region = 0
     //
-    Real dtLevel (int level) const { return dt_level[level]; }
+    Real dtLevel (int level) const;
     //
     // Tree of timesteps at all regions.
     //
