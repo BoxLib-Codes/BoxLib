@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <algorithm>
 
 #include <ParmParse.H>
 
@@ -342,7 +343,8 @@ public:
     
     void Restructure(ID base_region, std::list<int> new_structure);
 
-    void WriteAsciiFile (const std::string& file);
+    void WriteAsciiFile          (const std::string& file);
+    void WriteCoarsenedAsciiFile (const std::string& file);
 
     int Verbose () { return m_verbose; }
 
@@ -5939,6 +5941,143 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
         if (ParallelDescriptor::IOProcessor())
         {
             std::cout << "ParticleContainer<N>::WriteAsciiFile() time: " << stoptime << '\n';
+        }
+    }
+}
+
+template <int N>
+void
+ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
+{
+    BL_ASSERT(!filename.empty());
+
+    const Real strttime = ParallelDescriptor::second();
+    //
+    // Count # of valid particles.
+    //
+    long nparticles = 0;
+
+    for (int lev = 0; lev < m_particles.size(); lev++)
+    {
+        const PMap& pmap = m_particles[lev];
+
+        for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
+        {
+            const PBox& pbox = pmap_it->second;
+
+            for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
+            {
+                // Only keep particles in even cells
+                if (it->m_id > 0 &&
+                   (it->m_cell[0])%2 == 0 && (it->m_cell[1])%2 == 0 && (it->m_cell[2])%2 == 0)
+                    //
+                    // Only count (and checkpoint) valid particles.
+                    //
+                    nparticles++;
+            }
+        }
+    }
+    //
+    // And send count to I/O processor.
+    //
+    ParallelDescriptor::ReduceLongSum(nparticles,ParallelDescriptor::IOProcessorNumber());
+
+    if (ParallelDescriptor::IOProcessor())
+    {
+        //
+        // Have I/O processor open file and write out particle count.
+        //
+        std::ofstream File;
+
+        File.open(filename.c_str(), std::ios::out|std::ios::trunc);
+
+        if (!File.good())
+            BoxLib::FileOpenFailed(filename);
+
+        File << nparticles << '\n';
+            
+        File.flush();
+
+        File.close();
+
+        if (!File.good())
+            BoxLib::Abort("ParticleContainer<N>::WriteCoarsenedAsciiFile(): problem writing file");
+    }
+
+    ParallelDescriptor::Barrier();
+
+    const int MyProc = ParallelDescriptor::MyProc();
+
+    for (int i = 0; i < ParallelDescriptor::NProcs(); i++)
+    {
+        if (MyProc == i)
+        {
+            //
+            // Each CPU opens the file for appending and adds its particles.
+            //
+            std::ofstream File;
+
+            VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
+
+            File.rdbuf()->pubsetbuf(io_buffer.dataPtr(), io_buffer.size());
+
+            File.open(filename.c_str(), std::ios::out|std::ios::app);
+
+            File.precision(15);
+
+            if (!File.good())
+                BoxLib::FileOpenFailed(filename);
+            
+            for (int lev = 0; lev < m_particles.size(); lev++)
+            {
+                const PMap& pmap = m_particles[lev];
+
+                for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
+                {
+                    const PBox& pbox = pmap_it->second;
+
+                    for (typename PBox::const_iterator it = pbox.begin(), pboxEnd = pbox.end(); it != pboxEnd; ++it)
+                    {
+                        // Only keep particles in even cells
+                        if (it->m_id > 0 &&
+                           (it->m_cell[0])%2 == 0 && (it->m_cell[1])%2 == 0 && (it->m_cell[2])%2 == 0)
+                        {
+                            D_TERM(File << it->m_pos[0] << ' ',
+                                        << it->m_pos[1] << ' ',
+                                        << it->m_pos[2] << ' ');
+
+                            for (int i = 0; i < N; i++)
+                            {
+                                char ws = (i == N-1) ? '\n' : ' ';
+
+                                File << it->m_data[i] << ws;
+                            }
+                        }
+                    }
+                }
+            }
+
+            File.flush();
+
+            File.close();
+
+            if (!File.good())
+                BoxLib::Abort("ParticleContainer<N>::WriteCoarsenedAsciiFile(): problem writing file");
+
+        }
+
+        ParallelDescriptor::Barrier();
+    }
+
+    if (m_verbose > 1)
+    {
+        Real stoptime = ParallelDescriptor::second() - strttime;
+
+        ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
+
+        if (ParallelDescriptor::IOProcessor())
+        {
+            std::cout << "ParticleContainer<N>::WriteCoarsenedAsciiFile() time: " << stoptime << '\n';
         }
     }
 }
