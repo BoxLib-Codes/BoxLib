@@ -4,15 +4,8 @@ import os
 import shutil
 import sys
 import getopt
-import datetime
-import time
 import string
-import tarfile
 import subprocess
-import smtplib
-import email
-import getpass
-import socket
 import testnew as reg_test
 
 class testObj2:
@@ -323,7 +316,12 @@ def run_old_version(coms, test2, suite, testFile, origdir):
     print "\n"
 
     testargv = ['', '--do_temp_run', '--boxLibGitHash', bhash, '--sourceGitHash', mhash, '--extSrcGitHash', ehash, '--single_test', test2.name, testFile]
-    return reg_test.testSuite(testargv)
+    status = reg_test.testSuite(testargv)
+    print " \n"    
+    print "  Finish testsing"
+    for code in coms.keys():
+        print "   ", code, coms[code][0:-1] 
+    return status
 
 
 if __name__== "__main__":

@@ -21,7 +21,6 @@
 #include <DistributionMapping.H>
 #include <ParallelDescriptor.H>
 #include <ccse-mpi.H>
-
 #include <Profiler.H>
 
 //
@@ -1328,6 +1327,8 @@ FabArray<FAB>::copy (const FabArray<FAB>& src,
                      int                  ncomp,
                      CpOp                 op)
 {
+    BL_PROFILE("FabArray::copy()");
+
     if (size() == 0 || src.size() == 0) return;
 
     BL_ASSERT(op == FabArrayBase::COPY || op == FabArrayBase::ADD);
@@ -1933,6 +1934,8 @@ FabArrayCopyDescriptor<FAB>::CollectData ()
     //
     BL_ASSERT(sizeof(ParallelDescriptor::CommData) == ParallelDescriptor::CommData::DIM*sizeof(int));
 
+    BL_PROFILE("FabArrayCopyDescriptor::CollectData()");
+
     const int MyProc = ParallelDescriptor::MyProc();
 
     int Total_Rcvs_Size = 0;
@@ -2307,6 +2310,8 @@ FabArray<FAB>::FillBoundary (int  scomp,
                              int  ncomp,
                              bool cross)
 {
+    BL_PROFILE("FabArray::FillBoundary()");
+
     if ( n_grow <= 0 ) return;
 
     FabArrayBase::FBCacheIter cache_it = FabArrayBase::TheFB(cross,*this);

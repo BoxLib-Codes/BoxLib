@@ -23,7 +23,7 @@
       _ifc  := ifort
       _comp := Intel8
     else
-      $(errorr "$(_ifc_version) of IFC is not supported")
+      $(error "$(_ifc_version) of IFC is not supported")
     endif
     endif
     endif
@@ -44,11 +44,12 @@
     ifdef OMP
       FFLAGS   += -openmp -openmp-report2
       F90FLAGS += -openmp -openmp-report2
+      CFLAGS   += -openmp -openmp-report2
     endif
     ifeq ($(_comp),Intel12)
       ifndef NDEBUG
-        F90FLAGS += -g -traceback -O0 -check all -warn all -u 
-        FFLAGS   += -g -traceback -O0 -check all -warn all -u 
+        F90FLAGS += -g -traceback -O0 #-check all -warn all -u 
+        FFLAGS   += -g -traceback -O0 #-check all -warn all -u 
         #CFLAGS   += -g -Wcheck
       else
         ifdef INTEL_X86

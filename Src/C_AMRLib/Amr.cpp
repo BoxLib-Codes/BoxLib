@@ -37,6 +37,8 @@
 std::list<std::string> Amr::state_plot_vars;
 std::list<std::string> Amr::derive_plot_vars;
 bool                   Amr::first_plotfile;
+Array<BoxArray>        Amr::initial_ba;
+Array<BoxArray>        Amr::regrid_ba;
 
 namespace
 {
@@ -95,6 +97,8 @@ Amr::Finalize ()
 {
     Amr::state_plot_vars.clear();
     Amr::derive_plot_vars.clear();
+    Amr::regrid_ba.clear();
+    Amr::initial_ba.clear();
 
     initialized = false;
 }
@@ -331,7 +335,9 @@ Amr::Amr ()
 
     pp.query("file_name_digits", file_name_digits);
 
-    pp.query("regrid_file",grids_file);
+    pp.query("initial_grid_file",initial_grids_file);
+    pp.query("regrid_file"      , regrid_grids_file);
+
     if (pp.contains("run_log"))
     {
         std::string log_file_name;
@@ -574,6 +580,75 @@ Amr::Amr ()
         offset[i]        = Geometry::ProbLo(i) + delta*lo[i];
     }
     CoordSys::SetOffset(offset);
+
+    if (max_level > 0 && !initial_grids_file.empty())
+    {
+#define STRIP while( is.get() != '\n' )
+        std::ifstream is(initial_grids_file.c_str(),std::ios::in);
+
+        if (!is.good())
+            BoxLib::FileOpenFailed(initial_grids_file);
+
+        int in_finest,ngrid;
+
+        is >> in_finest;
+        STRIP;
+        initial_ba.resize(in_finest);
+        for (int lev = 1; lev <= in_finest; lev++)
+        {
+            BoxList bl;
+            is >> ngrid;
+            STRIP;
+            for (i = 0; i < ngrid; i++)
+            {
+                Box bx;
+                is >> bx;
+                STRIP;
+                bx.refine(ref_ratio[lev-1]);
+                bl.push_back(bx);
+            }
+            initial_ba[lev-1].define(bl);
+        }
+        is.close();
+#undef STRIP
+    }
+
+    if (max_level > 0 && !regrid_grids_file.empty())
+    {
+#define STRIP while( is.get() != '\n' )
+        std::ifstream is(regrid_grids_file.c_str(),std::ios::in);
+
+        if (!is.good())
+            BoxLib::FileOpenFailed(regrid_grids_file);
+
+        int in_finest,ngrid;
+
+        is >> in_finest;
+        STRIP;
+        regrid_ba.resize(in_finest);
+        for (int lev = 1; lev <= in_finest; lev++)
+        {
+            BoxList bl;
+            is >> ngrid;
+            STRIP;
+            for (i = 0; i < ngrid; i++)
+            {
+                Box bx;
+                is >> bx;
+                STRIP;
+                 bx.refine(ref_ratio[lev-1]);
+                 if (bx.longside() > max_grid_size[lev])
+                 {
+                     std::cout << "Grid " << bx << " too large" << '\n';
+                     BoxLib::Error();
+                 }
+                 bl.push_back(bx);
+            }
+            regrid_ba[lev-1].define(bl);
+        }
+        is.close();
+#undef STRIP
+    }
 }
 
 bool
@@ -781,6 +856,8 @@ Amr::writePlotFile ()
 {
     if (!Plot_Files_Output()) return;
 
+    BL_PROFILE("Amr::writePlotFile()");
+
     VisMF::SetNOutFiles(plot_nfiles);
 
     if (first_plotfile) 
@@ -863,12 +940,12 @@ Amr::writePlotFile ()
         const int IOProc        = ParallelDescriptor::IOProcessorNumber();
         Real      dPlotFileTime = ParallelDescriptor::second() - dPlotFileTime0;
 
+#ifndef BL_PROFILING
         ParallelDescriptor::ReduceRealMax(dPlotFileTime,IOProc);
 
         if (ParallelDescriptor::IOProcessor())
-        {
             std::cout << "Write plotfile time = " << dPlotFileTime << "  seconds" << '\n';
-        }
+#endif
     }
     ParallelDescriptor::Barrier();
 }
@@ -966,6 +1043,7 @@ Amr::init (Real strt_time,
 void
 Amr::readProbinFile (int& init)
 {
+    BL_PROFILE("Amr::readProbinFile()");
     //
     // Populate integer array with name of probin file.
     //
@@ -1024,6 +1102,8 @@ Amr::readProbinFile (int& init)
         const int IOProc     = ParallelDescriptor::IOProcessorNumber();
         Real      piTotal    = piEnd - piStart;
         Real      piTotalAll = ParallelDescriptor::second() - piStartAll;
+
+#ifndef BL_PROFILING
         ParallelDescriptor::ReduceRealMax(piTotal,    IOProc);
         ParallelDescriptor::ReduceRealMax(piTotalAll, IOProc);
 
@@ -1032,6 +1112,7 @@ Amr::readProbinFile (int& init)
             std::cout << "MFRead::: PROBINIT max time   = " << piTotal    << '\n';
             std::cout << "MFRead::: PROBINIT total time = " << piTotalAll << '\n';
         }
+#endif
     }
 
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
@@ -1167,7 +1248,8 @@ Amr::initialInit (Real strt_time,
 void
 Amr::restart (const std::string& filename)
 {
-    ;
+    BL_PROFILE("Amr::restart()");
+
     Real dRestartTime0 = ParallelDescriptor::second();
 
     VisMF::SetMFFileInStreams(mffile_nstreams);
@@ -1408,12 +1490,12 @@ Amr::restart (const std::string& filename)
     {
         Real dRestartTime = ParallelDescriptor::second() - dRestartTime0;
 
+#ifndef BL_PROFILING
         ParallelDescriptor::ReduceRealMax(dRestartTime,ParallelDescriptor::IOProcessorNumber());
 
         if (ParallelDescriptor::IOProcessor())
-        {
             std::cout << "Restart time = " << dRestartTime << " seconds." << '\n';
-        }
+#endif
     }
 }
 
@@ -1421,6 +1503,8 @@ void
 Amr::checkPoint ()
 {
     if (!checkpoint_files_output) return;
+
+    BL_PROFILE("Amr::checkPoint()");
 
     VisMF::SetNOutFiles(checkpoint_nfiles);
     //
@@ -1550,12 +1634,12 @@ Amr::checkPoint ()
     {
         Real dCheckPointTime = ParallelDescriptor::second() - dCheckPointTime0;
 
+#ifndef BL_PROFILING
         ParallelDescriptor::ReduceRealMax(dCheckPointTime,ParallelDescriptor::IOProcessorNumber());
 
         if (ParallelDescriptor::IOProcessor())
-        {
             std::cout << "checkPoint() time = " << dCheckPointTime << " secs." << '\n';
-        }
+#endif
     }
     ParallelDescriptor::Barrier();
 }
@@ -1585,8 +1669,11 @@ Amr::timeStep (AmrRegion& base_region,
                int  niter,
                Real stop_time)
 {
+    BL_PROFILE("Amr::timeStep()");
+
     int level = base_region.Level();
     ID base_id = base_region.getID();
+
     //
     // Allow regridding of level 0 calculation on restart.
     //
@@ -1763,11 +1850,12 @@ Amr::timeStep (AmrRegion& base_region,
 void
 Amr::coarseTimeStep (Real stop_time)
 {
+    BL_PROFILE("Amr::coarseTimeStep()");
+
     const Real run_strt = ParallelDescriptor::second() ;
     //
     // Compute new dt.
     //
-    
     if (regionSteps(ROOT_ID) > 0)
     {
         int post_regrid_flag = 0;
@@ -1816,10 +1904,16 @@ Amr::coarseTimeStep (Real stop_time)
         BoxLib::total_bytes_allocated_in_fabs_hwm = 0;
 
         if (ParallelDescriptor::IOProcessor())
+        {
             std::cout << "\nFAB byte spread across MPI nodes for timestep: ["
-                      << min_fab_bytes << " ... " << max_fab_bytes << "]\n";
+                      << min_fab_bytes
+                      << " ... "
+                      << max_fab_bytes
+                      << "]\n";
+        }
     }
 
+    BL_PROFILE_ADD_STEP(level_steps[0]);
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
     {
         std::cout << "\nSTEP = "
@@ -1888,6 +1982,28 @@ Amr::coarseTimeStep (Real stop_time)
 	|| to_checkpoint)
         checkPoint();
 
+    if (writePlotNow() || to_checkpoint)
+    {
+        writePlotFile();
+    }
+
+    if (to_stop)
+    {
+        ParallelDescriptor::Barrier();
+        if (to_checkpoint)
+        {
+            BoxLib::Abort("Stopped by user w/ checkpoint");
+        }
+        else
+        {
+            BoxLib::Abort("Stopped by user w/o checkpoint");
+        }
+    }
+}
+
+bool
+Amr::writePlotNow()
+{
     int plot_test = 0;
     if (plot_per > 0.0)
     {
@@ -1906,25 +2022,10 @@ Amr::coarseTimeStep (Real stop_time)
 	}
     }
 
-    if ((plot_int > 0 && region_steps.getRoot() % plot_int == 0) || plot_test == 1
-	|| to_checkpoint)
-    {
-        writePlotFile();
-    }
-
-    if (to_stop)
-    {
-        ParallelDescriptor::Barrier();
-        if (to_checkpoint)
-        {
-            BoxLib::Abort("Stopped by user w/ checkpoint");
-        }
-        else
-        {
-            BoxLib::Abort("Stopped by user w/o checkpoint");
-        }
-    }
-}
+    return ( (plot_int > 0 && region_steps.getRoot() % plot_int == 0) || 
+              plot_test == 1 ||
+              amr_level[0].writePlotNow());
+} 
 
 void
 Amr::defBaseLevel (Real strt_time)
@@ -2042,6 +2143,7 @@ Amr::regrid (int  lbase,
              Real time,
              bool initial)
 {
+
     if (multi_region)
         BoxLib::Abort("Calling lbase regrid in a multiregion simulation\n");
     ID region_id(lbase+1);
@@ -2053,8 +2155,11 @@ Amr::regrid (ID base_id,
              Real time,
              bool initial)
 {
+    BL_PROFILE("Amr::regrid()");
+
     AmrRegion& base_region = getRegion(base_id);
     int lbase = base_region.Level();
+
     if (verbose > 0 && ParallelDescriptor::IOProcessor())
         std::cout << "REGRID: at base region " << base_id << std::endl;
 
@@ -2088,7 +2193,6 @@ Amr::regrid (ID base_id,
     for(int i = 0; i < finest_level; i++)
         dms[i] = active_levels[i].get_distribution_map();
 
-    
     //
     // Compute positions of new grids.
     //
@@ -2100,11 +2204,11 @@ Amr::regrid (ID base_id,
     bool regrid_level_zero =
         (lbase == 0 && new_grid_places[0] != coarseRegion().boxArray()) && (!initial);
     const int start = regrid_level_zero ? 0 : lbase+1;
-    
+
     //
     // If use_efficient_regrid flag is set, then test to see whether we in fact 
-    //    have changed the grids at any of the levels through the regridding process.  
-    //    If not, then don't do anything more here.
+    // have changed the grids at any of the levels through the regridding process.
+    // If not, then don't do anything more here.
     //
     if (use_efficient_regrid == 1 && !regrid_level_zero && (finest_level == new_finest) && !(initial && multi_region))
     {
@@ -2479,6 +2583,8 @@ Amr::grid_places (int               lbase,
                   int&              new_finest,
                   Array<BoxArray>&  new_grids)
 {
+    BL_PROFILE("Amr::grid_places()");
+
     int i, max_crse = std::min(finest_level,max_level-1);
 
     const Real strttime = ParallelDescriptor::second();
@@ -2503,49 +2609,48 @@ Amr::grid_places (int               lbase,
 
         new_grids[0] = lev0;
     }
-    if (!grids_file.empty())
+
+    if ( time == 0. && !initial_grids_file.empty() )
     {
-#define STRIP while( is.get() != '\n' )
-
-        std::ifstream is(grids_file.c_str(),std::ios::in);
-
-        if (!is.good())
-            BoxLib::FileOpenFailed(grids_file);
-
         new_finest = std::min(max_level,(finest_level+1));
-        int in_finest;
-        is >> in_finest;
-        STRIP;
-        new_finest = std::min(new_finest,in_finest);
-        int ngrid;
+        new_finest = std::min(new_finest,initial_ba.size());
+
         for (int lev = 1; lev <= new_finest; lev++)
         {
             BoxList bl;
-            is >> ngrid;
-            STRIP;
+            int ngrid = initial_ba[lev-1].size();
             for (i = 0; i < ngrid; i++)
             {
-                Box bx;
-                is >> bx;
-                STRIP;
+                Box bx(initial_ba[lev-1][i]);
                 if (lev > lbase)
-                {
-                    bx.refine(ref_ratio[lev-1]);
-                    if (bx.longside() > max_grid_size[lev])
-                    {
-                        std::cout << "Grid " << bx << " too large" << '\n';
-                        BoxLib::Error();
-                    }
                     bl.push_back(bx);
-                }
             }
             if (lev > lbase)
                 new_grids[lev].define(bl);
         }
-        is.close();
         return;
-#undef STRIP
     }
+
+    else if ( !regrid_grids_file.empty() )
+    {
+        new_finest = std::min(max_level,(finest_level+1));
+        new_finest = std::min(new_finest,regrid_ba.size());
+        for (int lev = 1; lev <= new_finest; lev++)
+        {
+            BoxList bl;
+            int ngrid = regrid_ba[lev-1].size();
+            for (i = 0; i < ngrid; i++)
+            {
+                Box bx(regrid_ba[lev-1][i]);
+                if (lev > lbase)
+                    bl.push_back(bx);
+            }
+            if (lev > lbase)
+                new_grids[lev].define(bl);
+        }
+        return;
+    }
+
     //
     // Construct problem domain at each level.
     //
@@ -2840,12 +2945,12 @@ Amr::grid_places (int               lbase,
     {
         Real stoptime = ParallelDescriptor::second() - strttime;
 
+#ifndef BL_PROFILING
         ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
 
         if (ParallelDescriptor::IOProcessor())
-        {
             std::cout << "grid_places() time: " << stoptime << '\n';
-        }
+#endif
     }
 }
 
@@ -2905,8 +3010,9 @@ Amr::bldFineLevels (Real strt_time)
     while (finest_level < max_level);
     //
     // Iterate grids to ensure fine grids encompass all interesting gunk.
+    //     but only iterate if we did not provide a grids file.
     //
-    if (grids_file.empty())  // only iterare if we did not provide a grids file
+    if ( regrid_grids_file.empty() || (strt_time == 0.0 && !initial_grids_file.empty()) )  
       {
 	bool grids_the_same;
 

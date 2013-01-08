@@ -376,6 +376,7 @@ public:
     // 
     TimeLevel which_time (int  state_indx,
                           Real time) const;
+<<<<<<< HEAD
     // 
     // Sets/Gets the ancester list. Currently only needed for a regridding hack.
     //
@@ -391,6 +392,11 @@ public:
     ID getID() const;
 
     AmrRegion* Parent() { return parent_region; };
+
+    //
+    // Does the AmrRegion want Amr to write a plotfile now?
+    //
+    virtual bool writePlotNow ();
 
 protected:
     //

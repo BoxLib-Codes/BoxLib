@@ -20,4 +20,5 @@
     ifndef OMP
       FFLAGS   += -h noomp
       F90FLAGS += -h noomp
+      CFLAGS   += -h noomp
     endif

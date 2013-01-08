@@ -7,6 +7,7 @@
 #include <ParallelDescriptor.H>
 #include <Utility.H>
 #include <ParmParse.H>
+#include <Profiler.H>
 
 DescriptorList AmrRegion::desc_lst;
 DeriveList     AmrRegion::derive_lst;
@@ -434,6 +435,8 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
                                      int           ncomp,
                                      Interpolater* mapper)
 {
+    BL_PROFILE("FillPatchIteratorHelper::Initialize()");
+
     BL_ASSERT(mapper);
     BL_ASSERT(scomp >= 0);
     BL_ASSERT(ncomp >= 1);
@@ -866,6 +869,8 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
                                int        dcomp,
                                int        idx)
 {
+    BL_PROFILE("FillPatchIteratorHelper::fill()");
+
     BL_ASSERT(fab.box() == m_ba[idx]);
     BL_ASSERT(fab.nComp() >= dcomp + m_ncomp);
 
@@ -1506,6 +1511,7 @@ AmrRegion::estimateWork ()
     return 1.0*countCells();
 }
 
+<<<<<<< HEAD
 
 void
 AmrRegion::define(RegionList& regions, Amr* papa)
@@ -1580,4 +1586,9 @@ void
 AmrRegion::cluster(ID base_region, int lev, BoxArray new_grids, std::list<BoxArray> clusters)
 {
     BoxLib::Abort("You must overload cluster() to use region_creation = Application\n");
+
+bool
+AmrRegion::writePlotNow ()
+{
+    return false;
 }
