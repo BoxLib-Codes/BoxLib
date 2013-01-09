@@ -376,9 +376,8 @@ public:
     // 
     TimeLevel which_time (int  state_indx,
                           Real time) const;
-<<<<<<< HEAD
     // 
-    // Sets/Gets the ancester list. Currently only needed for a regridding hack.
+    // Sets/Gets the ancestor list. Currently only needed for a regridding hack.
     //
     void set_ancestors(PArray<AmrRegion>& ancs);
     PArray<AmrRegion>& get_ancestors();
