@@ -410,11 +410,11 @@ ParticleContainer<N>::ParticleContainer(Amr* amr)
 
 template <int N>
 long
-ParticleContainer<N>::TotalNumberOfParticles (bool only_valid, bool local_only) const
+ParticleContainer<N>::TotalNumberOfParticles (bool only_valid, bool only_local) const
 {
     long nparticles = 0;
     for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
-        nparticles += NumberOfParticlesAtLevel(lev,only_valid,local_only);
+        nparticles += NumberOfParticlesAtLevel(lev,only_valid,only_local);
     return nparticles;
 }
 
@@ -422,7 +422,7 @@ template <int N>
 long
 ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
                                                 bool only_valid,
-                                                bool local_only) const
+                                                bool only_local) const
 {
     long nparticles = 0;
     if (lev >= 0 && lev > m_amr->finestLevel())
@@ -464,7 +464,8 @@ ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
 template <int N>
 long
 ParticleContainer<N>::NumberOfParticlesInRegion (ID region_id,
-                                                bool only_valid) const
+                                                bool only_valid,
+                                                bool only_local) const
 {
     long nparticles = 0;
     const PMap& pmap = m_particles.getData(region_id);
@@ -491,7 +492,7 @@ ParticleContainer<N>::NumberOfParticlesInRegion (ID region_id,
         }
     }
 
-    if (!local_only)
+    if (!only_local)
         ParallelDescriptor::ReduceLongSum(nparticles);
 
     return nparticles;
