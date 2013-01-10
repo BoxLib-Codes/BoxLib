@@ -1,4 +1,3 @@
-
 #include <winstd.H>
 #include <algorithm>
 #include <cstdio>
@@ -1796,7 +1795,6 @@ Amr::timeStep (AmrRegion& base_region,
     Real my_dt = dt_region.getData(base_id);
     
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
-
     
     dt_reg_min.setData(base_id, iteration == 1 ? dt_new : std::min(dt_reg_min.getData(base_id),dt_new));
 
@@ -2023,8 +2021,7 @@ Amr::writePlotNow()
     }
 
     return ( (plot_int > 0 && region_steps.getRoot() % plot_int == 0) || 
-              plot_test == 1 ||
-              amr_level[0].writePlotNow());
+              plot_test == 1 || coarseRegion().writePlotNow() );
 } 
 
 void

@@ -1511,8 +1511,6 @@ AmrRegion::estimateWork ()
     return 1.0*countCells();
 }
 
-<<<<<<< HEAD
-
 void
 AmrRegion::define(RegionList& regions, Amr* papa)
 {
@@ -1586,6 +1584,7 @@ void
 AmrRegion::cluster(ID base_region, int lev, BoxArray new_grids, std::list<BoxArray> clusters)
 {
     BoxLib::Abort("You must overload cluster() to use region_creation = Application\n");
+}
 
 bool
 AmrRegion::writePlotNow ()
