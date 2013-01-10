@@ -914,7 +914,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     // tmp_particles should mirror how m_particles is built.
     // At the end of this routine it'll be the new m_particles.
     //
-    Array<PMap> tmp_particles;
+    PTree<PMap> tmp_particles;
 
     // Sets the structure of m_particles to match the region hierarchy.
       m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
@@ -1096,23 +1096,21 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
         // we don't keep trying to redistribute particles that have
         // already been redistributed correctly.
         //
-        for (int lev = 0; lev < m_particles.size(); lev++)
+        PTreeIterator<PMap>   ptree_it =   m_particles.getIterator(ROOT_ID);
+        PTreeIterator<PMap> tmptree_it = tmp_particles.getIterator(ROOT_ID);
+        for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++tmptree_it)
         {
-            PMap& pmap     = m_particles[lev];
-            PMap& tmp_pmap = tmp_particles[lev];
-
-            for (typename PMap::iterator pmap_it = pmap.begin(), End = pmap.end();
-                 pmap_it != End;
-                 ++pmap_it)
+            int lev = ptree_it.getLevel();
+            PMap&   pmap = **ptree_it;
+            PMap& tmpmap = **tmptree_it;
             {
-                PBox& pbox     = pmap_it->second;
-                PBox& tmp_pbox = tmp_pmap[pmap_it->first];
+                PBox& pbox     = pmap->second;
+                PBox& tmp_pbox = tmpmap[pmap->first];
 
                 tmp_pbox.insert(tmp_pbox.end(), pbox.begin(), pbox.end());
 
                 PBox().swap(pbox);
             }
-
             PMap().swap(pmap);
         }
     }
