@@ -1098,14 +1098,16 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
         //
         PTreeIterator<PMap>   ptree_it =   m_particles.getIterator(ROOT_ID);
         PTreeIterator<PMap> tmptree_it = tmp_particles.getIterator(ROOT_ID);
-        for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++tmptree_it)
+        for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it)
         {
-            int lev = ptree_it.getLevel();
             PMap&   pmap = **ptree_it;
             PMap& tmpmap = **tmptree_it;
+
+            for (typename PMap::iterator   pmap_it =   pmap.begin(),  End =   pmap.end();
+                 pmap_it != End; ++pmap_it)
             {
-                PBox& pbox     = pmap->second;
-                PBox& tmp_pbox = tmpmap[pmap->first];
+                PBox& pbox = pmap_it->second;
+                PBox& tmp_pbox   = tmpmap[pmap_it->first];
 
                 tmp_pbox.insert(tmp_pbox.end(), pbox.begin(), pbox.end());
 
@@ -1114,10 +1116,12 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
             PMap().swap(pmap);
         }
     }
+
     //
     // Make tmp_particles the new m_particles.
     //
-    tmp_particles.swap(m_particles);
+    // tmp_particles.swap(m_particles);
+    m_particles = tmp_particles;
     //
     // Add up all the particles read in to get the total number of particles.
     //
@@ -6215,9 +6219,10 @@ ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
     //
     long nparticles = 0;
 
-    for (int lev = 0; lev < m_particles.size(); lev++)
+    PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+    for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++ptree_it)
     {
-        const PMap& pmap = m_particles[lev];
+        PMap&   pmap = **ptree_it;
 
         for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
         {
@@ -6286,9 +6291,10 @@ ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
             if (!File.good())
                 BoxLib::FileOpenFailed(filename);
             
-            for (int lev = 0; lev < m_particles.size(); lev++)
+            PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+            for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++ptree_it)
             {
-                const PMap& pmap = m_particles[lev];
+                PMap&   pmap = **ptree_it;
 
                 for (typename PMap::const_iterator pmap_it = pmap.begin(), End = pmap.end(); pmap_it != End; ++pmap_it)
                 {
