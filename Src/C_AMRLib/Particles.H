@@ -1098,7 +1098,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
         //
         PTreeIterator<PMap>   ptree_it =   m_particles.getIterator(ROOT_ID);
         PTreeIterator<PMap> tmptree_it = tmp_particles.getIterator(ROOT_ID);
-        for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it)
+        for ( ; !ptree_it.isFinished(); ++ptree_it)
         {
             PMap&   pmap = **ptree_it;
             PMap& tmpmap = **tmptree_it;
@@ -3143,9 +3143,10 @@ ParticleContainer<N>::GetParticleLocationsAndMass(Array<Real>& part_data)
    // Mass + locations
    part_data.resize((BL_SPACEDIM+1)*npart,0);
 
-   for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
+   PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+   for ( ; !ptree_it.isFinished(); ++ptree_it)
    {
-       PMap& pmap = m_particles[lev];
+       PMap&   pmap = **ptree_it;
 
        for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
        {
@@ -3212,9 +3213,10 @@ ParticleContainer<N>::GetParticleVelocities(Array<Real>& part_data)
    // Velocities
    part_data.resize((BL_SPACEDIM)*npart,0);
 
-   for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
+   PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+   for( ; !ptree_it.isFinished(); ++ptree_it)
    {
-       PMap& pmap = m_particles[lev];
+       PMap& pmap = **ptree_it;
 
        for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
        {
@@ -3279,9 +3281,10 @@ ParticleContainer<N>::SetParticleLocationsAndMass(Array<Real>& part_data)
    if (part_data.size() != npart*(BL_SPACEDIM+1))
        BoxLib::Abort("Sending in wrong size part_data to SetParticleLocationsAndMass");
 
-   for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
+   PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+   for( ; !ptree_it.isFinished(); ++ptree_it)
    {
-       PMap& pmap = m_particles[lev];
+       PMap& pmap = **ptree_it;
 
        for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
        {
@@ -3348,9 +3351,10 @@ ParticleContainer<N>::SetParticleVelocities(Array<Real>& part_data)
    if (part_data.size() != npart*(BL_SPACEDIM))
        BoxLib::Abort("Sending in wrong size part_data to SetParticleVelocities");
 
-   for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
+   PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
+   for( ; !ptree_it.isFinished(); ++ptree_it)
    {
-       PMap& pmap = m_particles[lev];
+       PMap& pmap = **ptree_it;
 
        for (typename PMap::iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
        {
@@ -6287,7 +6291,7 @@ ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
                 BoxLib::FileOpenFailed(filename);
             
             PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
-            for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++ptree_it)
+            for ( ; !ptree_it.isFinished(); ++ptree_it)
             {
                 PMap&   pmap = **ptree_it;
 
