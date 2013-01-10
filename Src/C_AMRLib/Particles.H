@@ -4787,12 +4787,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
         //
         // There's no parallel work to do.
         //
-<<<<<<< HEAD
-//        BL_ASSERT(OK());
-        BL_ASSERT(OK(full_where, base_region, nGrow));
-=======
-        BL_ASSERT(OK(full_where, lev_min, nGrow, theEffectiveFinestLevel));
->>>>>>> master
+        BL_ASSERT(OK(full_where, base_region, nGrow, theEffectiveFinestLevel));
         return;
     }
 
