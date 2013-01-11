@@ -554,11 +554,16 @@ protected:
     std::string      restart_file;
     std::string      probin_file;
     LevelBld*        levelbld;
+
     // Region Controls
     // Allow multiple regions per level?
     bool             multi_region;
     // How do we create regions?
     std::string      region_creation;
+
+    bool             abort_on_stream_retry_failure;
+    int              stream_max_tries;
+
     //
     // The static data ...
     //
