@@ -92,7 +92,6 @@ main (int   argc,
         // Do a timestep.
         //
         amrptr->coarseTimeStep(stop_time);
-
     }
 
     delete amrptr;
