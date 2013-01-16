@@ -1,4 +1,4 @@
-BOXLIB_HOME ?= /path/to/BoxLib
+BOXLIB_HOME = ../../../..
 
 PRECISION  = DOUBLE
 PROFILE    = FALSE

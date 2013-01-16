@@ -1,4 +1,4 @@
-BOXLIB_HOME ?= ../../../..
+BOXLIB_HOME = ../../../..
 ADR_DIR  ?= $(BOXLIB_HOME)/Tutorials/AMR_Advection_C
 
 TOP := $(ADR_DIR)

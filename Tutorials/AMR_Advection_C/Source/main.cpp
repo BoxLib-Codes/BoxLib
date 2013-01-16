@@ -20,11 +20,7 @@
 #include <Amr.H>
 #include <ParmParse.H>
 #include <ParallelDescriptor.H>
-#include <AmrLevel.H>
-
-#ifdef HAS_XGRAPH
-#include <XGraph1d.H>
-#endif
+#include <AmrRegion.H>
 
 int
 main (int   argc,
@@ -75,18 +71,10 @@ main (int   argc,
 
     amrptr->init(strt_time,stop_time);
 
-#ifdef HAS_XGRAPH
-    XGraph1d *xgraphptr = new XGraph1d(*amrptr);
-#endif
-
-#ifdef HAS_XGRAPH
-    xgraphptr->draw(amrptr->levelSteps(0),amrptr->cumTime());
-#endif
-
     // If we set the regrid_on_restart flag and if we are *not* going to take
     //    a time step then we want to go ahead and regrid here.
     if ( amrptr->RegridOnRestart() && 
-         ( (amrptr->levelSteps(0) >= max_step) ||
+         ( (amrptr->regionSteps(ROOT_ID) >= max_step) ||
            (amrptr->cumTime() >= stop_time) ) )
            {
            //
@@ -105,19 +93,7 @@ main (int   argc,
         //
         amrptr->coarseTimeStep(stop_time);
 
-#ifdef HAS_XGRAPH
-	xgraphptr->draw(amrptr->levelSteps(0),amrptr->cumTime());
-#endif
-
     }
-
-#ifdef HAS_XGRAPH
-    xgraphptr->draw(amrptr->levelSteps(0),amrptr->cumTime(), 1);
-#endif
-
-#ifdef HAS_XGRAPH
-    delete xgraphptr;
-#endif
 
     delete amrptr;
     //
