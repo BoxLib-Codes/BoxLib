@@ -1,7 +1,7 @@
 #ifndef _Diffusion_H_
 #define _Diffusion_H_
 
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <FluxRegister.H>
 
 class Diffusion {
@@ -13,7 +13,7 @@ public:
   void read_params ();
 
   void install_level (int                   level,
-                      AmrLevel*             level_data,
+                      AmrRegion*             level_data,
                       MultiFab&             volume,
                       MultiFab*             area);
 
@@ -39,7 +39,7 @@ protected:
   // Pointers to amr,amrlevel.
   //
   Amr*             parent;
-  PArray<AmrLevel> LevelData;
+  PArray<AmrRegion> LevelData;
 
   PArray<FluxRegister> phi_flux_reg;
   //

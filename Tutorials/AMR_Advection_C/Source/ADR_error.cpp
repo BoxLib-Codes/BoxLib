@@ -12,7 +12,7 @@ static Box grow_box_by_two (const Box& b) { return BoxLib::grow(b,2); }
 typedef StateDescriptor::BndryFunc BndryFunc;
 
 void
-ADR::ErrorSetUp ()
+ADR::error_setup ()
 {
     //
     // DEFINE ERROR ESTIMATION QUANTITIES

@@ -8,8 +8,8 @@ ADR::sum_integrated_quantities ()
 {
     if (verbose <= 0) return;
 
-    int finest_level = parent->finestLevel();
-    Real dt_crse     = parent->dtLevel(0);
+    int finest_level = master->finestLevel();
+    Real dt_crse     = master->dtLevel(0);
     Real time        = state[State_Type].curTime();
     Real mass        = 0.0;
     Real xvel        = 0.0;
@@ -18,15 +18,17 @@ ADR::sum_integrated_quantities ()
     Real zvel        = 0.0;
 #endif
 
-    for (int lev = 0; lev <= finest_level; lev++)
+    RegionIterator it = master->getRegionIterator();
+    for ( ; !it.isFinished(); ++it)
     {
-        ADR& adr_lev = getLevel(lev);
+        ADR& adr_reg = get_region(it.getID());
+        int lev = adr_reg.Level();
 
-        mass     += adr_lev.volWgtSum("density", time);
-        xvel     += adr_lev.volWgtSum("xvel", time);
-        yvel     += adr_lev.volWgtSum("yvel", time);
+        mass     += adr_reg.volWgtSum("density", time);
+        xvel     += adr_reg.volWgtSum("xvel", time);
+        yvel     += adr_reg.volWgtSum("yvel", time);
 #if (BL_SPACEDIM==3)
-        zvel     += adr_lev.volWgtSum("zvel", time);
+        zvel     += adr_reg.volWgtSum("zvel", time);
 #endif
     }
 
@@ -55,9 +57,9 @@ ADR::volWgtSum (const std::string& name,
 
     BoxArray baf;
 
-    if (level < parent->finestLevel())
+    if (level < master->finestLevel())
     {
-        baf = parent->boxArray(level+1);
+        baf = master->boxArray(level+1);
         baf.coarsen(fine_ratio);
     }
 
@@ -65,7 +67,7 @@ ADR::volWgtSum (const std::string& name,
     {
         FArrayBox& fab = (*mf)[mfi];
 
-        if (level < parent->finestLevel())
+        if (level < master->finestLevel())
         {
             std::vector< std::pair<int,Box> > isects = baf.intersections(grids[mfi.index()]);
 

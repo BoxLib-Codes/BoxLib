@@ -6,48 +6,68 @@ class ADRBld
     :
     public LevelBld
 {
-    virtual void variableSetUp ();
-    virtual void variableCleanUp ();
-    virtual AmrLevel *operator() ();
-    virtual AmrLevel *operator() (Amr&            papa,
-                                  int             lev,
+    virtual void variable_setup();
+    virtual void variable_cleanup();
+
+    // hack copies for BoxLib overriding
+    virtual void variableSetUp();
+    virtual void variableCleanUp();
+
+    virtual AmrRegion *operator() ();
+    virtual AmrRegion *operator() (Amr& papa, ID id,
                                   const Geometry& level_geom,
-                                  const BoxArray& ba,
-                                  Real            time);
+                                  const BoxArray& ba, Real time);
 };
 
 ADRBld ADR_bld;
 
 LevelBld*
-getLevelBld ()
+get_level_bld ()
 {
     return &ADR_bld;
 }
 
 void
-ADRBld::variableSetUp ()
+ADRBld::variable_setup ()
 {
-    ADR::variableSetUp();
+    ADR::variable_setup();
 }
 
 void
-ADRBld::variableCleanUp ()
+ADRBld::variable_cleanup ()
 {
-    ADR::variableCleanUp();
+    ADR::variable_cleanup();
 }
 
-AmrLevel*
+AmrRegion*
 ADRBld::operator() ()
 {
     return new ADR;
 }
 
-AmrLevel*
+AmrRegion*
 ADRBld::operator() (Amr&            papa,
-                       int             lev,
-                       const Geometry& level_geom,
-                       const BoxArray& ba,
-                       Real            time)
+                    ID              id,
+                    const Geometry& level_geom,
+                    const BoxArray& ba,
+                    Real            time)
 {
-    return new ADR(papa, lev, level_geom, ba, time);
+    return new ADR(papa, id, level_geom, ba, time);
 }
+
+// override hacks, copies of above
+LevelBld*
+getLevelBld()
+{
+    return &ADR_bld;
+}
+
+void ADRBld::variableSetUp()
+{
+    ADR::variable_setup();
+}
+void ADRBld::variableCleanUp()
+{
+    ADR::variable_cleanup();
+}
+

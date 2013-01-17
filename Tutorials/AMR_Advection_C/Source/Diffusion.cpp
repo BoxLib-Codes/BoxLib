@@ -44,7 +44,7 @@ Diffusion::read_params ()
 
 void
 Diffusion::install_level (int                   level,
-                          AmrLevel*             level_data,
+                          AmrRegion*             level_data,
                           MultiFab&             _volume,
                           MultiFab*             _area)
 {

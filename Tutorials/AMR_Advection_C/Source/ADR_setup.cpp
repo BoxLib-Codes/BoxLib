@@ -99,7 +99,7 @@ set_z_vel_bc(BCRec& bc, const BCRec& phys_bc)
 #endif
 
 void
-ADR::variableSetUp ()
+ADR::variable_setup ()
 {
     BL_ASSERT(desc_lst.size() == 0);
 
@@ -310,5 +310,5 @@ ADR::variableSetUp ()
     //
     // DEFINE ERROR ESTIMATION QUANTITIES
     //
-    ErrorSetUp();
+    error_setup();
 }

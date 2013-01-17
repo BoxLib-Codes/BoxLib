@@ -31,9 +31,12 @@ static Real fixed_dt     = -1.0;
 static Real initial_dt   = -1.0;
 static Real dt_cutoff    = 0.0;
 
+int          ADR::strict_subcycling = 0;
+
 bool         ADR::dump_old      = false;
 
 int          ADR::verbose       = 0;
+int          ADR::show_timings  = 0;
 Real         ADR::cfl           = 0.8;
 Real         ADR::init_shrink   = 1.0;
 Real         ADR::change_max    = 1.1;
@@ -72,12 +75,12 @@ int          ADR::normalize_species = 0;
 // Note: ADR::variableSetUp is in ADR_setup.cpp
 
 void
-ADR::variableCleanUp () 
+ADR::variable_cleanup () 
 {
 #ifdef DIFFUSION
   if (diffusion != 0) {
     if (verbose && ParallelDescriptor::IOProcessor()) {
-      cout << "Deleting diffusion in variableCleanUp..." << '\n';
+      cout << "Deleting diffusion in variable_cleanup..." << '\n';
     }
     delete diffusion;
     diffusion = 0;
@@ -109,6 +112,8 @@ ADR::read_params ()
     pp.query("do_reflux",do_reflux);
     do_reflux = (do_reflux ? 1 : 0);
     pp.get("dt_cutoff",dt_cutoff);
+
+    pp.query("strict_subcycling",strict_subcycling);
 
     pp.query("dump_old",dump_old);
 
@@ -223,12 +228,12 @@ ADR::ADR ()
 }
 
 ADR::ADR (Amr&            papa,
-                int             lev,
-                const Geometry& level_geom,
-                const BoxArray& bl,
-                Real            time)
+          ID              id,
+          const Geometry& level_geom,
+          const BoxArray& bl,
+          Real            time)
     :
-    AmrLevel(papa,lev,level_geom,bl,time) 
+    AmrRegion(papa,id,level_geom,bl,time) 
 {
     buildMetrics();
 
@@ -239,7 +244,7 @@ ADR::ADR (Amr&            papa,
 #ifdef DIFFUSION
       // diffusion is a static object, only alloc if not already there
       if (diffusion == 0) 
-	diffusion = new Diffusion(parent,&phys_bc);
+	diffusion = new Diffusion(master,&phys_bc);
 
       diffusion->install_level(level,this,volume,area);
 #endif
@@ -256,7 +261,7 @@ ADR::restart (Amr&     papa,
                  istream& is,
                  bool     bReadSpecial)
 {
-    AmrLevel::restart(papa,is,bReadSpecial);
+    AmrRegion::restart(papa,is,bReadSpecial);
 
     buildMetrics();
 
@@ -269,7 +274,7 @@ ADR::restart (Amr&     papa,
 #ifdef DIFFUSION
     if (level == 0) {
        BL_ASSERT(diffusion == 0);
-       diffusion = new Diffusion(parent,&phys_bc);
+       diffusion = new Diffusion(master,&phys_bc);
     }
 #endif
 }
@@ -280,7 +285,7 @@ ADR::checkPoint(const std::string& dir,
                    VisMF::How     how,
                    bool dump_old_default)
 {
-  AmrLevel::checkPoint(dir, os, how, dump_old);
+  AmrRegion::checkPoint(dir, os, how, dump_old);
 }
 
 std::string
@@ -297,7 +302,7 @@ ADR::thePlotFileType () const
 void
 ADR::setPlotVariables ()
 {
-  AmrLevel::setPlotVariables();
+  AmrRegion::setPlotVariables();
 
   ParmParse pp("act");
 
@@ -330,7 +335,7 @@ ADR::setPlotVariables ()
 	      string spec_string = "X(";
               spec_string += spec_name;
               spec_string += ')';
-	      parent->addDerivePlotVar(spec_string);
+	      master->addDerivePlotVar(spec_string);
               delete [] spec_name;
 	  }
       }
@@ -351,7 +356,7 @@ ADR::writePlotFile (const std::string& dir,
     std::vector<std::pair<int,int> > plot_var_map;
     for (int typ = 0; typ < desc_lst.size(); typ++)
         for (int comp = 0; comp < desc_lst[typ].nComp();comp++)
-            if (parent->isStatePlotVar(desc_lst[typ].name(comp)) &&
+            if (master->isStatePlotVar(desc_lst[typ].name(comp)) &&
                 desc_lst[typ].getType() == IndexType::TheCellType())
                 plot_var_map.push_back(std::pair<int,int>(typ,comp));
 
@@ -363,7 +368,7 @@ ADR::writePlotFile (const std::string& dir,
 	 it != dlist.end();
 	 ++it)
     {
-        if (parent->isDerivePlotVar(it->name()))
+        if (master->isDerivePlotVar(it->name()))
 	{
             derive_names.push_back(it->name());
             num_derive++;
@@ -404,8 +409,8 @@ ADR::writePlotFile (const std::string& dir,
         }
 
         os << BL_SPACEDIM << '\n';
-        os << parent->cumTime() << '\n';
-        int f_lev = parent->finestLevel();
+        os << master->cumTime() << '\n';
+        int f_lev = master->finestLevel();
         os << f_lev << '\n';
         for (i = 0; i < BL_SPACEDIM; i++)
             os << Geometry::ProbLo(i) << ' ';
@@ -414,18 +419,18 @@ ADR::writePlotFile (const std::string& dir,
             os << Geometry::ProbHi(i) << ' ';
         os << '\n';
         for (i = 0; i < f_lev; i++)
-            os << parent->refRatio(i)[0] << ' ';
+            os << master->refRatio(i)[0] << ' ';
         os << '\n';
         for (i = 0; i <= f_lev; i++)
-            os << parent->Geom(i).Domain() << ' ';
+            os << master->Geom(i).Domain() << ' ';
         os << '\n';
         for (i = 0; i <= f_lev; i++)
-            os << parent->levelSteps(i) << ' ';
+            os << master->regionSteps(ROOT_ID) << ' ';
         os << '\n';
         for (i = 0; i <= f_lev; i++)
         {
             for (int k = 0; k < BL_SPACEDIM; k++)
-                os << parent->Geom(i).CellSize()[k] << ' ';
+                os << master->Geom(i).CellSize()[k] << ' ';
             os << '\n';
         }
         os << (int) Geometry::Coord() << '\n';
@@ -460,7 +465,7 @@ ADR::writePlotFile (const std::string& dir,
     if (ParallelDescriptor::IOProcessor())
     {
         os << level << ' ' << grids.size() << ' ' << cur_time << '\n';
-        os << parent->levelSteps(level) << '\n';
+        os << master->regionSteps(ROOT_ID) << '\n';
 
         for (i = 0; i < grids.size(); ++i)
         {
@@ -591,7 +596,7 @@ ADR::setTimeLevel (Real time,
                       Real dt_old,
                       Real dt_new)
 {
-    AmrLevel::setTimeLevel(time,dt_old,dt_new);
+    AmrRegion::setTimeLevel(time,dt_old,dt_new);
 }
 
 void
@@ -626,13 +631,13 @@ ADR::initData ()
 }
 
 void
-ADR::init (AmrLevel &old)
+ADR::init (AmrRegion &old)
 {
     ADR* oldlev = (ADR*) &old;
     //
     // Create new grid data by fillpatching from old.
     //
-    Real dt_new    = parent->dtLevel(level);
+    Real dt_new    = master->dtRegion(m_id);
     Real cur_time  = oldlev->state[State_Type].curTime();
     Real prev_time = oldlev->state[State_Type].prevTime();
     Real dt_old    = cur_time - prev_time;
@@ -655,11 +660,11 @@ ADR::init (AmrLevel &old)
 void
 ADR::init ()
 {
-    Real dt        = parent->dtLevel(level);
-    Real cur_time  = getLevel(level-1).state[State_Type].curTime();
-    Real prev_time = getLevel(level-1).state[State_Type].prevTime();
+    Real dt        = master->dtRegion(m_id);
+    Real cur_time  = parent_region->get_state_data(State_Type).curTime();
+    Real prev_time = parent_region->get_state_data(State_Type).prevTime();
 
-    Real dt_old = (cur_time - prev_time)/(Real)parent->MaxRefRatio(level-1);
+    Real dt_old = (cur_time - prev_time)/(Real)master->MaxRefRatio(level-1);
 
     setTimeLevel(cur_time,dt_old,dt);
     MultiFab& S_new = get_new_data(State_Type);
@@ -667,14 +672,14 @@ ADR::init ()
 }
 
 Real
-ADR::initialTimeStep ()
+ADR::initial_time_step ()
 {
     Real dummy_dt = 0.0;
-    return (initial_dt > 0.0) ? initial_dt : init_shrink*estTimeStep(dummy_dt);
+    return (initial_dt > 0.0) ? initial_dt : init_shrink*est_time_step(dummy_dt);
 }
 
 Real
-ADR::estTimeStep (Real dt_old)
+ADR::est_time_step (Real dt_old)
 {
     if (fixed_dt > 0.0)
         return fixed_dt;
@@ -699,19 +704,19 @@ ADR::estTimeStep (Real dt_old)
     estdt *= cfl;
 
     if (verbose && ParallelDescriptor::IOProcessor())
-        cout << "ADR::estTimeStep at level " << level << ":  estdt = " << estdt << '\n';
+        cout << "ADR::est_time_step at level " << level << ":  estdt = " << estdt << '\n';
 
     return estdt;
 }
 void
 ADR::computeNewDt (int                   finest_level,
-                      int                   sub_cycle,
-                      Array<int>&           n_cycle,
-                      const Array<IntVect>& ref_ratio,
-                      Array<Real>&          dt_min,
-                      Array<Real>&          dt_level,
-                      Real                  stop_time,
-                      int                   post_regrid_flag)
+                   int                   sub_cycle,
+                   Tree<int>&            n_cycle,
+                   const Array<IntVect>& ref_ratio,
+                   Tree<Real>&           dt_reg_min,
+                   Tree<Real>&           dt_region,
+                   Real                  stop_time,
+                   int                   post_regrid_flag)
 {
     //
     // We are at the end of a coarse grid timecycle.
@@ -720,59 +725,99 @@ ADR::computeNewDt (int                   finest_level,
     if (level > 0)
         return;
 
-    int i;
-    n_cycle[0] = 1;
-    for (i = 1; i <= finest_level; i++) {
-        n_cycle[i] = sub_cycle ? parent->MaxRefRatio(i-1) : 1;
-    }
-
     Real dt_0 = 1.0e+100;
     int n_factor = 1;
-    for (i = 0; i <= finest_level; i++)
+    ID id;
+    TreeIterator<int> nc_it = n_cycle.getIterator();
+    TreeIterator<Real> dt_it = dt_reg_min.getIterator(Prefix);
+    for (; !dt_it.isFinished(); ++dt_it)
     {
-        ADR& adv_level = getLevel(i);
-        dt_min[i] = adv_level.estTimeStep(dt_level[i]);
+        id = dt_it.getID();
+        ADR& adv_level = get_region(id);
+        dt_reg_min.setData(id,adv_level.est_time_step(dt_region.getData(id)));
     }
 
     if (fixed_dt <= 0.0)
     {
-       if (post_regrid_flag == 1) 
-       {
-          //
-          // Limit dt's by pre-regrid dt
-          //
-          for (i = 0; i <= finest_level; i++)
-          {
-              dt_min[i] = std::min(dt_min[i],dt_level[i]);
-          }
-       } 
-       else 
-       {
-          //
-          // Limit dt's by change_max * old dt
-          //
-          for (i = 0; i <= finest_level; i++)
-          {
-             if (verbose && ParallelDescriptor::IOProcessor())
-                 if (dt_min[i] > change_max*dt_level[i])
-                 {
-                    cout << "ADR::computeNewDt : limiting dt at level " << i << std::endl;
-                    cout << " ... new dt computed: " << dt_min[i] << std::endl;
-                    cout << " ... but limiting to: " << change_max*dt_level[i] <<
-                            " = " << change_max << " * " << dt_level[i] << std::endl;
-                 }
-              dt_min[i] = std::min(dt_min[i],change_max*dt_level[i]);
-          }
-       } 
-    }
+        bool sub_unchanged=true;
+        if ((master->maxLevel() > 0) && (level == 0) &&
+            (master->subcyclingMode() == "Optimal") && 
+            (master->okToRegrid(m_id) || master->regionSteps(ROOT_ID) == 0) )
+        {
+            Tree<int> new_cycle(n_cycle);
+            // The max allowable dt
+            Tree<Real> dt_max(dt_reg_min);
+            // find the maximum number of cycles allowed.
+            std::list<int> structure = new_cycle.getStructure(ROOT_ID);
+            Tree<int> cycle_max;
+            Tree<Real> est_work;
+            cycle_max.setRoot(1);
+            est_work.setRoot(master->coarseRegion().estimateWork());
+            cycle_max.buildFromStructure(ROOT_ID, structure);
+            est_work.buildFromStructure(ROOT_ID, structure);
+            // set non-root elements of est_work and cycle_max
+            nc_it = cycle_max.getIterator(Prefix);
+            for ( ++nc_it; !nc_it.isFinished(); ++nc_it)
+            {
+                id = nc_it.getID();
+                int level = id.level();
+                cycle_max.setData(id, master->MaxRefRatio(level-1));
+                est_work.setData(id, master->getRegion(id).estimateWork());
+            }
 
+            // this value will be used only if the subcycling pattern is changed.
+            dt_0 = master->computeOptimalSubcycling(new_cycle, dt_max, est_work, cycle_max);
+            nc_it = cycle_max.getIterator(Prefix);
+            for ( ; !nc_it.isFinished(); ++nc_it)
+            {
+                id = nc_it.getID();
+                if (n_cycle.getData(id) != new_cycle.getData(id))
+                {
+                    sub_unchanged = false;
+                    n_cycle.setData(id,new_cycle.getData(id));
+                }
+            }
+            
+        }
+        
+        if (sub_unchanged)
     //
-    // Find the minimum over all levels
-    //
-    for (i = 0; i <= finest_level; i++)
-    {
-        n_factor *= n_cycle[i];
-        dt_0 = std::min(dt_0,n_factor*dt_min[i]);
+        // Limit dt's by change_max * old dt
+        //
+        {
+            dt_it = dt_reg_min.getIterator(Prefix);
+            for (; !dt_it.isFinished(); ++dt_it)
+            {
+                id = dt_it.getID();
+                if (verbose && ParallelDescriptor::IOProcessor())
+                {
+                    if (dt_reg_min.getData(id) > change_max*dt_region.getData(id))
+                    {
+                        cout << "ADR::compute_new_dt : limiting dt at level "
+                             << id.size()-1 << " in region " << id << '\n';
+                        cout << " ... new dt computed: " << dt_reg_min.getData(id)
+                             << '\n';
+                        cout << " ... but limiting to: "
+                             << change_max * dt_region.getData(id) << " = " << change_max
+                             << " * " << dt_region.getData(id) << '\n';
+                    }
+                }
+
+                dt_reg_min.setData(id,std::min(dt_reg_min.getData(id), change_max * dt_region.getData(id)));
+            }
+            //
+            // Find the max allowed Dt by finding the minmax over all levels
+            //
+            master->FindMaxDt(dt_0, n_cycle, dt_reg_min);
+        }
+        else
+        {
+            if (verbose && ParallelDescriptor::IOProcessor())
+            {
+                cout << "ADR: Changing subcycling pattern. New pattern:\n";
+                cout << n_cycle.toString();
+            }
+        }
     }
 
     //
@@ -786,20 +831,30 @@ ADR::computeNewDt (int                   finest_level,
     }
 
     n_factor = 1;
-    for (i = 0; i <= finest_level; i++)
+    nc_it = n_cycle.getIterator(Prefix);
+    dt_region.setRoot(dt_0);
+    // Apply figure out all dt's from dt_0
+    nc_it = n_cycle.getIterator(Prefix);
+    for (++nc_it; !nc_it.isFinished(); ++nc_it)
     {
-        n_factor *= n_cycle[i];
-        dt_level[i] = dt_0/n_factor;
+        id = nc_it.getID();
+        dt_region.setData(id, dt_region.getData(nc_it.getParentID()) / n_cycle.getData(id));
+    }
+ 
+    if (verbose && ParallelDescriptor::IOProcessor())
+    {
+        cout << "ADR: New dt:\n";
+        cout << dt_region.toString();
     }
 }
 
 void
 ADR::computeInitialDt (int                   finest_level,
-                          int                   sub_cycle,
-                          Array<int>&           n_cycle,
-                          const Array<IntVect>& ref_ratio,
-                          Array<Real>&          dt_level,
-                          Real                  stop_time)
+                       int                   sub_cycle,
+                       Tree<int>&            n_cycle,
+                       const Array<IntVect>& ref_ratio,
+                       Tree<Real>&           dt_region,
+                       Real                  stop_time)
 {
     //
     // Grids have been constructed, compute dt for all levels.
@@ -807,38 +862,117 @@ ADR::computeInitialDt (int                   finest_level,
     if (level > 0)
         return;
 
-    int i;
-    n_cycle[0] = 1;
-    for (i = 1; i <= finest_level; i++)
-    {
-        n_cycle[i] = sub_cycle ? parent->MaxRefRatio(i-1) : 1;
-    }
-
     Real dt_0 = 1.0e+100;
     int n_factor = 1;
-    for (i = 0; i <= finest_level; i++)
+    ID id;
+    if (master->subcyclingMode() == "Optimal")
     {
-        dt_level[i] = getLevel(i).initialTimeStep();
-        n_factor   *= n_cycle[i];
-        dt_0 = std::min(dt_0,n_factor*dt_level[i]);
-    }
+        Tree<int> new_cycle(n_cycle);
+        // find the maximum number of cycles allowed.
+        std::list<int> structure = new_cycle.getStructure(ROOT_ID);
+        Tree<int> cycle_max;
+        Tree<Real> est_work;
+        cycle_max.setRoot(1);
+        est_work.setRoot(master->coarseRegion().estimateWork());
+        cycle_max.buildFromStructure(ROOT_ID, structure);
+        est_work.buildFromStructure(ROOT_ID, structure);
+        // set non-root elements of est_work and cycle_max
+        TreeIterator<int> nc_it = cycle_max.getIterator(Prefix);
+        for ( ++nc_it; !nc_it.isFinished(); ++nc_it)
+        {
+            id = nc_it.getID();
+            int level = id.level();
+            cycle_max.setData(id, master->MaxRefRatio(level-1));
+            est_work.setData(id, master->getRegion(id).estimateWork());
+        }
+        // The max allowable dt
+        Tree<Real> dt_max;
+        dt_max.buildFromStructure(ROOT_ID, structure);
+        TreeIterator<Real> dt_it = dt_max.getIterator(Prefix);
+        for (; !dt_it.isFinished(); ++dt_it)
+        {
+            id = dt_it.getID();
+            dt_max.setData(id, get_region(id).initial_time_step());
+        }
+        dt_0 = master->computeOptimalSubcycling(new_cycle, dt_max, est_work, cycle_max);
+        nc_it = n_cycle.getIterator(Prefix);
+        for ( ; !nc_it.isFinished(); ++nc_it)
+        {
+            id = nc_it.getID();
+            n_cycle.setData(id,new_cycle.getData(id));
+            BL_ASSERT(n_cycle.getData(id) <= cycle_max.getData(id));
+        }
 
+        if (verbose && ParallelDescriptor::IOProcessor())
+        {
+            cout << "ADR: Initial subcycling pattern:\n";
+            cout << n_cycle.toString();
+        }
+    }
+    else
+    {
+        TreeIterator<Real> dt_it = dt_region.getIterator();
+        for (; !dt_it.isFinished(); ++dt_it)
+        {
+            id = dt_it.getID();
+            dt_region.setData(id,get_region(id).initial_time_step());
+        }
+        //
+        // Find max coarse dt by minmaxing over levels
+        //
+        master->FindMaxDt(dt_0, n_cycle, dt_region);
+    }
+    
     //
     // Limit dt's by the value of stop_time.
     //
-    const Real eps = 0.001*dt_0;
-    Real cur_time  = state[State_Type].curTime();
-    if (stop_time >= 0.0) {
+    const Real eps = 0.001 * dt_0;
+    Real cur_time = state[State_Type].curTime();
+    if (stop_time >= 0.0)
+    {
         if ((cur_time + dt_0) > (stop_time - eps))
             dt_0 = stop_time - cur_time;
     }
-
     n_factor = 1;
-    for (i = 0; i <= finest_level; i++)
+    dt_region.setRoot(dt_0);
+    // Apply figure out all dt's from dt_0
+    TreeIterator<int> nc_it = n_cycle.getIterator(Prefix);
+    for (++nc_it; !nc_it.isFinished(); ++nc_it)
     {
-        n_factor *= n_cycle[i];
-        dt_level[i] = dt_0/n_factor;
+        id = nc_it.getID();
+        dt_region.setData(id, dt_region.getData(nc_it.getParentID()) / n_cycle.getData(id));
     }
+    
+    if (verbose && ParallelDescriptor::IOProcessor())
+    {
+        cout << "ADR: Initial dt:\n";
+        cout << dt_region.toString();
+    }
+}
+
+void
+ADR::computeRestrictedDt (ID  base_region,
+                          Tree<int>&  n_cycle,
+                          Tree<Real>& dt_region)
+{
+    std::list<int> structure = n_cycle.getStructure(ROOT_ID);
+    Tree<int> cycle_max;
+    Tree<Real> dt_max;
+    cycle_max.buildFromStructure(structure);
+    dt_max.buildFromStructure(structure);
+    TreeIterator<int> it = cycle_max.getIterator(base_region);
+    ID id;
+    // Setup cycle_max and dt_max
+    for ( ; !it.isFinished(); ++it)
+    {
+        id = it.getID();
+        if (id.size() == 1)
+            cycle_max.setData(id, 1);
+        else
+            cycle_max.setData(id, master->MaxRefRatio(id.size()-2));
+        dt_max.setData(id, get_region(id).est_time_step(dt_region.getData(id)));
+    }
+    master->setRestrictedSubcycling(base_region, n_cycle, dt_region, dt_max, cycle_max);
 }
 
 void
@@ -848,18 +982,20 @@ ADR::post_timestep (int iteration)
     // Integration cycle on fine level grids is complete
     // do post_timestep stuff here.
     //
-    int finest_level = parent->finestLevel();
+    int finest_level = master->finestLevel();
 
     if (do_reflux && level < finest_level) {
 
         MultiFab& S_new_crse = get_new_data(State_Type);
 
-        reflux();
+        //We must reflux if a region at the next finer level is subcycled relative to this level;
+        //   otherwise the reflux was done as part of the multilevel advance
+        reflux(-1);
 
         // We need to do this before anything else because refluxing changes the values of coarse cells
         //    underneath fine grids with the assumption they'll be over-written by averaging down
         if (level < finest_level)
-           avgDown();
+           average_down();
 
         // This needs to be done after any changes to the state from refluxing.
         enforce_nonnegative_species(S_new_crse);
@@ -867,16 +1003,14 @@ ADR::post_timestep (int iteration)
     }
 
     if (level < finest_level)
-        avgDown();
+        average_down();
 
     if (level == 0)
     {
-        int nstep = parent->levelSteps(0);
+        int nstep = master->regionSteps(ROOT_ID);
 
         if ((sum_interval > 0) && (nstep%sum_interval == 0) )
-        {
             sum_integrated_quantities();
-        }         
     }
 }
 void
@@ -887,11 +1021,11 @@ ADR::post_restart ()
 #ifdef DIFFUSION
       // diffusion is a static object, only alloc if not already there
       if (diffusion == 0)
-        diffusion = new Diffusion(parent,&phys_bc);
+        diffusion = new Diffusion(master,&phys_bc);
 
       if (level == 0) 
-         for (int lev = 0; lev <= parent->finestLevel(); lev++) {
-            AmrLevel& this_level = getLevel(lev);
+         for (int lev = 0; lev <= master->finestLevel(); lev++) {
+            AmrRegion& this_region = getLevel(lev);
                 ADR& cs_level = getLevel(lev);
             diffusion->install_level(lev,&this_level,
                                      cs_level.Volume(),cs_level.Area());
@@ -908,8 +1042,7 @@ ADR::postCoarseTimeStep (Real cumtime)
 }
 
 void
-ADR::post_regrid (int lbase,
-                     int new_finest)
+ADR::post_regrid (ID base_region, int new_finest)
 {
 }
 
@@ -922,14 +1055,19 @@ ADR::post_init (Real stop_time)
     // Average data down from finer levels
     // so that conserved data is consistent between levels.
     //
-    int finest_level = parent->finestLevel();
-    for (int k = finest_level-1; k>= 0; k--)
-        getLevel(k).avgDown();
+    int finest_level = master->finestLevel();
 
-    if ( (sum_interval > 0) && (parent->levelSteps(0)%sum_interval == 0) )
+    for (int k = finest_level - 1; k >= 0; k--)
     {
-        sum_integrated_quantities();
+        RegionIterator it = master->getRegionIterator(k);
+        for ( ; !it.isFinished(); ++it)
+        {
+            get_region(it.getID()).average_down();
+        }
     }
+
+    if ( (sum_interval > 0) && (master->regionSteps(ROOT_ID)%sum_interval == 0) )
+        sum_integrated_quantities();
 }
 
 int
@@ -937,7 +1075,12 @@ ADR::okToContinue ()
 {
     if (level > 0)
         return 1;
-    return  parent->dtLevel(0) > dt_cutoff;
+
+    int test = 1;
+    if (master->dtRegion(ROOT_ID) < dt_cutoff)
+        test = 0;
+
+    return test;
 }
 
 void
@@ -994,13 +1137,43 @@ ADR::getNewSource (Real old_time, Real new_time, Real dt, MultiFab& ext_src)
 }
 
 void
-ADR::reflux ()
+ADR::reflux (int check_children)
 {
-    BL_ASSERT(level<parent->finestLevel());
+    BL_ASSERT(level<master->finestLevel());
 
     const Real strt = ParallelDescriptor::second();
 
-    getFluxReg(level+1).Reflux(get_new_data(State_Type),volume,1.0,0,0,NUM_STATE,geom);
+    BL_ASSERT(level<master->finestLevel());
+ 
+    if (check_children != -1 && check_children != 0 && check_children != 1)
+        BoxLib::Abort("Must have check_children = {-1,0,1} in reflux()");
+ 
+    // Possible values for check_children
+    // -1: exclude children with the same timestep (if called from post_timestep)
+    // 0: no check
+    // 1: exclude children with a different timestep (if called from multilevel advance)
+ 
+    PList<AmrRegion> children;
+    master->getRegions().getChildrenOfNode(m_id, children);
+    for (PList<AmrRegion>::iterator it = children.begin(); it != children.end(); ++it)
+    {
+        ID c_id = (*it)->getID();
+ 
+        // Note that if (strict_subcycling == 1) then every region advances
+        //      independently so we reflux from every child regardless of its dt.
+ 
+        // Skip this child if it wasn't part of the ml advance.
+        if ( (check_children == 1) && (strict_subcycling == 0) &&
+              master->dtRegion(m_id) != master->dtRegion(c_id))
+            continue;
+ 
+        // Skip this child if it was    part of the ml advance.
+        if ( (check_children == -1) && (strict_subcycling == 0) &&
+              master->dtRegion(m_id) == master->dtRegion(c_id))
+            continue;
+
+        get_flux_reg(c_id).Reflux(get_new_data(State_Type),volume,1.0,0,0,NUM_STATE,geom);
+    }
 
     if (verbose)
     {
@@ -1015,11 +1188,11 @@ ADR::reflux ()
 }
 
 void
-ADR::avgDown ()
+ADR::average_down (bool check_children)
 {
-  if (level == parent->finestLevel()) return;
+  if (level == master->finestLevel()) return;
 
-  avgDown(State_Type);
+  average_down(State_Type,check_children);
 }
 
 void
@@ -1034,51 +1207,62 @@ ADR::enforce_nonnegative_species (MultiFab& S_new)
 }
 
 void
-ADR::avgDown (int state_indx)
+ADR::average_down (int state_index, bool check_children)
 {
-    if (level == parent->finestLevel()) return;
-
-    ADR& fine_lev = getLevel(level+1);
-    MultiFab&  S_crse   = get_new_data(state_indx);
-    MultiFab&  S_fine   = fine_lev.get_new_data(state_indx);
-    MultiFab&  fvolume  = fine_lev.volume;
-    const int  ncomp    = S_fine.nComp();
-
-    BL_ASSERT(S_crse.boxArray() == volume.boxArray());
-    BL_ASSERT(fvolume.boxArray() == S_fine.boxArray());
-    //
-    // Coarsen() the fine stuff on processors owning the fine data.
-    //
-    BoxArray crse_S_fine_BA(S_fine.boxArray().size());
-
-    for (int i = 0; i < S_fine.boxArray().size(); ++i)
+    if (level == master->finestLevel()) return;
+ 
+    MultiFab& S_crse = get_new_data(state_index);
+ 
+    //iterate over chidlren
+    RegionIterator c_it = master->getRegionIterator(m_id, level+1);
+    for ( ; !c_it.isFinished(); ++c_it)
     {
-        crse_S_fine_BA.set(i,BoxLib::coarsen(S_fine.boxArray()[i],fine_ratio));
-    }
+        if ( check_children && strict_subcycling == 0 && 
+             master->dtRegion(m_id) != master->dtRegion(c_it.getID()))
+            continue;
+        ADR& fine_region = get_region(c_it.getID());
+        MultiFab& S_fine = fine_region.get_new_data(state_index);
+        const int num_comps = S_fine.nComp();
 
-    MultiFab crse_S_fine(crse_S_fine_BA,ncomp,0);
-    MultiFab crse_fvolume(crse_S_fine_BA,1,0);
+        //
+        // Coarsen() the fine stuff on processors owning the fine data.
+        //
+        BoxArray crse_S_fine_BA(S_fine.boxArray().size());
+ 
+        for (int i = 0; i < S_fine.boxArray().size(); ++i)
+        {
+            crse_S_fine_BA.set(i, BoxLib::coarsen(S_fine.boxArray()[i],
+                                                  fine_ratio));
+        }
+ 
+        MultiFab crse_S_fine(crse_S_fine_BA, num_comps, 0);
+        MultiFab crse_fvolume(crse_S_fine_BA,1,0);
+        crse_fvolume.copy(volume);
 
-    crse_fvolume.copy(volume);
+        MultiFab& fvolume = fine_region.Volume();
+        BL_ASSERT(S_crse.boxArray() == volume.boxArray());
+        BL_ASSERT(fvolume.boxArray() == S_fine.boxArray());
 
-    for (MFIter mfi(S_fine); mfi.isValid(); ++mfi)
-    {
-        const int        i        = mfi.index();
-        const Box&       ovlp     = crse_S_fine_BA[i];
-        FArrayBox&       crse_fab = crse_S_fine[i];
-        const FArrayBox& crse_vol = crse_fvolume[i];
-        const FArrayBox& fine_fab = S_fine[i];
-        const FArrayBox& fine_vol = fvolume[i];
+        for (MFIter mfi(S_fine); mfi.isValid(); ++mfi)
+        {
+            const int        i        = mfi.index();
+            const Box&       ovlp     = crse_S_fine_BA[i];
+            FArrayBox&       crse_fab = crse_S_fine[i];
+            const FArrayBox& crse_vol = crse_fvolume[i];
+            const FArrayBox& fine_fab = S_fine[i];
+            const FArrayBox& fine_vol = fvolume[i];
+ 
+       	    BL_FORT_PROC_CALL(AVGDOWN,avgdown)
+                (BL_TO_FORTRAN(crse_fab), num_comps,
+                 BL_TO_FORTRAN(crse_vol),
+                 BL_TO_FORTRAN(fine_fab),
+                 BL_TO_FORTRAN(fine_vol),
+                 ovlp.loVect(),ovlp.hiVect(),fine_ratio.getVect());
+        }
 
-	BL_FORT_PROC_CALL(AVGDOWN,avgdown)
-            (BL_TO_FORTRAN(crse_fab), ncomp,
-             BL_TO_FORTRAN(crse_vol),
-             BL_TO_FORTRAN(fine_fab),
-             BL_TO_FORTRAN(fine_vol),
-             ovlp.loVect(),ovlp.hiVect(),fine_ratio.getVect());
-    }
+        S_crse.copy(crse_S_fine);
 
-    S_crse.copy(crse_S_fine);
+     }
 }
 
 void
@@ -1091,7 +1275,7 @@ ADR::allocOldData ()
 void
 ADR::removeOldData()
 {
-    AmrLevel::removeOldData();
+    AmrRegion::removeOldData();
 }
 
 void
@@ -1154,7 +1338,7 @@ ADR::derive (const std::string& name,
                 Real           time,
                 int            ngrow)
 {
-   return AmrLevel::derive(name,time,ngrow);
+   return AmrRegion::derive(name,time,ngrow);
 }
 
 void
@@ -1163,7 +1347,7 @@ ADR::derive (const std::string& name,
                 MultiFab&      mf,
                 int            dcomp)
 {
-    AmrLevel::derive(name,time,mf,dcomp);
+    AmrRegion::derive(name,time,mf,dcomp);
 }
 
 Real
@@ -1175,25 +1359,27 @@ ADR::sumDerive (const std::string& name,
 
     BL_ASSERT(!(mf == 0));
 
-    BoxArray baf;
+    BoxArray ba_fine;
 
-    if (level < parent->finestLevel())
+    if (level < master->finestLevel())
     {
-        baf = parent->boxArray(level+1);
-        baf.coarsen(fine_ratio);
+        ba_fine = master->boxArray(m_id, level + 1);
+        ba_fine.coarsen(fine_ratio);
     }
+
+    std::vector< std::pair<int,Box> > isects;
 
     for (MFIter mfi(*mf); mfi.isValid(); ++mfi)
     {
         FArrayBox& fab = (*mf)[mfi];
 
-        if (level < parent->finestLevel())
+        if (level < master->finestLevel())
         {
-            std::vector< std::pair<int,Box> > isects = baf.intersections(grids[mfi.index()]);
+            ba_fine.intersections(grids[mfi.index()],isects);
 
             for (int ii = 0; ii < isects.size(); ii++)
             {
-                fab.setVal(0,isects[ii].second,0);
+                fab.setVal(0, isects[ii].second, 0, fab.nComp());
             }
         }
 
@@ -1271,6 +1457,7 @@ ADR::SyncInterp (MultiFab&      CrseSync,
                     SyncInterpType which_interp,
                     int            state_comp)
 {
+#if 0
     BL_ASSERT(which_interp >= 0 && which_interp <= 5);
 
     Interpolater* interpolater = 0;
@@ -1287,9 +1474,9 @@ ADR::SyncInterp (MultiFab&      CrseSync,
 
     ADR&   fine_level = getLevel(f_lev);
     const BoxArray& fgrids     = fine_level.boxArray();
-    const Geometry& fgeom      = parent->Geom(f_lev);
+    const Geometry& fgeom      = master->Geom(f_lev);
     const BoxArray& cgrids     = getLevel(c_lev).boxArray();
-    const Geometry& cgeom      = parent->Geom(c_lev);
+    const Geometry& cgeom      = master->Geom(c_lev);
     const Real*     dx_crse    = cgeom.CellSize();
     Box             cdomain    = BoxLib::coarsen(fgeom.Domain(),ratio);
     const int*      cdomlo     = cdomain.loVect();
@@ -1403,6 +1590,7 @@ ADR::SyncInterp (MultiFab&      CrseSync,
     }
 
     delete [] bc_new;
+#endif
 }
 
 void

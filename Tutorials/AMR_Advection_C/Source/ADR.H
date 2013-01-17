@@ -2,7 +2,7 @@
 #define _ADR_H_
 
 #include <BC_TYPES.H>
-#include <AmrLevel.H>
+#include <AmrRegion.H>
 #include <ErrorList.H>
 #include <FluxRegister.H>
 
@@ -15,12 +15,12 @@ enum StateType { State_Type = 0,
                  NUM_STATE_TYPE };
 
 //
-// AmrLevel-derived class for hyperbolic conservation equations for stellar media
+// AmrRegion-derived class for hyperbolic conservation equations for stellar media
 //
 
 class ADR
     :
-    public AmrLevel
+    public AmrRegion
 {
 public:
     //
@@ -30,11 +30,10 @@ public:
     //
     //The basic constructor.
     //
-    ADR (Amr&            papa,
-            int             lev,
-            const Geometry& level_geom,
-            const BoxArray& bl,
-            Real            time);
+    ADR (Amr&            papa, ID id, 
+         const Geometry& level_geom,
+         const BoxArray& bl,
+         Real            time);
     //
     //The destructor.
     //
@@ -46,7 +45,7 @@ public:
                           istream& is,
 			  bool bReadSpecial = false);
     //
-    //Call AmrLevel::checkPoint and then add radiation info
+    //Call AmrRegion::checkPoint and then add radiation info
     //
     virtual void checkPoint(const std::string& dir,
                             std::ostream&      os,
@@ -66,18 +65,21 @@ public:
     virtual void writePlotFile (const std::string& dir,
                                 ostream&       os,
                                 VisMF::How     how);
+
     //
     //Define data descriptors.
     //
-    static void variableSetUp ();
+    static void variable_setup();
+
     //
     //Define tagging functions.
     //
-    static void ErrorSetUp ();
+    static void error_setup ();
     //
     //Cleanup data descriptors at end of run.
     //
-    static void variableCleanUp ();
+    static void variable_cleanup ();
+
     //
     //Initialize grid data at problem start-up.
     //
@@ -101,7 +103,7 @@ public:
     //
     //Initialize data on this level from another ADR (during regrid).
     //
-    virtual void init (AmrLevel& old);
+    virtual void init (AmrRegion& old);
     //
     //Initialize data on this level after regridding if old level did not previously exist
     //
@@ -111,40 +113,55 @@ public:
     //
     virtual int okToContinue ();
     //
-    //Advance grids at this level in time.
+    //Advance grids, possibly over multiple levels, in time.
     //
     virtual Real advance (Real time,
                           Real dt,
                           int  iteration,
                           int  ncycle);
+
+    //
+    //Advance grids at just this level in time.
+    //
+    Real advance_level (Real time,
+                        Real dt);
     //
     //Estimate time step.
     //
-    Real estTimeStep (Real dt_old);
+    Real est_time_step (Real dt_old);
     //
     //Compute initial time step.
     //
-    Real initialTimeStep ();
+    Real initial_time_step ();
     //
     //Compute initial `dt'.
     //
     virtual void computeInitialDt (int                   finest_level,
                                    int                   sub_cycle,
-                                   Array<int>&           n_cycle,
+                                   Tree<int>&            n_cycle,
                                    const Array<IntVect>& ref_ratio,
-                                   Array<Real>&          dt_level,
+                                   Tree<Real>&           dt_region,
                                    Real                  stop_time);
     //
     //Compute new `dt'.
     //
     virtual void computeNewDt (int                   finest_level,
                                int                   sub_cycle,
-                               Array<int>&           n_cycle,
+                               Tree<int>&            n_cycle,
                                const Array<IntVect>& ref_ratio,
-                               Array<Real>&          dt_min,
-                               Array<Real>&          dt_level,
+                               Tree<Real>&           dt_min,
+                               Tree<Real>&           dt_region,
                                Real                  stop_time,
                                int                   post_regrid_flag);
+
+    //
+    // Recomputes dt and subcycling pattern for descendents of base_region
+    // without changing dt at base_region.
+    //
+    virtual void computeRestrictedDt (ID  base_region,
+                                      Tree<int>&  n_cycle,
+                                      Tree<Real>& dt_region);
+
     //
     //Allocate data at old time.
     //
@@ -168,8 +185,7 @@ public:
     //
     //Do work after regrid().
     //
-    virtual void post_regrid (int lbase,
-                              int new_finest);   
+    virtual void post_regrid (ID base_region, int new_finest);   
     //
     //Do work after a restart().
     //
@@ -245,6 +261,8 @@ public:
     static int       FirstAdv,  LastAdv,  NumAdv;
     static int       FirstSpec, LastSpec, NumSpec;
 
+    static int       strict_subcycling;
+
 protected:
 
     //
@@ -255,12 +273,15 @@ protected:
     static void adr_network_init ();
     static void read_params ();
 
-    ADR& getLevel (int lev);
+    ADR& get_region (ID region_id);
 
-    FluxRegister& getFluxReg ();
-    FluxRegister& getFluxReg (int lev);
+    FluxRegister& get_flux_reg ();
+    FluxRegister& get_flux_reg (ID region);
 
-    void reflux ();
+    void reflux (int check_children);
+
+    void average_down(bool check_children = false);
+    void average_down(int state_indx, bool check_children = false);
 
     void enforce_nonnegative_species (MultiFab& S_new);
 
@@ -317,6 +338,7 @@ protected:
     static bool      dump_old;
     static int       radius_grow;
     static int       verbose;
+    static int       show_timings;
     static Real      cfl;
     static Real      init_shrink;
     static Real      change_max;
@@ -378,14 +400,14 @@ ADR::Volume ()
 
 inline
 ADR&
-ADR::getLevel (int lev)
+ADR::get_region(ID region_id)
 {
-    return *(ADR *) &parent->getLevel(lev);
+    return *(ADR *) &master->getRegion(region_id);
 }
 
 inline
 FluxRegister&
-ADR::getFluxReg ()
+ADR::get_flux_reg ()
 {
     BL_ASSERT(flux_reg);
     return *flux_reg;
@@ -393,8 +415,8 @@ ADR::getFluxReg ()
 
 inline
 FluxRegister&
-ADR::getFluxReg (int lev)
+ADR::get_flux_reg (ID region)
 {
-    return getLevel(lev).getFluxReg();
+    return get_region(region).get_flux_reg();
 }
 #endif /*_ADR_H_*/
