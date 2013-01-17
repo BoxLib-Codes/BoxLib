@@ -9,7 +9,7 @@ ADR::sum_integrated_quantities ()
     if (verbose <= 0) return;
 
     int finest_level = master->finestLevel();
-    Real dt_crse     = master->dtLevel(0);
+    Real dt_crse     = master->dtRegion(ROOT_ID);
     Real time        = state[State_Type].curTime();
     Real mass        = 0.0;
     Real xvel        = 0.0;
