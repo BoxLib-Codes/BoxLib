@@ -15,7 +15,7 @@ template <class T> class TreeIterator; // Forward Declaration
 template <class T> class Tree;
 
 /*
-  An Tree of Pointers to Objects of Type T.
+  A Tree of Pointers to Objects of Type T.
 
   When a PTree<T> object is destructed, should only the pointers be
   destructed or should the objects to which they point also be deleted?
