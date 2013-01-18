@@ -3,54 +3,56 @@
 
 #include <AmrRegion.H>
 #include <FluxRegister.H>
+#include <Tree.H>
 
 class Diffusion {
 
 public:
 
-  Diffusion(Amr* Parent, BCRec* _phys_bc);
+  Diffusion(Amr* Parent, int _finest_level, BCRec* _phys_bc);
   virtual ~Diffusion ();
+
   void read_params ();
 
-  void install_level (int                   level,
-                      AmrRegion*             level_data,
-                      MultiFab&             volume,
-                      MultiFab*             area);
+  void install_region (ID          region_id,
+                       AmrRegion*  region_data_to_install,
+                       MultiFab&   volume,
+                       MultiFab*   area);
 
   // Level 0 version 
-  void applyop(int level,MultiFab& species,
+  void applyop(ID region_id,MultiFab& species,
                MultiFab& DiffTerm, PArray<MultiFab>& diff_coef);
 
   // Level > 0 version 
-  void applyop(int level,MultiFab& species, MultiFab& Crse,
+  void applyop(ID region_id,MultiFab& species, MultiFab& Crse,
                MultiFab& DiffTerm, PArray<MultiFab>& diff_coef);
 
   void make_mg_bc();
 
-  void GetCrsePhi(int level, 
+  void GetCrsePhi(ID region_id,
                   MultiFab& phi_crse,
                   Real time);
 
-  void zeroPhiFluxReg (int level);
+  void zeroPhiFluxReg (ID region_id);
 
 
 protected:
   //
   // Pointers to amr,amrlevel.
   //
-  Amr*             parent;
-  PArray<AmrRegion> LevelData;
+  Amr*             master;
+  PTree<AmrRegion> region_data;
 
-  PArray<FluxRegister> phi_flux_reg;
+  PTree<FluxRegister> phi_flux_reg;
   //
   // BoxArray at each level
   //
-  Array<BoxArray> grids;
+  Tree<BoxArray> grids;
   //
   // Volume and area fractions.
   //
-  PArray<MultiFab> volume;
-  Array<MultiFab*> area;
+  PTree<MultiFab> volume;
+  Tree<MultiFab*> area;
 
   int mg_bc[2*BL_SPACEDIM];
 
@@ -60,8 +62,8 @@ protected:
   static int   stencil_type;
 
 #if (BL_SPACEDIM < 3)
-  void applyMetricTerms(int level,MultiFab& Rhs, PArray<MultiFab>& coeffs);
-  void unweight_cc(int level,MultiFab& cc);
+  void applyMetricTerms(ID region,MultiFab& Rhs, PArray<MultiFab>& coeffs);
+  void unweight_cc(ID region,MultiFab& cc);
 #endif
 };
 #endif

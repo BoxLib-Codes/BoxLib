@@ -34,11 +34,12 @@ void
 ADR::getDiffusionTerm (Real time, MultiFab& DiffTerm, int comp)
 {
    MultiFab& S_old = get_old_data(State_Type);
+
    if (verbose > 1 && ParallelDescriptor::IOProcessor()) 
-      std::cout << "Calculating diffusion term of component " << comp << " at level " << level 
+      std::cout << "Calculating diffusion term of component " << comp << " in region " << m_id 
                 << " at time " << time << std::endl;
 
-   // Fill at this level.
+   // Fill in this region
    MultiFab species(grids,1,1,Fab_allocate);
    for (FillPatchIterator fpi    (*this,S_old,1,time,State_Type,   comp,1),
                           fpi_rho(*this,S_old,1,time,State_Type,Density,1);
@@ -57,7 +58,7 @@ ADR::getDiffusionTerm (Real time, MultiFab& DiffTerm, int comp)
       coeffs[dir].define(edge_boxes,1,0,Fab_allocate);
    }
 
-   const Geometry& fine_geom = parent->Geom(parent->finestLevel());
+   const Geometry& fine_geom = master->Geom(master->finestLevel());
    const Real*       dx_fine = fine_geom.CellSize();
 
    for (MFIter mfi(S_old); mfi.isValid(); ++mfi)
@@ -76,20 +77,26 @@ ADR::getDiffusionTerm (Real time, MultiFab& DiffTerm, int comp)
      for (int d = 0; d < BL_SPACEDIM; d++)
        geom.FillPeriodicBoundary(coeffs[d]);
 
-   if (level == 0) {
-      diffusion->applyop(level,species,DiffTerm,coeffs);
-   } else if (level > 0) {
+   int level = m_id.level();
+   if (level == 0) 
+   {
+      diffusion->applyop(m_id,species,DiffTerm,coeffs);
+   } 
+   else if (level > 0) 
+   {
       // Fill at next coarser level, if it exists.
-      const BoxArray& crse_grids = getLevel(level-1).boxArray();
+      ID parent_id = m_id.parent();
+      const BoxArray& crse_grids = master->boxArray(parent_id);
+
       MultiFab Crse(crse_grids,1,1,Fab_allocate);
-      for (FillPatchIterator fpi    (getLevel(level-1),Crse,1,time,State_Type,   comp,1),
-                             fpi_rho(getLevel(level-1),Crse,1,time,State_Type,Density,1);
+      for (FillPatchIterator fpi    (master->getRegion(parent_id),Crse,1,time,State_Type,   comp,1),
+                             fpi_rho(master->getRegion(parent_id),Crse,1,time,State_Type,Density,1);
           fpi.isValid()&&fpi_rho.isValid(); ++fpi,++fpi_rho)
       {
         Crse[fpi].copy(fpi());
         Crse[fpi].divide(fpi_rho(),0,0,1);
       }
-      diffusion->applyop(level,species,Crse,DiffTerm,coeffs);
+      diffusion->applyop(m_id,species,Crse,DiffTerm,coeffs);
    }
 
    // Multiply Lap(c) by Rho to make Rho Lap(c)

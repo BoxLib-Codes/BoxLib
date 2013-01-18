@@ -13,16 +13,17 @@
 int  Diffusion::verbose      = 0;
 int  Diffusion::stencil_type = CC_CROSS_STENCIL;
  
-Diffusion::Diffusion(Amr* Parent, BCRec* _phys_bc)
+Diffusion::Diffusion(Amr* Parent, int _finest_level, BCRec* _phys_bc)
   : 
-    parent(Parent),
-    LevelData(MAX_LEV),
-    phi_flux_reg(MAX_LEV, PArrayManage),
-    grids(MAX_LEV),
-    volume(MAX_LEV),
-    area(MAX_LEV),
+    master(Parent),
     phys_bc(_phys_bc)
 {
+    std::list<int> structure = master->getRegions().getStructure();
+    region_data.buildFromStructure(structure),
+    phi_flux_reg.buildFromStructure(structure),
+    grids.buildFromStructure(structure),
+    volume.buildFromStructure(structure),
+    area.buildFromStructure(structure),
     read_params();
     make_mg_bc();
 }
@@ -43,47 +44,52 @@ Diffusion::read_params ()
 }
 
 void
-Diffusion::install_level (int                   level,
-                          AmrRegion*             level_data,
-                          MultiFab&             _volume,
-                          MultiFab*             _area)
+Diffusion::install_region (ID          region_id,
+                           AmrRegion*  region_data_to_install,
+                           MultiFab&   _volume,
+                           MultiFab*    _area)
 {
+    int level = region_id.level();
     if (verbose && ParallelDescriptor::IOProcessor())
         std::cout << "Installing Diffusion level " << level << '\n';
 
-    LevelData.clear(level);
-    LevelData.set(level, level_data);
+    region_data.clearData(region_id);
+    region_data.setData(region_id, region_data_to_install);
 
-    volume.clear(level);
-    volume.set(level, &_volume);
+    volume.clearData(region_id);
+    volume.setData(region_id, &_volume);
 
-    area.set(level, _area);
+    area.setData(region_id, _area);
 
-    BoxArray ba(LevelData[level].boxArray());
-    grids[level] = ba;
+    BoxArray my_grids = region_data_to_install->boxArray();
+    grids.setData(region_id, my_grids);
 
-    if (level > 0) {
-       phi_flux_reg.clear(level);
-       IntVect crse_ratio = parent->refRatio(level-1);
-       phi_flux_reg.set(level,new FluxRegister(grids[level],crse_ratio,level,1));
+    if (level > 0)
+    {
+        phi_flux_reg.clearData(region_id);
+        IntVect crse_ratio = master->refRatio(level-1);
+        phi_flux_reg.setData(region_id, new FluxRegister(my_grids, crse_ratio,
+                                                 level, 1));
     }
 }
 
 void
-Diffusion::zeroPhiFluxReg (int level)
+Diffusion::zeroPhiFluxReg (ID region_id)
 {
-  phi_flux_reg[level].setVal(0.);
+  phi_flux_reg.getData(region_id).setVal(0.);
 }
 
 void
-Diffusion::applyop (int level, MultiFab& Species, 
+Diffusion::applyop (ID region_id, MultiFab& Species, 
                     MultiFab& DiffTerm, PArray<MultiFab>& diff_coef)
 {
+   
     if (verbose > 0 && ParallelDescriptor::IOProcessor()) {
         std::cout << "   " << '\n';
-        std::cout << "... compute diffusive term at level " << level << '\n';
+        std::cout << "... compute diffusive term in region " << region_id << '\n';
     }
 
+    int level = region_id.level();
     int nlevs = 1;
 
     Array< Array<Real> > xa(1);
@@ -98,18 +104,20 @@ Diffusion::applyop (int level, MultiFab& Species,
         xb[0][i] = 0.;
       }
     } else {
-      const Real* dx_crse   = parent->Geom(level-1).CellSize();
+      const Real* dx_crse   = master->Geom(level-1).CellSize();
       for ( int i = 0; i < BL_SPACEDIM; ++i ) {
         xa[0][i] = 0.5 * dx_crse[i];
         xb[0][i] = 0.5 * dx_crse[i];
       }
     }
 
+    BoxArray m_grids = grids.getData(region_id);
+
     //
     // Store the Dirichlet boundary condition for phi in bndry.
     //
-    const Geometry& geom = parent->Geom(level);
-    MacBndry bndry(grids[level],1,geom);
+    const Geometry& geom = master->Geom(level);
+    MacBndry bndry(m_grids, 1, geom);
 
     // Build the homogeneous boundary conditions.  One could setVal
     // the bndry fabsets directly, but we instead do things as if
@@ -126,12 +134,11 @@ Diffusion::applyop (int level, MultiFab& Species,
     std::vector<BoxArray> bav(nlevs);
     std::vector<DistributionMapping> dmv(nlevs);
 
-    ADR* cs = dynamic_cast<ADR*>(&parent->getLevel(level));
-    bav[0] = grids[level];
-    MultiFab& S_new = cs->get_new_data(State_Type);
+    bav[0] = m_grids;
+    MultiFab& S_new = region_data.getData(region_id).get_new_data(State_Type);
     dmv[0] = S_new.DistributionMap();
     std::vector<Geometry> fgeom(1);
-    fgeom[0] = parent->Geom(level);
+    fgeom[0] = master->Geom(level);
 
     MGT_Solver mgt_solver(fgeom, mg_bc, bav, dmv, false, stencil_type);
     
@@ -147,10 +154,10 @@ Diffusion::applyop (int level, MultiFab& Species,
 
     // Need to do this even if Cartesian because the array is needed in set_coefficients
     coeffs[0].resize(BL_SPACEDIM,PArrayManage);
-    Geometry g = cs->Geom();
+    Geometry g = master->Geom(level);
     for (int i = 0; i < BL_SPACEDIM ; i++) {
         coeffs[0].set(i, new MultiFab);
-        g.GetFaceArea(coeffs[0][i],grids[level],i,0);
+        g.GetFaceArea(coeffs[0][i],m_grids,i,0);
         MultiFab::Copy(coeffs[0][i],diff_coef[i],0,0,1,0);
     }
 
@@ -172,10 +179,11 @@ Diffusion::applyop (int level, MultiFab& Species,
 }
 
 void
-Diffusion::applyop (int level, MultiFab& Species, 
+Diffusion::applyop (ID region_id, MultiFab& Species, 
                     MultiFab& Crse, MultiFab& DiffTerm, 
                     PArray<MultiFab>& diff_coef)
 {
+    int level = region_id.level();
     if (verbose > 0 && ParallelDescriptor::IOProcessor()) {
         std::cout << "   " << '\n';
         std::cout << "... compute diffusive term at level " << level << '\n';
@@ -195,7 +203,7 @@ Diffusion::applyop (int level, MultiFab& Species,
         xb[0][i] = 0.;
       }
     } else {
-      const Real* dx_crse   = parent->Geom(level-1).CellSize();
+      const Real* dx_crse   = master->Geom(level-1).CellSize();
       for ( int i = 0; i < BL_SPACEDIM; ++i ) {
         xa[0][i] = 0.5 * dx_crse[i];
         xb[0][i] = 0.5 * dx_crse[i];
@@ -205,13 +213,14 @@ Diffusion::applyop (int level, MultiFab& Species,
     //
     // Store the Dirichlet boundary condition for phi in bndry.
     //
-    const Geometry& geom = parent->Geom(level);
-    MacBndry bndry(grids[level],1,geom);
+    const Geometry& geom = master->Geom(level);
+    BoxArray m_grids = grids.getData(region_id);
+    MacBndry bndry(m_grids,1,geom);
     const int src_comp  = 0;
     const int dest_comp = 0;
     const int num_comp  = 1;
 
-    IntVect crse_ratio = level > 0 ? parent->refRatio(level-1)
+    IntVect crse_ratio = level > 0 ? master->refRatio(level-1)
                                    : IntVect::TheZeroVector();
 
     // Build the homogeneous boundary conditions.  One could setVal
@@ -221,7 +230,7 @@ Diffusion::applyop (int level, MultiFab& Species,
     // boundarys.  Here we creat an mf, setVal, and pass that to
     // the bndry object.
     //
-    BoxArray crse_boxes = BoxArray(grids[level]).coarsen(crse_ratio);
+    BoxArray crse_boxes = BoxArray(m_grids).coarsen(crse_ratio);
     const int in_rad     = 0;
     const int out_rad    = 1; 
     const int extent_rad = 2;
@@ -233,12 +242,11 @@ Diffusion::applyop (int level, MultiFab& Species,
     std::vector<BoxArray> bav(nlevs);
     std::vector<DistributionMapping> dmv(nlevs);
 
-    ADR* cs = dynamic_cast<ADR*>(&parent->getLevel(level));
-    bav[0] = grids[level];
-    MultiFab& S_new = cs->get_new_data(State_Type);
+    bav[0] = m_grids;
+    MultiFab& S_new = region_data.getData(region_id).get_new_data(State_Type);
     dmv[0] = S_new.DistributionMap();
     std::vector<Geometry> fgeom(1);
-    fgeom[0] = parent->Geom(level);
+    fgeom[0] = master->Geom(level);
 
     MGT_Solver mgt_solver(fgeom, mg_bc, bav, dmv, false, stencil_type);
     
@@ -254,10 +262,10 @@ Diffusion::applyop (int level, MultiFab& Species,
 
     // Need to do this even if Cartesian because the array is needed in set_coefficients
     coeffs[0].resize(BL_SPACEDIM,PArrayManage);
-    Geometry g = cs->Geom();
+    Geometry g = master->Geom(level);
     for (int i = 0; i < BL_SPACEDIM ; i++) {
         coeffs[0].set(i, new MultiFab);
-        g.GetFaceArea(coeffs[0][i],grids[level],i,0);
+        g.GetFaceArea(coeffs[0][i],m_grids,i,0);
         MultiFab::Copy(coeffs[0][i],diff_coef[i],0,0,1,0);
     }
 
@@ -280,9 +288,10 @@ Diffusion::applyop (int level, MultiFab& Species,
 
 #if (BL_SPACEDIM < 3)
 void
-Diffusion::applyMetricTerms(int level, MultiFab& Rhs, PArray<MultiFab>& coeffs)
+Diffusion::applyMetricTerms(ID region_id, MultiFab& Rhs, PArray<MultiFab>& coeffs)
 {
-    const Real* dx = parent->Geom(level).CellSize();
+    int level = region_id.level();
+    const Real* dx = master->Geom(level).CellSize();
     int coord_type = Geometry::Coord();
     for (MFIter mfi(Rhs); mfi.isValid(); ++mfi)
     {
@@ -301,14 +310,16 @@ Diffusion::applyMetricTerms(int level, MultiFab& Rhs, PArray<MultiFab>& coeffs)
 
 #if (BL_SPACEDIM < 3)
 void
-Diffusion::unweight_cc(int level, MultiFab& cc)
+Diffusion::unweight_cc(ID region_id, MultiFab& cc)
 {
-    const Real* dx = parent->Geom(level).CellSize();
+    int level = region_id.level();
+    const Real* dx = master->Geom(level).CellSize();
     int coord_type = Geometry::Coord();
+    BoxArray m_grids = grids.getData(region_id);
     for (MFIter mfi(cc); mfi.isValid(); ++mfi)
     {
         int index = mfi.index();
-        const Box bx = grids[level][index];
+        const Box bx = m_grids[index];
         BL_FORT_PROC_CALL(UNWEIGHT_CC,unweight_cc)
             (bx.loVect(), bx.hiVect(),
              BL_TO_FORTRAN(cc[mfi]),dx,&coord_type);
@@ -319,7 +330,7 @@ Diffusion::unweight_cc(int level, MultiFab& cc)
 void
 Diffusion::make_mg_bc ()
 {
-    const Geometry& geom = parent->Geom(0);
+    const Geometry& geom = master->Geom(0);
     for ( int dir = 0; dir < BL_SPACEDIM; ++dir )
     {
         if ( geom.isPeriodic(dir) )

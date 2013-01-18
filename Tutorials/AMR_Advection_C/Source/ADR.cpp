@@ -244,9 +244,9 @@ ADR::ADR (Amr&            papa,
 #ifdef DIFFUSION
       // diffusion is a static object, only alloc if not already there
       if (diffusion == 0) 
-	diffusion = new Diffusion(master,&phys_bc);
+	diffusion = new Diffusion(master, master->finestLevel(), &phys_bc);
 
-      diffusion->install_level(level,this,volume,area);
+      diffusion->install_region(m_id,this,volume,area);
 #endif
 
 }
@@ -274,7 +274,7 @@ ADR::restart (Amr&     papa,
 #ifdef DIFFUSION
     if (level == 0) {
        BL_ASSERT(diffusion == 0);
-       diffusion = new Diffusion(master,&phys_bc);
+       diffusion = new Diffusion(master,master->finestLevel(),&phys_bc);
     }
 #endif
 }
@@ -1021,16 +1021,20 @@ ADR::post_restart ()
 
 #ifdef DIFFUSION
       // diffusion is a static object, only alloc if not already there
+
       if (diffusion == 0)
-        diffusion = new Diffusion(master,&phys_bc);
+	diffusion = new Diffusion(master, master->finestLevel(), &phys_bc);
 
       if (level == 0) 
-         for (int lev = 0; lev <= master->finestLevel(); lev++) {
-            AmrRegion& this_region = getLevel(lev);
-                ADR& cs_level = getLevel(lev);
-            diffusion->install_level(lev,&this_level,
-                                     cs_level.Volume(),cs_level.Area());
-         }
+      {
+           RegionIterator it = master->getRegionIterator();
+           for ( ; !it.isFinished(); ++it)
+           {
+               ADR& fine_region = get_region(it.getID());
+               diffusion->install_region(it.getID(), *it, 
+                                     fine_region.Volume(),fine_region.Area());
+           }
+      }
 #endif
 }
 
