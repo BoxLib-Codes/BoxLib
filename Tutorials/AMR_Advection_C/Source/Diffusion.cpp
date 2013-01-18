@@ -50,24 +50,20 @@ Diffusion::install_region (ID          region_id,
                            MultiFab*    _area)
 {
     int level = region_id.level();
-//  if (verbose && ParallelDescriptor::IOProcessor())
+    if (verbose && ParallelDescriptor::IOProcessor())
         std::cout << "Installing Diffusion in region " << region_id 
                   << " at level " << level << '\n';
 
-    std::cout << "Clearing region_data " << region_id << std::endl;
     region_data.clearData(region_id);
-//  region_data.setData(region_id, region_data_to_install);
+    region_data.setData(region_id, region_data_to_install);
 
-    std::cout << "Clearing volume " << region_id << std::endl;
     volume.clearData(region_id);
     volume.setData(region_id, &_volume);
 
-//  area.setData(region_id, _area);
+    area.setData(region_id, _area);
 
     BoxArray my_grids = region_data_to_install->boxArray();
     grids.setData(region_id, my_grids);
-
-    std::cout << "Done with install " << region_id << std::endl;
 
     if (level > 0)
     {
@@ -370,6 +366,12 @@ Diffusion::restructure (ID base_region, std::list<int> structure)
 {
     region_data.clearChildrenOfNode(base_region);
     region_data.buildFromStructure(base_region, structure);
+
+    volume.clearChildrenOfNode(base_region);
+    volume.buildFromStructure(base_region, structure);
+
+    area.clearChildrenOfNode(base_region);
+    area.buildFromStructure(base_region, structure);
 
     phi_flux_reg.clearChildrenOfNode(base_region);
     phi_flux_reg.buildFromStructure(base_region, structure);

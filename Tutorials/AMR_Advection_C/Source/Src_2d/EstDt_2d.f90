@@ -1,6 +1,6 @@
      subroutine estdt(u,u_l1,u_l2,u_h1,u_h2,lo,hi,dx,dt)
 
-     use meth_params_module, only : NVAR, UX, UY
+     use meth_params_module, only : NVAR, UX, UY, UFA
 
      implicit none
 
@@ -9,10 +9,19 @@
      double precision :: u(u_l1:u_h1,u_l2:u_h2,NVAR)
      double precision :: dx(2),dt
 
-     double precision :: xvel,yvel,dt1,dt2
+     double precision :: xvel,yvel,dt1,dt2,dt_loc
+     double precision :: s_max
      integer          :: i,j
 
-      do j = lo(2),hi(2)
+     s_max = -1.d20
+     do j = lo(2),hi(2)
+         do i = lo(1),hi(1)
+             s_max = max(s_max,u(i,j,UFA))
+         end do
+     end do
+
+     dt_loc = 1.d200
+     do j = lo(2),hi(2)
          do i = lo(1),hi(1)
 
             xvel = u(i,j,UX)
@@ -21,9 +30,17 @@
             dt1 = dx(1)/abs(xvel)
             dt2 = dx(2)/abs(yvel)
 
-            dt = min(dt,dt1,dt2)
+            dt_loc = min(dt_loc,dt1,dt2)
 
          enddo
       enddo
+
+      ! Only modify fine grid dt
+      if (lo(2).ne.0 .and. s_max .gt. 1.5) then
+!         print *,'Multiplying dt_loc ',dt_loc,' by half to get ', dt_loc * 0.5d0
+          dt_loc = dt_loc * 0.5d0
+      end if
+
+      dt = min(dt,dt_loc)
 
       end subroutine estdt

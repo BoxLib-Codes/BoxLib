@@ -17,7 +17,9 @@ ADR::error_setup ()
     //
     // DEFINE ERROR ESTIMATION QUANTITIES
     //
-    err_list.add("StateErr",1,ErrorRec::Special,
-                 BL_FORT_PROC_CALL(STATE_ERROR,state_error));
+    // err_list.add("StateErr",1,ErrorRec::Special,
+    //              BL_FORT_PROC_CALL(STATE_ERROR,state_error));
 
+    err_list.add("adv_0",1,ErrorRec::Special,
+                 BL_FORT_PROC_CALL(ADV_ERROR,adv_error));
 }

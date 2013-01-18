@@ -233,6 +233,9 @@ ADR::advance_region (Real time,
     }
 #endif
 
+    // Copy old velocity into new velocity -- assumes velocity unchanging.
+    MultiFab::Copy(S_new,S_old,Xvel,Xvel,BL_SPACEDIM,0);
+
     // It's possible for interpolation to create very small negative values for
     // species so we make sure here that all species are non-negative after this
     // point
@@ -302,7 +305,7 @@ ADR::advance_region (Real time,
     }
 #endif
     ext_src_old.FillBoundary();
-        
+
     for (FillPatchIterator fpi(*this, S_new, NUM_GROW, time, State_Type, 0, NUM_STATE);
          fpi.isValid(); ++fpi)
     {
@@ -366,22 +369,22 @@ ADR::advance_region (Real time,
             courno = std::max(courno, cflLoc);
         }
 
-        if (add_ext_src)  
-        {
-           getOldSource(prev_time,dt,ext_src_old);
-           ext_src_old.mult(-0.5*dt);
+    if (add_ext_src)  
+    {
+       getOldSource(prev_time,dt,ext_src_old);
+       ext_src_old.mult(-0.5*dt);
 
-           // Compute source at new time (no ghost cells needed)
-           MultiFab ext_src_new(grids,NUM_STATE,0,Fab_allocate);
-           ext_src_new.setVal(0.0);
+       // Compute source at new time (no ghost cells needed)
+       MultiFab ext_src_new(grids,NUM_STATE,0,Fab_allocate);
+       ext_src_new.setVal(0.0);
 
-           getNewSource(prev_time,cur_time,dt,ext_src_new);
-           ext_src_new.mult(0.5*dt);
+       getNewSource(prev_time,cur_time,dt,ext_src_new);
+       ext_src_new.mult(0.5*dt);
 
-           // Subtract off half of the old source term, and add half of the new.
-           MultiFab::Add(S_new,ext_src_old,0,0,S_new.nComp(),0);
-           MultiFab::Add(S_new,ext_src_new,0,0,S_new.nComp(),0);
-        }
+       // Subtract off half of the old source term, and add half of the new.
+       MultiFab::Add(S_new,ext_src_old,0,0,S_new.nComp(),0);
+       MultiFab::Add(S_new,ext_src_new,0,0,S_new.nComp(),0);
+    }
 
     for (int i = 0; i < BL_SPACEDIM ; i++)
     {
@@ -425,6 +428,7 @@ ADR::advance_region (Real time,
         {
             if (S_new.contains_nan(Density + i, 1, 0))
             {
+                std::cout << "   Testing on component i = " << i << std::endl;
                 BoxLib::Abort("S_new has NaNs after the update");
             }
         }
@@ -442,9 +446,6 @@ ADR::advance_region (Real time,
 #ifdef REACTIONS
     react_second_half_dt(S_new,cur_time,dt);
 #endif
-
-    // Copy old velocity into new velocity -- assumes velocity unchanging.
-    MultiFab::Copy(S_new,S_old,Xvel,Xvel,BL_SPACEDIM,0);
 
     return dt;
 }

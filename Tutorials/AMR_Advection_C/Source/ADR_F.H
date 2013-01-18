@@ -38,7 +38,17 @@ BL_FORT_PROC_DECL(INITDATA,initdata)
 BL_FORT_PROC_DECL(STATE_ERROR,state_error)
     (int* tag, ARLIM_P(tag_lo), ARLIM_P(tag_hi),
      const int* tagval, const int* clearval,
-     BL_FORT_FAB_ARG(press),
+     BL_FORT_FAB_ARG(state),
+     const int lo[], const int hi[],
+     const int* ncomp,
+     const int domlo[], const int domhi[],
+     const Real dx[], const Real xlo[], const Real problo[],
+     const Real* time, const int* level);
+
+BL_FORT_PROC_DECL(ADV_ERROR,adv_error)
+    (int* tag, ARLIM_P(tag_lo), ARLIM_P(tag_hi),
+     const int* tagval, const int* clearval,
+     BL_FORT_FAB_ARG(adv),
      const int lo[], const int hi[],
      const int* ncomp,
      const int domlo[], const int domhi[],

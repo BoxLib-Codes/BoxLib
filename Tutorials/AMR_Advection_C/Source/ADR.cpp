@@ -246,7 +246,6 @@ ADR::ADR (Amr&            papa,
       if (diffusion == 0) 
 	diffusion = new Diffusion(master, master->finestLevel(), &phys_bc);
 
-      std::cout << "CALLING INSTALL REGION AT ID " << m_id << std::endl;
       diffusion->install_region(m_id,this,volume,area);
 #endif
 
@@ -970,7 +969,6 @@ ADR::computeRestrictedDt (ID  base_region,
         else
             cycle_max.setData(id, master->MaxRefRatio(id.size()-2));
         dt_max.setData(id, get_region(id).est_time_step(dt_region.getData(id)));
-        std::cout << "SETTING DT_MAX " << id << " " << dt_max.getData(id) << std::endl;
     }
     master->setRestrictedSubcycling(base_region, n_cycle, dt_region, dt_max, cycle_max);
 }
@@ -1174,7 +1172,7 @@ ADR::reflux (int check_children)
               master->dtRegion(m_id) == master->dtRegion(c_id))
             continue;
 
-        std::cout << "Refluxing from region " << c_id << " to region " << m_id << std::endl;
+        std::cout << "    Refluxing from region " << c_id << " to region " << m_id << std::endl;
         get_flux_reg(c_id).Reflux(get_new_data(State_Type),volume,1.0,0,0,NUM_STATE,geom);
     }
 

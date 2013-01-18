@@ -118,7 +118,7 @@ ADR::variable_setup ()
 #if (BL_SPACEDIM == 3)
     Zvel = cnt++;
 #endif
-    NumAdv = 0;
+    NumAdv = 1;
     if (NumAdv > 0)
     {
         FirstAdv = cnt++;
@@ -193,6 +193,7 @@ ADR::variable_setup ()
         sprintf(buf, "adv_%d", i);
         cnt++; set_scalar_bc(bc,phys_bc); bcs[cnt] = bc; name[cnt] = string(buf);
     }
+    std::cout << "NAME " << name[cnt] << std::endl;
 
     // Get the species names from the network model.
     char* spec_names[NumSpec];
@@ -252,6 +253,15 @@ ADR::variable_setup ()
                           FirstSpec+i,
                           name[FirstSpec+i],
                           bcs[FirstSpec+i],
+                          BndryFunc(BL_FORT_PROC_CALL(SPECFILL,specfill)));
+    }
+
+    for (int i=0; i<NumAdv; ++i)
+    {
+    desc_lst.setComponent(State_Type,
+                          FirstAdv+i,
+                          name[FirstAdv+i],
+                          bcs[FirstAdv+i],
                           BndryFunc(BL_FORT_PROC_CALL(SPECFILL,specfill)));
     }
 
