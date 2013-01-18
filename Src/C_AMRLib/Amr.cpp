@@ -3043,7 +3043,6 @@ void
 Amr::initSubcycle ()
 {
     ParmParse pp("amr");
-    int i;
     sub_cycle = true;
     if (pp.contains("nosub"))
     {
