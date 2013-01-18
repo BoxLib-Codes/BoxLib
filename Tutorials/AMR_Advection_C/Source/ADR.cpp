@@ -246,6 +246,7 @@ ADR::ADR (Amr&            papa,
       if (diffusion == 0) 
 	diffusion = new Diffusion(master, master->finestLevel(), &phys_bc);
 
+      std::cout << "CALLING INSTALL REGION AT ID " << m_id << std::endl;
       diffusion->install_region(m_id,this,volume,area);
 #endif
 
@@ -268,8 +269,6 @@ ADR::restart (Amr&     papa,
     BL_ASSERT(flux_reg == 0);
     if (level > 0 && do_reflux)
         flux_reg = new FluxRegister(grids,crse_ratio,level,NUM_STATE);
-
-    const Real* dx  = geom.CellSize();
 
 #ifdef DIFFUSION
     if (level == 0) {
@@ -1017,8 +1016,6 @@ ADR::post_timestep (int iteration)
 void
 ADR::post_restart ()
 {
-   Real cur_time = state[State_Type].curTime();
-
 #ifdef DIFFUSION
       // diffusion is a static object, only alloc if not already there
 
@@ -1181,15 +1178,15 @@ ADR::reflux (int check_children)
         get_flux_reg(c_id).Reflux(get_new_data(State_Type),volume,1.0,0,0,NUM_STATE,geom);
     }
 
-    if (verbose)
+    if (verbose & 0)
     {
         const int IOProc = ParallelDescriptor::IOProcessorNumber();
-//      Real      end    = ParallelDescriptor::second() - strt;
+        Real      end    = ParallelDescriptor::second() - strt;
 
-//      ParallelDescriptor::ReduceRealMax(end,IOProc);
+        ParallelDescriptor::ReduceRealMax(end,IOProc);
 
-//      if (ParallelDescriptor::IOProcessor())
-//          std::cout << "ADR::reflux() at level " << level << " : time = " << end << std::endl;
+        if (ParallelDescriptor::IOProcessor())
+            std::cout << "ADR::reflux() at level " << level << " : time = " << end << std::endl;
     }
 }
 
@@ -1605,3 +1602,10 @@ ADR::adr_network_init ()
    BL_FORT_PROC_CALL(F_NETWORK_INIT,f_network_init) ();
 }
 
+void
+ADR::restructure(std::list<int> structure)
+{
+#ifdef DIFFUSION
+    diffusion->restructure(m_id, structure);
+#endif
+}

@@ -136,9 +136,6 @@ ADR::advance (Real time,
         }
     }
 
-    const Real prev_time = state[State_Type].prevTime();
-    const Real cur_time  = state[State_Type].curTime();
-
     //
     // Call the advance at each level to be advanced
     //

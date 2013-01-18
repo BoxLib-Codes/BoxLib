@@ -170,26 +170,37 @@ public:
     //Remove data at old time.
     //
     virtual void removeOldData ();
+
+    //
+    // Restructure special data structures--esp. gravity.
+    //
+    void restructure(std::list<int> structure);
+
     //
     //Print information about energy budget.
     //
     void do_energy_diagnostics();
+
     //
     //Do work after timestep().
     //
     virtual void post_timestep (int iteration);
+
     //
     // Contains operations to be done only after a full coarse timestep.
     //
     virtual void postCoarseTimeStep (Real cumtime);
+
     //
     //Do work after regrid().
     //
     virtual void post_regrid (ID base_region, int new_finest);   
+
     //
     //Do work after a restart().
     //
     virtual void post_restart ();
+
     //
     //Do work after init().
     //

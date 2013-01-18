@@ -19,11 +19,11 @@ Diffusion::Diffusion(Amr* Parent, int _finest_level, BCRec* _phys_bc)
     phys_bc(_phys_bc)
 {
     std::list<int> structure = master->getRegions().getStructure();
-    region_data.buildFromStructure(structure),
-    phi_flux_reg.buildFromStructure(structure),
-    grids.buildFromStructure(structure),
-    volume.buildFromStructure(structure),
-    area.buildFromStructure(structure),
+    region_data.buildFromStructure(structure);
+    volume.buildFromStructure(structure);
+    area.buildFromStructure(structure);
+    phi_flux_reg.buildFromStructure(structure);
+    grids.buildFromStructure(structure);
     read_params();
     make_mg_bc();
 }
@@ -50,19 +50,24 @@ Diffusion::install_region (ID          region_id,
                            MultiFab*    _area)
 {
     int level = region_id.level();
-    if (verbose && ParallelDescriptor::IOProcessor())
-        std::cout << "Installing Diffusion level " << level << '\n';
+//  if (verbose && ParallelDescriptor::IOProcessor())
+        std::cout << "Installing Diffusion in region " << region_id 
+                  << " at level " << level << '\n';
 
+    std::cout << "Clearing region_data " << region_id << std::endl;
     region_data.clearData(region_id);
-    region_data.setData(region_id, region_data_to_install);
+//  region_data.setData(region_id, region_data_to_install);
 
+    std::cout << "Clearing volume " << region_id << std::endl;
     volume.clearData(region_id);
     volume.setData(region_id, &_volume);
 
-    area.setData(region_id, _area);
+//  area.setData(region_id, _area);
 
     BoxArray my_grids = region_data_to_install->boxArray();
     grids.setData(region_id, my_grids);
+
+    std::cout << "Done with install " << region_id << std::endl;
 
     if (level > 0)
     {
@@ -359,4 +364,39 @@ Diffusion::make_mg_bc ()
     if (Geometry::IsSPHERICAL() || Geometry::IsRZ() )
         mg_bc[0] = MGT_BC_NEU;
 }
+
+void
+Diffusion::restructure (ID base_region, std::list<int> structure)
+{
+    region_data.clearChildrenOfNode(base_region);
+    region_data.buildFromStructure(base_region, structure);
+
+    phi_flux_reg.clearChildrenOfNode(base_region);
+    phi_flux_reg.buildFromStructure(base_region, structure);
+
+    grids.clearChildrenOfNode(base_region);
+    grids.buildFromStructure(base_region, structure);
+}
+ 
+ExecutionTree*
+Diffusion::init_solve_tree()
+{
+    ExecutionTree* solve_tree = new ExecutionTree(ROOT_ID);
+    solve_tree->buildFromStructure(region_data.getStructure());
+    PTreeConstIterator<AmrRegion> it = region_data.getConstIterator();
+    for( ; !it.isFinished(); ++it)
+    {
+        if (it.isDefined())
+        {
+            solve_tree->setData(it.getID(),1);
+        }
+        else
+        {
+            solve_tree->setData(it.getID(),0);
+        }
+    }
+    solve_tree->prune();
+    return solve_tree;
+}
+
 

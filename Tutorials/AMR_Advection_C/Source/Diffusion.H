@@ -29,6 +29,8 @@ public:
 
   void make_mg_bc();
 
+  void restructure(ID base_region, std::list<int> structure);
+
   void GetCrsePhi(ID region_id,
                   MultiFab& phi_crse,
                   Real time);
@@ -65,6 +67,8 @@ protected:
   void applyMetricTerms(ID region,MultiFab& Rhs, PArray<MultiFab>& coeffs);
   void unweight_cc(ID region,MultiFab& cc);
 #endif
+
+  ExecutionTree* init_solve_tree();
 };
 #endif
 

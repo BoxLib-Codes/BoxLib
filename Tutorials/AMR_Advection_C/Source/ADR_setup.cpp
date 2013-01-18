@@ -104,7 +104,6 @@ ADR::variable_setup ()
     BL_ASSERT(desc_lst.size() == 0);
 
     // Initialize the network
-    std::cout << "CALLING FROM VAR SET UP " << std::endl;
     adr_network_init();
 
     // Get options, set phys_bc
