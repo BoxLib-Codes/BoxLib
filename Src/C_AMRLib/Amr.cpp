@@ -1798,37 +1798,16 @@ Amr::timeStep (AmrRegion& base_region,
     //
     // Advance grids at this level.
     //
-    if (verbose > 0 && ParallelDescriptor::IOProcessor())
-    {
-        std::cout << "ADVANCE grids in region "
-                  << base_id
-                  << " at level "
-                  << level
-                  << " with dt = "
-                  << dt_region.getData(base_id)
-                  << " and n_cycle "
-                  << n_cycle.getData(base_id)
-                  << std::endl;
-    }
-    
     
     Real my_dt = dt_region.getData(base_id);
     
+    // We now put the print statements in the advance routines.
     Real dt_new = base_region.advance(time,my_dt,iteration,niter);
     
     dt_reg_min.setData(base_id, iteration == 1 ? dt_new : std::min(dt_reg_min.getData(base_id),dt_new));
 
     region_steps.setData(base_id, region_steps.getData(base_id) + 1);
     region_count.setData(base_id, region_count.getData(base_id) + 1);
-
-    if (verbose > 0 && ParallelDescriptor::IOProcessor())
-    {
-        std::cout << "Advanced " 
-                  << cellCount(base_id)
-                  << " cells in region "
-                  << base_id
-                  << std::endl;
-    }
 
 #ifdef USE_STATIONDATA
     station.report(time+my_dt,base_region);
@@ -3414,6 +3393,7 @@ Amr::setRestrictedSubcycling(ID  base_region,
     ID parent_id;
     // Limit dt_max by the fully iterated child dts.
     TreeIterator<Real> dt_it = dt_max.getIterator(base_region);
+
     for ( ; !dt_it.isFinished(); ++dt_it)
     {
         id = dt_it.getID();
@@ -3423,12 +3403,28 @@ Amr::setRestrictedSubcycling(ID  base_region,
         Real cmax = dt_max.getData(id)*cycle_max.getData(id);
         dt_max.setData(parent_id, std::min(dt_max.getData(parent_id), cmax));
     }
-    BL_ASSERT(dtregion.getData(base_region) <= dt_max.getData(base_region));
+   
+    // BL_ASSERT(dtregion.getData(base_region) <= dt_max.getData(base_region));
+
+    // We change the dt of the parent instead of failing here ...
+    if (dtregion.getData(base_region) > dt_max.getData(base_region))
+    {
+       std::cout << "... DT REGION OF BASE REGION IS " << dtregion.getData(base_region) << std::endl;
+       std::cout << "... DT    MAX OF BASE REGION IS " << dt_max.getData(base_region) << std::endl;
+       std::cout << "... DT REGION OF BASE REGION > DT MAX OF BASE REGION" << std::endl;
+       std::cout << "... so RESETTING DTREGION OF BASE REGION TO " << dt_max.getData(base_region) << std::endl;
+
+       dtregion.setData(base_region,dt_max.getData(base_region));
+       std::cout << "... DT REGION OF BASE REGION IS NOW         " << dtregion.getData(base_region) << std::endl;
+    }
+
+
     for (++it ; !it.isFinished(); ++it)
     {
         id = it.getID();
         parent_id = it.getParentID();
         TreeIterator<Real> dt_it = dt_max.getIterator(id);
+
         // Necessary dt / allowed dt
         int new_cycle = int(ceil(dtregion.getData(parent_id) / dt_max.getData(id)));
         if (new_cycle > cycle_max.getData(id))
