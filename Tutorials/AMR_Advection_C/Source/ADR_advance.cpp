@@ -26,6 +26,7 @@ ADR::advance (Real time,
     {
         if (level > 0)
             return dt;
+
         advance_tree.buildFromStructure(master->getRegions().getStructure(m_id));
         finest_level_to_advance = finest_level;
         RegionIterator it = master->getRegionIterator(m_id);
@@ -34,6 +35,14 @@ ADR::advance (Real time,
             ID id = it.getID();
             advance_tree.setData(id, 1);
         }
+ 
+        if (verbose > 0 && ParallelDescriptor::IOProcessor())
+        {
+            std::cout << "ADVANCE grids with no subcycling at levels " << level 
+                      << " through " << finest_level 
+                      << " with dt = " << dt 
+                      << std::endl;
+        }
     }
     else
     {
@@ -41,6 +50,17 @@ ADR::advance (Real time,
         {
             finest_level_to_advance = level;
             //Leave advance tree as is.
+
+            if (verbose > 0 && ParallelDescriptor::IOProcessor())
+            {
+                std::cout << "ADVANCE grids with strict subcyling in region "
+                          << m_id
+                          << " at level "
+                          << level
+                          << " with dt = "
+                          << dt 
+                          << std::endl;
+            }
         }
         else
         {
@@ -66,6 +86,31 @@ ADR::advance (Real time,
                 }
             }
             advance_tree.prune();
+            if (verbose > 0 && ParallelDescriptor::IOProcessor())
+            {
+                if (finest_level_to_advance == level) 
+                {
+                    std::cout << "ADVANCE grids in region "
+                              << m_id 
+                              << " at level " 
+                              << level 
+                              << " with dt "
+                              << dt
+                              << std::endl;
+                }
+                else
+                {
+                    std::cout << "ADVANCE grids with base region "
+                              << m_id 
+                              << " at level " 
+                              << level 
+                              << " through finest level " 
+                              << finest_level_to_advance 
+                              << " with dt "
+                              << dt
+                              << std::endl;
+                }
+            }
         }
     }
 
@@ -102,12 +147,31 @@ ADR::advance (Real time,
         ExecutionTreeIterator it = advance_tree.getIterator(m_id, lev);
         for ( ; !it.isFinished(); ++it)
         {
-            get_region(it.getID()).advance_level(time, dt);
+            if (verbose > 0 && ParallelDescriptor::IOProcessor())
+            {
+                std::cout << "    Starting advance of region "
+                          << it.getID()
+                          << " at level " 
+                          << lev
+                          << std::endl;
+            }
+
+            get_region(it.getID()).advance_region(time, dt);
+
+            if (verbose > 0 && ParallelDescriptor::IOProcessor())
+            {
+                std::cout << "        Finishing advance of "
+                          << master->cellCount(it.getID())
+                          << " cells in region "
+                          << it.getID()
+                          << std::endl;
+            }
         }
     }
     
     //
-    // We must reflux here
+    // We must reflux here only if we advanced multiple levels as part of 
+    //    this advance
     //
     if (do_reflux)
     {
@@ -140,8 +204,8 @@ ADR::advance (Real time,
 }
 
 Real
-ADR::advance_level (Real time,
-                    Real dt)
+ADR::advance_region (Real time,
+                     Real dt)
 {
     const Real prev_time    = state[State_Type].prevTime();
     const Real cur_time     = state[State_Type].curTime();

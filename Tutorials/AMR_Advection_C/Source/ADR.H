@@ -121,10 +121,10 @@ public:
                           int  ncycle);
 
     //
-    //Advance grids at just this level in time.
+    //Advance grids in just this region.
     //
-    Real advance_level (Real time,
-                        Real dt);
+    Real advance_region (Real time,
+                         Real dt);
     //
     //Estimate time step.
     //

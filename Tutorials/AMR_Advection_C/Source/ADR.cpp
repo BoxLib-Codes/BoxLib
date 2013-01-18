@@ -704,7 +704,7 @@ ADR::est_time_step (Real dt_old)
     estdt *= cfl;
 
     if (verbose && ParallelDescriptor::IOProcessor())
-        cout << "ADR::est_time_step at level " << level << ":  estdt = " << estdt << '\n';
+        cout << "ADR::est_time_step in region " << m_id << ":  estdt = " << estdt << '\n';
 
     return estdt;
 }
@@ -971,6 +971,7 @@ ADR::computeRestrictedDt (ID  base_region,
         else
             cycle_max.setData(id, master->MaxRefRatio(id.size()-2));
         dt_max.setData(id, get_region(id).est_time_step(dt_region.getData(id)));
+        std::cout << "SETTING DT_MAX " << id << " " << dt_max.getData(id) << std::endl;
     }
     master->setRestrictedSubcycling(base_region, n_cycle, dt_region, dt_max, cycle_max);
 }
@@ -1172,18 +1173,19 @@ ADR::reflux (int check_children)
               master->dtRegion(m_id) == master->dtRegion(c_id))
             continue;
 
+        std::cout << "Refluxing from region " << c_id << " to region " << m_id << std::endl;
         get_flux_reg(c_id).Reflux(get_new_data(State_Type),volume,1.0,0,0,NUM_STATE,geom);
     }
 
     if (verbose)
     {
         const int IOProc = ParallelDescriptor::IOProcessorNumber();
-        Real      end    = ParallelDescriptor::second() - strt;
+//      Real      end    = ParallelDescriptor::second() - strt;
 
-        ParallelDescriptor::ReduceRealMax(end,IOProc);
+//      ParallelDescriptor::ReduceRealMax(end,IOProc);
 
-        if (ParallelDescriptor::IOProcessor())
-            std::cout << "ADR::reflux() at level " << level << " : time = " << end << std::endl;
+//      if (ParallelDescriptor::IOProcessor())
+//          std::cout << "ADR::reflux() at level " << level << " : time = " << end << std::endl;
     }
 }
 
