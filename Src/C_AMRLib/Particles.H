@@ -236,7 +236,8 @@ public:
 
     void AssignDensitySingleRegion (MultiFab& mf, ID region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
-    void AssignDensity (PArray<MultiFab>& mf, ID base_region = ROOT_ID, int ncomp = 1, int finest_level = -1, ExecutionTree* exec_tree = 0) const;
+    void AssignDensity (PArray<MultiFab>& mf, ID base_region = ROOT_ID, int ncomp = 1, 
+                        int finest_level = -1, ExecutionTree* exec_tree = 0) const;
 
     void AssignDensityAndVels (PArray<MultiFab>& mf, ID base_region = ROOT_ID) const;
 
@@ -274,7 +275,7 @@ public:
     // These flags are used to do proper checking for subcycling particles
     // the default values are fine for non-subcycling methods
     //
-    bool OK (bool full_where = false,  ID base_region = ROOT_ID , int ngrow = 0) const;
+    bool OK (bool full_where = false,  ID base_region = ROOT_ID , int ngrow = 0, int finest_level = -1) const;
 
     void ByteSpread () const;
     //
@@ -920,12 +921,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
       m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
     tmp_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
 
-//  This is what was in the master branch; not sure whether we should still have this here.
-//  tmp_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-//    m_particles.reserve(15);  // So we don't ever have to do any copying on a resize.
-//  tmp_particles.resize(m_amr->finestLevel()+1);
-//    m_particles.resize(m_amr->finestLevel()+1);
-
     //
     // Only the first NReaders MPI processes read particles.
     // All the processors need to participate in Redistribute() though.
@@ -936,6 +931,9 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     std::ifstream ifs;
 
     VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
+
+    std::cout << "MYPROC " << MyProc << std::endl;
+    std::cout << "NREADRS " << NReaders << std::endl;
 
     if (MyProc < NReaders)
     {
@@ -998,6 +996,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     //
     long MyCnt = NP / NReaders;
 
+    std::cout << "Num particles " << NP << std::endl;
+
     if (MyProc == (NReaders - 1))
         //
         // We'll take the remainder.
@@ -1011,6 +1011,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
                                             geom.ProbHi(2) - geom.ProbLo(2))};
 
     long how_many_redists = NP / (NPartPerRedist*NReaders), how_many_read = 0;
+
+    std::cout << "how_many_redists " << how_many_redists << std::endl;
 
     if (NP % (NPartPerRedist*NReaders)) how_many_redists++;
 
@@ -1087,6 +1089,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
                 m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
             }
 
+            std::cout << "Read in " << NR << std::endl;
+
             how_many_read += NR;
         }
 
@@ -1098,16 +1102,36 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
         //
         PTreeIterator<PMap>   ptree_it =   m_particles.getIterator(ROOT_ID);
         PTreeIterator<PMap> tmptree_it = tmp_particles.getIterator(ROOT_ID);
+
         for ( ; !ptree_it.isFinished(); ++ptree_it)
         {
             PMap&   pmap = **ptree_it;
             PMap& tmpmap = **tmptree_it;
 
+            std::cout << " P LEVEL " << ptree_it.getLevel()  << std::endl;
+            std::cout << "TP LEVEL " << tmptree_it.getLevel() << std::endl;
+
+            for (typename PMap::iterator tmpmap_it = tmpmap.begin(),  End = tmpmap.end();
+                 tmpmap_it != End; ++tmpmap_it)
+            {
+                std::cout << " defining tmppbox " << std::endl;
+                PBox& pbox = tmpmap_it->second;
+                std::cout << "SIZE OF PBOX " << pbox.size() << std::endl;
+
+            }
+
             for (typename PMap::iterator   pmap_it =   pmap.begin(),  End =   pmap.end();
                  pmap_it != End; ++pmap_it)
             {
+                std::cout << " defining pbox " << std::endl;
                 PBox& pbox = pmap_it->second;
+
+                std::cout << " defining tmp_pbox " << std::endl;
+                std::cout << " pmap_it->first    " << pmap_it->first << std::endl;
+
                 PBox& tmp_pbox   = tmpmap[pmap_it->first];
+
+                std::cout << " inserting " << std::endl;
 
                 tmp_pbox.insert(tmp_pbox.end(), pbox.begin(), pbox.end());
 
@@ -1116,6 +1140,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
             PMap().swap(pmap);
         }
     }
+
+                std::cout << " got to here " << std::endl;
 
     //
     // Make tmp_particles the new m_particles.
@@ -4686,6 +4712,32 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     
     const int MyProc   = ParallelDescriptor::MyProc();
     Real      strttime = ParallelDescriptor::second();
+
+    //
+    // On startup there are cases where Redistribute() could be called
+    // with a given finestLevel() where regions at that level have yet to be defined.
+    //
+    int theEffectiveFinestLevel = m_amr->getRegions().getFinestLevelAtNode(ROOT_ID);
+
+    int m_particles_flev = 0;
+    PTreeIterator<PMap> flev_it = m_particles.getIterator(base_region);
+    for( ; !flev_it.isFinished(); ++flev_it)
+    {
+        int lev = flev_it.getLevel();
+        if (lev > m_particles_flev)
+            m_particles_flev = lev;
+    }
+
+    if (m_particles_flev != theEffectiveFinestLevel)
+    {
+        if (ParallelDescriptor::IOProcessor())
+            std::cout << "ParticleContainer<N>::Redistribute() resizing m_particles from "
+                      << m_particles_flev+1
+                      << " to "
+                      << theEffectiveFinestLevel+1 << '\n';
+        // Sets the structure of m_particles to match the region hierarchy.
+        m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
+    }
     
     //
     // The valid particles that we don't own.
@@ -5019,8 +5071,14 @@ template <int N>
 bool
 ParticleContainer<N>::OK (bool full_where,
                           ID base_region,
-                          int  ngrow) const
+                          int  ngrow,
+                          int  finest_level) const
 {
+    if (finest_level == -1)
+        finest_level = m_amr->finestLevel();
+
+    BL_ASSERT(finest_level <= m_amr->finestLevel());
+
     //
     // Check that the integer data in each valid particle is what it should be.
     // This includes checking that particles are in the proper place in the particle
