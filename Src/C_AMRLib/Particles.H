@@ -930,9 +930,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
 
     VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
 
-    std::cout << "MYPROC " << MyProc << std::endl;
-    std::cout << "NREADRS " << NReaders << std::endl;
-
     if (MyProc < NReaders)
     {
         int DM = 0;
@@ -994,8 +991,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     //
     long MyCnt = NP / NReaders;
 
-    std::cout << "Num particles " << NP << std::endl;
-
     if (MyProc == (NReaders - 1))
         //
         // We'll take the remainder.
@@ -1009,8 +1004,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
                                             geom.ProbHi(2) - geom.ProbLo(2))};
 
     long how_many_redists = NP / (NPartPerRedist*NReaders), how_many_read = 0;
-
-    std::cout << "how_many_redists " << how_many_redists << std::endl;
 
     if (NP % (NPartPerRedist*NReaders)) how_many_redists++;
 
@@ -1086,9 +1079,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
 
                 m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
             }
-
-            std::cout << "Read in " << NR << std::endl;
-
             how_many_read += NR;
         }
 
