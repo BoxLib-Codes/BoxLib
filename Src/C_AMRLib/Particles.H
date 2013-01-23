@@ -406,9 +406,6 @@ ParticleContainer<N>::ParticleContainer(Amr* amr)
     m_particles.setRoot(new PMap());
 }
 
-
-
-
 template <int N>
 long
 ParticleContainer<N>::TotalNumberOfParticles (bool only_valid, bool only_local) const
@@ -916,6 +913,7 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     // At the end of this routine it'll be the new m_particles.
     //
     PTree<PMap> tmp_particles;
+    tmp_particles.setRoot(new PMap());
 
     // Sets the structure of m_particles to match the region hierarchy.
       m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
@@ -1108,30 +1106,11 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
             PMap&   pmap = **ptree_it;
             PMap& tmpmap = **tmptree_it;
 
-            std::cout << " P LEVEL " << ptree_it.getLevel()  << std::endl;
-            std::cout << "TP LEVEL " << tmptree_it.getLevel() << std::endl;
-
-            for (typename PMap::iterator tmpmap_it = tmpmap.begin(),  End = tmpmap.end();
-                 tmpmap_it != End; ++tmpmap_it)
-            {
-                std::cout << " defining tmppbox " << std::endl;
-                PBox& pbox = tmpmap_it->second;
-                std::cout << "SIZE OF PBOX " << pbox.size() << std::endl;
-
-            }
-
             for (typename PMap::iterator   pmap_it =   pmap.begin(),  End =   pmap.end();
                  pmap_it != End; ++pmap_it)
             {
-                std::cout << " defining pbox " << std::endl;
                 PBox& pbox = pmap_it->second;
-
-                std::cout << " defining tmp_pbox " << std::endl;
-                std::cout << " pmap_it->first    " << pmap_it->first << std::endl;
-
                 PBox& tmp_pbox   = tmpmap[pmap_it->first];
-
-                std::cout << " inserting " << std::endl;
 
                 tmp_pbox.insert(tmp_pbox.end(), pbox.begin(), pbox.end());
 
@@ -1140,8 +1119,6 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
             PMap().swap(pmap);
         }
     }
-
-                std::cout << " got to here " << std::endl;
 
     //
     // Make tmp_particles the new m_particles.
