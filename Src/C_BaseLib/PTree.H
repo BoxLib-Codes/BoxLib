@@ -32,7 +32,7 @@ template <class T> class PTree;
 /*
   An PTree of Pointers to Objects of Type T.
 
-  When a PPTree<T> object is destructed, should only the pointers be
+  When a PTree<T> object is destructed, should only the pointers be
   destructed or should the objects to which they point also be deleted?
   The PPTree<T> class allows for both scenarios.  By default, it will
   only remove the pointers.  If the array is constructed with the
