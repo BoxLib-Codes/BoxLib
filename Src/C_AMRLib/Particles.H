@@ -913,7 +913,8 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     // At the end of this routine it'll be the new m_particles.
     //
     PTree<PMap> tmp_particles;
-    tmp_particles.setRoot(new PMap());
+    PMap* tmp_pmap = new PMap();
+    tmp_particles.setRoot(tmp_pmap);
 
     // Sets the structure of m_particles to match the region hierarchy.
       m_particles.buildFromStructure(ROOT_ID, m_amr->getRegions().getStructure(ROOT_ID));
@@ -1113,9 +1114,10 @@ ParticleContainer<N>::InitFromBinaryFile (const std::string& file,
     //
     // Make tmp_particles the new m_particles.
     //
-    // tmp_particles.swap(m_particles);
-    m_particles = tmp_particles;
+    m_particles.clearData(ROOT_ID);
+    m_particles.setData(ROOT_ID,tmp_pmap);
     //
+
     // Add up all the particles read in to get the total number of particles.
     //
     if (m_verbose > 0)
@@ -1975,7 +1977,6 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
     int lev = region_id.level();
     BL_ASSERT(mf.boxArray() == m_amr->getRegion(region_id).boxArray());
-
 
     const Real      strttime    = ParallelDescriptor::second();
     const Geometry& gm          = m_amr->Geom(lev);
