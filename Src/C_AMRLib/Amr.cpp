@@ -1167,11 +1167,11 @@ Amr::initialInit (Real strt_time,
     // Compute dt and set time levels of all grid data.
     //
     coarseRegion().computeInitialDt(finest_level,
-                                  sub_cycle,
-                                  n_cycle,
-                                  ref_ratio,
-                                  dt_region,
-                                  stop_time);
+                                    sub_cycle,
+                                    n_cycle,
+                                    ref_ratio,
+                                    dt_region,
+                                    stop_time);
     //
     // The following was added for multifluid.
     //
@@ -1195,13 +1195,15 @@ Amr::initialInit (Real strt_time,
     
     //
     // Compute dt and set time levels of all grid data.
+    // Only need to re-do this if we actually created new fine levels.
     //
-    coarseRegion().computeInitialDt(finest_level,
-                                  sub_cycle,
-                                  n_cycle,
-                                  ref_ratio,
-                                  dt_region,
-                                  stop_time);
+    if (finest_level > 0)
+        coarseRegion().computeInitialDt(finest_level,
+                                        sub_cycle,
+                                        n_cycle,
+                                        ref_ratio,
+                                        dt_region,
+                                        stop_time);
     ID id;
     RegionIterator prit = amr_regions.getIterator(Prefix);
     for (; !prit.isFinished(); ++prit)
