@@ -2026,7 +2026,6 @@ ParticleContainer<N>::AssignDensitySingleRegion (MultiFab& mf,
         {
             const ParticleType& p = *it;
             
-
             if (p.m_id <= 0) continue;
 
             const int M = ParticleBase::CIC_Cells_Fracs(p, plo, dx, dx_particle, fracs, cells);
@@ -4356,6 +4355,7 @@ ParticleContainer<N>::CreateGhostParticles (ID region_id,
                                             PBox& ghosts) const
 {
     BL_ASSERT(ghosts.empty());
+
     // The level of the child region, not the parent
     int level = region_id.level();
     BL_ASSERT(level > 0);
@@ -4407,7 +4407,7 @@ ParticleContainer<N>::CreateGhostParticles (ID region_id,
                 // Set its position.
                 //
                 p.m_lev  = level;
-                p.m_grid = 0; // m_grid is unreliable--it will be set during the call.
+                p.m_grid = isects[i].first;
                 p.m_cell = iv;
                 //
                 // Store it in the PBox.
