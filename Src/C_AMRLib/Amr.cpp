@@ -1980,8 +1980,8 @@ Amr::coarseTimeStep (Real stop_time)
     ParallelDescriptor::Bcast(&to_stop,       1, ParallelDescriptor::IOProcessorNumber());
 
     if(to_stop == 1 && to_checkpoint == 0) {  // prevent main from writing files
-      last_checkpoint = level_steps[0];
-      last_plotfile   = level_steps[0];
+      last_checkpoint = region_steps.getRoot();
+      last_plotfile   = region_steps.getRoot();
     }
     if ((check_int > 0 && region_steps.getRoot() % check_int == 0) || check_test == 1
 	|| to_checkpoint)
