@@ -3921,8 +3921,8 @@ ParticleContainer<N>::RemoveParticlesInRegion (ID region_id)
 template <int N>
 void
 ParticleContainer<N>::AddParticlesToRegion (ID region_id,
-                                           PBox& virts,
-                                           bool  where_already_called)
+                                            PBox& virts,
+                                            bool  where_already_called)
 {
     const int MyProc = ParallelDescriptor::MyProc();
     int level = region_id.level();
@@ -4214,7 +4214,11 @@ ParticleContainer<N>::AddParticlesToRegion (ID region_id,
 
             rcvp += N;
 
-            m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+            // This assumes that the particles here belong to the same region as this was called with.
+            // The code currently fails if we don't assume this because ghost particles do not live
+            // in the valid BoxArray so the whichRegion test fails.
+            m_particles.getData(region_id)[p.m_grid].push_back(p);
+            // m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
 
             nparticles.pop_front();
         }
