@@ -2327,7 +2327,6 @@ Amr::regrid (ID base_id,
     
     std::list<int> new_structure = n_cycle.getStructure(base_id);
     
-    
     //
     // Check to see if the structure has changed. Note, this check only
     // recognizes identical trees--if the leaves have been re-ordered
@@ -2625,6 +2624,10 @@ Amr::grid_places (int               lbase,
         lev0.refine(2);
 
         new_grids[0] = lev0;
+
+        // Need to impose this here in the event that we return with fixed_grids
+        //    and never have a chance to impose it later
+        impose_refine_grid_layout(lbase,lbase,new_grids);
     }
 
     if ( time == 0. && !initial_grids_file.empty() )
@@ -2647,7 +2650,6 @@ Amr::grid_places (int               lbase,
         }
         return;
     }
-
     else if ( !regrid_grids_file.empty() )
     {
         new_finest = std::min(max_level,(finest_level+1));
