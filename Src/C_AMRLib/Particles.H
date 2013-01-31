@@ -217,7 +217,14 @@ struct ParticleContainerBase
 
     virtual void AssignDensitySingleLevel (MultiFab& mf, int level, int ncomp=1, int particle_lvl_offset = 0) const = 0;
 
-    virtual Real sumParticleMass (const MultiFab& mf, int level) const = 0;
+    virtual Real sumParticleMass (int level) const = 0;
+
+    virtual void RemoveParticlesAtLevel (int level) = 0;
+
+    virtual void Redistribute (bool where_already_called = false,
+                               bool full_where           = false,
+                               int  lev_min              = 0, 
+                               int  nGrow                = 0) = 0;
 };
 
 template <int N>
@@ -252,8 +259,8 @@ public:
     void InitCosmo  (MultiFab& mf, const Real vel_fac[], const Array<int> n_part, const Real particleMass, const Real shift[]);
     void InitCosmo1ppc (MultiFab& mf, const Real vel_fac[], const Real particleMass);
 
-    Real sumParticleMass (const MultiFab& mf, int level, ID base_region = ROOT_ID) const;
-    void sumParticleMomentum (const MultiFab& mf, int lev, Real* mom, ID base_region = ROOT_ID) const;
+    Real sumParticleMass (int level, ID base_region = ROOT_ID) const;
+    void sumParticleMomentum (int lev, Real* mom, ID base_region = ROOT_ID) const;
 
     void Increment (MultiFab& mf, int level, ID base_region = ROOT_ID);
 
@@ -1980,8 +1987,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
 
 template <int N>
 Real
-ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
-                                       int             lev,
+ParticleContainer<N>::sumParticleMass (int             lev,
                                        ID base_region) const
 {
     BL_ASSERT(N >= 1);
@@ -2021,8 +2027,7 @@ ParticleContainer<N>::sumParticleMass (const MultiFab& mf,
 
 template <int N>
 void
-ParticleContainer<N>::sumParticleMomentum (const MultiFab& mf,
-                                           int             lev,
+ParticleContainer<N>::sumParticleMomentum (int             lev,
                                            Real*           mom,
                                            ID base_region) const
 {
