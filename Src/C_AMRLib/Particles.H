@@ -213,17 +213,20 @@ struct ParticleContainerBase
 {
     virtual ~ParticleContainerBase ();
 
-    virtual void AssignDensity (PArray<MultiFab>& mf, int lev_min = 0, int ncomp = 1, int finest_level = -1) const = 0;
+    virtual void AssignDensity (PArray<MultiFab>& mf, ID base_region = ROOT_ID, int ncomp = 1, 
+                                int finest_level = -1, ExecutionTree* exec_tree = 0) const = 0;
 
-    virtual void AssignDensitySingleLevel (MultiFab& mf, int level, int ncomp=1, int particle_lvl_offset = 0) const = 0;
+    virtual void AssignDensitySingleRegion (MultiFab& mf, ID region_id, int ncomp=1, int particle_lvl_offset = 0) const = 0;
 
-    virtual Real sumParticleMass (int level) const = 0;
+    virtual Real sumParticleMass (int level, ID base_region = ROOT_ID) const = 0;
 
-    virtual void RemoveParticlesAtLevel (int level) = 0;
+    virtual void Restructure(ID base_region, std::list<int> new_structure) = 0;
+
+    virtual void RemoveParticlesInRegion ( ID region_id) = 0;
 
     virtual void Redistribute (bool where_already_called = false,
                                bool full_where           = false,
-                               int  lev_min              = 0, 
+                               ID base_region = ROOT_ID, 
                                int  nGrow                = 0) = 0;
 };
 
