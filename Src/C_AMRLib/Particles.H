@@ -229,13 +229,13 @@ struct ParticleContainerBase
                                ID base_region = ROOT_ID, 
                                int  nGrow                = 0) = 0;
 
-    virtual void moveKickDrift (const MultiFab& grav_vector, int level, Real timestep, 
+    virtual void moveKickDrift (const MultiFab& grav_vector, ID region_id, Real timestep, 
                                 Real a_old = 1.0, Real a_half = 1.0) = 0;
-    virtual void moveKick      (const MultiFab& grav_vector, int level, Real timestep, 
+    virtual void moveKick      (const MultiFab& grav_vector, ID region_id, Real timestep, 
                                 Real a_new = 1.0, Real a_half = 1.0) = 0;
-    virtual void moveKickDrift (PArray<MultiFab>& grav_vector, int level, Real timestep, 
+    virtual void moveKickDrift (PArray<MultiFab>& grav_vector, ID region_id, Real timestep, 
                                 Real a_old = 1.0, Real a_half = 1.0) = 0;
-    virtual void moveKick      (PArray<MultiFab>& grav_vector, int level, Real timestep, 
+    virtual void moveKick      (PArray<MultiFab>& grav_vector, ID region_id, Real timestep, 
                                 Real a_new = 1.0, Real a_half = 1.0) = 0;
 };
 
