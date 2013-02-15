@@ -810,6 +810,7 @@ ParticleContainer<N>::InitFromAsciiFile (const std::string& file, int extradata,
     //
     int NRedist_chunk = NReaders / NRedist;
 
+    ID region_id;
     for (int nr = 0; nr < NRedist; nr++)
     {
         if (m_verbose > 0 && ParallelDescriptor::IOProcessor())
@@ -4073,7 +4074,7 @@ ParticleContainer<N>::AddParticlesToRegion (ID region_id,
                 //
                 p.m_lev = level;
 
-                if (!ParticleBase::SingleLevelWhere(p, m_amr, level))
+                if (!ParticleBase::SingleRegionWhere(p, m_amr, region_id))
                     //
                     // Virtuals shouldn't be in Ghost cells.
                     //
