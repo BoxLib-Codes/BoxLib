@@ -313,7 +313,7 @@ public:
                           ID base_region,
                           int  nGrow);
 
-    void RedistributeMPI (PMap& not_ours);
+    void RedistributeMPI (PMap& not_ours, const ID& region_id, bool adding_particles_at_level = false);
 
     //
     // OK checks that all particles are in the right places (for some value of right)
@@ -4111,7 +4111,7 @@ ParticleContainer<N>::AddParticlesToRegion (ID region_id,
     }
     else
     {
-        RedistributeMPI(not_ours);
+        RedistributeMPI(not_ours,region_id,true);
     }
 }
 
@@ -4653,7 +4653,8 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
     }
     else
     {
-        RedistributeMPI(not_ours);
+        ID dummy_id;
+        RedistributeMPI(not_ours,dummy_id,false);
     }
 
     BL_ASSERT(OK(full_where, base_region, nGrow));
@@ -4673,7 +4674,7 @@ ParticleContainer<N>::Redistribute (bool where_already_called,
 
 template <int N>
 void
-ParticleContainer<N>::RedistributeMPI (PMap& not_ours)
+ParticleContainer<N>::RedistributeMPI (PMap& not_ours, const ID& region_id, bool adding_particles_at_level)
 {
 #if BL_USE_MPI
     const int MyProc = ParallelDescriptor::MyProc();
@@ -4943,7 +4944,16 @@ ParticleContainer<N>::RedistributeMPI (PMap& not_ours)
 
                     rcvp += N;
 
-                    m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+                    if (adding_particles_at_level)
+                    {
+                        // This assumes that the particles here belong to the same region as this was called with.
+                        // The code currently fails if we don't assume this because ghost particles do not live
+                        // in the valid BoxArray so the whichRegion test fails.
+                        m_particles.getData(region_id)[p.m_grid].push_back(p);
+                    } else {
+                        m_particles.getData(m_amr->whichRegion(p.m_lev,p.m_cell))[p.m_grid].push_back(p);
+                    }
+                    
                 }
 
                 PBox().swap(pbox);
