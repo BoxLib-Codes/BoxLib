@@ -237,6 +237,11 @@ ifdef USE_GCC
       COPTF += -fopenmp
       CDEBF += -fopenmp
     endif
+    #
+    # Force C to have same flags as C++.
+    #
+    COPTF += $(CXXOPTF) -std=c99 -ftree-vectorize
+    CDEBF += $(CXXDEBF) -std=c99
 endif
 
 ifeq ($(findstring rose, $(COMP)), rose)
@@ -262,6 +267,11 @@ ifeq ($(findstring rose, $(COMP)), rose)
       COPTF += -fopenmp
       CDEBF += -fopenmp
     endif
+    #
+    # Force C to have same flags as C++.
+    #
+    COPTF += $(CXXOPTF)
+    CDEBF += $(CXXDEBF)
 endif
 
 ifeq ($(findstring rose, $(FCOMP)), rose)
@@ -371,11 +381,11 @@ ifeq ($(COMP),Intel)
      _icc  := icc
    endif
 
-   CXXOPTF += -g -O2 -ip -fp-model precise
+   CXXOPTF += -g -O2 -ip -fp-model source -xHost
    CXXDEBF += -g -O0
 
-   COPTF += $(CXXOPTF)
-   CDEBF += $(CXXDEBF)
+   COPTF += $(CXXOPTF) -std=c99
+   CDEBF += $(CXXDEBF) -std=c99
 
    __icc_version := $(shell $(_icpc) -V 2>&1 1>/dev/null | grep Version)
    ifeq ($(findstring Version 5.0.1, $(__icc_version)), Version 5.0.1)
@@ -634,8 +644,8 @@ ifeq ($(FCOMP),Intel)
      fOPTF += -g
    endif
 
-   FOPTF += -O2 -ip -fp-model precise
-   fOPTF += -O2 -ip -fp-model precise
+   FOPTF += -O2 -ip -fp-model source -xHost
+   fOPTF += -O2 -ip -fp-model source -xHost
 
    ifneq ($(IFC_MAJOR_VERSION), 9)
      ifneq ($(IFC_MAJOR_VERSION), 10)
