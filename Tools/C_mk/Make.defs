@@ -209,7 +209,9 @@ USE_GCC =
 ifeq ($(findstring gcc, $(COMP)), gcc)
     USE_GCC = true
 endif
-
+ifeq ($(findstring gnu, $(COMP)), gnu)
+    USE_GCC = true
+endif
 ifeq ($(findstring g++, $(COMP)), g++)
     USE_GCC = true
 endif
@@ -240,7 +242,7 @@ ifdef USE_GCC
     #
     # Force C to have same flags as C++.
     #
-    COPTF += $(CXXOPTF) -std=c99 -ftree-vectorize
+    COPTF += $(CXXOPTF) -std=c99
     CDEBF += $(CXXDEBF) -std=c99
 endif
 
@@ -329,8 +331,8 @@ ifeq ($(findstring gfortran, $(FCOMP)), gfortran)
 
     FOPTF += -ffixed-line-length-132 -g -O3
     fOPTF += -ffixed-line-length-132 -g -O3
-    FDEBF += -g -O1 -ffixed-line-length-132 -fbounds-check -fbacktrace -Wuninitialized -Wunused -ffpe-trap=invalid -finit-real=nan
-    fDEBF += -g -O1 -ffixed-line-length-132 -fbounds-check -fbacktrace -Wuninitialized -Wunused -ffpe-trap=invalid -finit-real=nan
+    FDEBF += -g -O1 -ffixed-line-length-132 -fbounds-check -fbacktrace -Wuninitialized -Wno-maybe-uninitialized -Wunused -ffpe-trap=invalid -finit-real=nan
+    fDEBF += -g -O1 -ffixed-line-length-132 -fbounds-check -fbacktrace -Wuninitialized -Wno-maybe-uninitialized -Wunused -ffpe-trap=invalid -finit-real=nan
 
    ifeq ($(USE_OMP),TRUE)
     FOPTF += -fopenmp
