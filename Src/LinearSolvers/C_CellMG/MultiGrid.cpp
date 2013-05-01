@@ -27,7 +27,6 @@ Real             MultiGrid::def_rtol_b;
 Real             MultiGrid::def_atol_b;
 int              MultiGrid::def_verbose;
 int              MultiGrid::def_maxiter;
-CGSolver::Solver MultiGrid::def_cg_solver;
 int              MultiGrid::def_maxiter_b;
 int              MultiGrid::def_numLevelsMAX;
 int              MultiGrid::def_smooth_on_cg_unstable;
@@ -55,7 +54,6 @@ MultiGrid::Initialize ()
     MultiGrid::def_verbose               = 0;
     MultiGrid::def_maxiter               = 40;
     MultiGrid::def_maxiter_b             = 80;
-    MultiGrid::def_cg_solver             = CGSolver::BiCGStab;
     MultiGrid::def_numLevelsMAX          = 1024;
     MultiGrid::def_smooth_on_cg_unstable = 0;
 
@@ -90,18 +88,6 @@ MultiGrid::Initialize ()
     }
 #endif
 
-    int ii;
-    if (pp.query("cg_solver", ii ))
-    {
-        switch (ii)
-        {
-        case 0: def_cg_solver = CGSolver::CG;       break;
-        case 1: def_cg_solver = CGSolver::BiCGStab; break;
-        default:
-            BoxLib::Error("MultiGrid::Initialize(): bad cg_solver value");
-        }
-    }
-
     if (ParallelDescriptor::IOProcessor() && (def_verbose > 2))
     {
         std::cout << "MultiGrid settings...\n";
@@ -115,7 +101,6 @@ MultiGrid::Initialize ()
         std::cout << "   def_atol_b                = " << def_atol_b                << '\n';
         std::cout << "   def_maxiter               = " << def_maxiter               << '\n';
         std::cout << "   def_maxiter_b             = " << def_maxiter_b             << '\n';
-        std::cout << "   def_cg_solver             = " << def_cg_solver             << '\n';
         std::cout << "   def_numLevelsMAX          = " << def_numLevelsMAX          << '\n';
         std::cout << "   def_smooth_on_cg_unstable = " << def_smooth_on_cg_unstable << '\n';
         std::cout << "   use_Anorm_for_convergence = " << use_Anorm_for_convergence << '\n';
@@ -175,7 +160,6 @@ MultiGrid::MultiGrid (LinOp &_Lp)
     nu_b         = def_nu_b;
     numLevelsMAX = def_numLevelsMAX;
     smooth_on_cg_unstable = def_smooth_on_cg_unstable;
-    cg_solver    = def_cg_solver;
     numlevels    = numLevels();
     if ( ParallelDescriptor::IOProcessor() && (verbose > 2) )
     {
@@ -274,11 +258,9 @@ MultiGrid::residualCorrectionForm (MultiFab&       resL,
     // Using the linearity of the operator, Lp, we can solve this system
     // instead by solving for the correction required to the initial guess.
     //
-
     initialsolution->copy(inisol);
     solnL.copy(inisol);
     Lp.residual(resL, rhsL, solnL, level, bc_mode);
-    solnL.setVal(0.0);
 }
 
 void
@@ -342,7 +324,6 @@ MultiGrid::solve_ (MultiFab&      _sol,
   //
   Real       norm_cor    = 0.0;
   int        nit         = 1;
-
   const Real new_error_0 = norm_rhs;
   const Real norm_Lp     = Lp.norm(0, level);
 
@@ -602,9 +583,8 @@ MultiGrid::coarsestSmooth (MultiFab&      solL,
     {
         bool use_mg_precond = false;
 	CGSolver cg(Lp, use_mg_precond, level);
-	// cg.setExpert(true);
 	cg.setMaxIter(maxiter_b);
-	int ret = cg.solve(solL, rhsL, rtol_b, atol_b, bc_mode, cg_solver);
+	int ret = cg.solve(solL, rhsL, rtol_b, atol_b, bc_mode);
 	if (ret != 0)
         {
             if (smooth_on_cg_unstable)
