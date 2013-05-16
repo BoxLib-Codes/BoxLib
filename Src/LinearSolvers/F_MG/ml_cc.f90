@@ -49,10 +49,10 @@ contains
     logical :: fine_converged,need_grad_phi
 
     real(dp_t) :: Anorm, bnorm, abs_eps, ni_res
-    real(dp_t) :: tres, tres0, max_norm
+    real(dp_t) :: tres, ttres, tres0, max_norm
     real(dp_t) :: sum, coeff_sum, coeff_max
 
-    real(dp_t) :: r1,r2
+    real(dp_t) :: r1,r2,t1(3),t2(3)
     logical :: solved
 
     type(bl_prof_timer), save :: bpt
@@ -115,15 +115,27 @@ contains
        call ml_restriction(rh(n-1), rh(n), mgt(n)%mm(mglev),&
             mgt(n-1)%mm(mglev_crse), ref_ratio(n-1,:))
     end do
-    bnorm = ml_norm_inf(rh,fine_mask)
+    !
+    ! Let's elide some reductions by doing there reductions together.
+    !
+    bnorm = ml_norm_inf(rh,fine_mask,local=.true.)
 
-    Anorm = stencil_norm(mgt(nlevs)%ss(mgt(nlevs)%nlevels))
+    Anorm = stencil_norm(mgt(nlevs)%ss(mgt(nlevs)%nlevels),local=.true.)
     do n = 1, nlevs-1
-       Anorm = max(stencil_norm(mgt(n)%ss(mgt(n)%nlevels),fine_mask(n)),Anorm)
+       Anorm = max(stencil_norm(mgt(n)%ss(mgt(n)%nlevels),fine_mask(n),local=.true.),Anorm)
     end do
 
-    !   First we must restrict the final solution onto coarser levels, because those coarse
-    !   cells may be used to construct slopes in the interpolation of the boundary conditions
+    t1(1) = bnorm
+    t1(2) = Anorm
+
+    call parallel_reduce(t2(1:2), t1(1:2), MPI_MAX)
+
+    bnorm = t2(1)
+    Anorm = t2(2)
+    !
+    ! First we must restrict the final solution onto coarser levels, because those coarse
+    ! cells may be used to construct slopes in the interpolation of the boundary conditions.
+    !
     do n = nlevs,2,-1
        mglev      = mgt(n  )%nlevels
        mglev_crse = mgt(n-1)%nlevels
@@ -172,11 +184,21 @@ contains
        call ml_restriction(res(n-1), res(n), mgt(n)%mm(mglev),&
             mgt(n-1)%mm(mglev_crse), ref_ratio(n-1,:))
     enddo
-
+    !
     ! Test on whether coefficients sum to zero in order to know whether to enforce solvability
     ! Only test on lowest mg level of lowest AMR level -- this should be cheapest
-    coeff_sum = max_of_stencil_sum(mgt(1)%ss(1)) 
-    coeff_max = stencil_norm(mgt(1)%ss(1)) 
+    !
+    ! Elide some reduction.
+    !
+    t1(1) = max_of_stencil_sum(mgt(1)%ss(1),local=.true.) 
+    t1(2) = stencil_norm(mgt(1)%ss(1),local=.true.) 
+    t1(3) = ml_norm_inf(rh,fine_mask,local=.true.)
+
+    call parallel_reduce(t2, t1, MPI_MAX)
+
+    coeff_sum = t2(1)
+    coeff_max = t2(2)
+    tres0     = t2(3)
 
     if ( coeff_sum .lt. (1.d-12 * coeff_max) ) then
        mgt(1)%coeffs_sum_to_zero = .true.
@@ -217,7 +239,6 @@ contains
 
     end if
 
-    tres0 = ml_norm_inf(rh,fine_mask)
     if ( parallel_IOProcessor() .and. mgt(nlevs)%verbose > 0 ) then
        write(unit=*, &
             fmt='("F90mg: Initial rhs                  = ",g15.8)') bnorm
@@ -529,16 +550,10 @@ contains
                 do n = 1,nlevs
                    tres = norm_inf(res(n))
                    if ( parallel_ioprocessor() ) then
-                      !                  write(unit=*, fmt='(i3,": Level ",i2,"  : SL_Ninf(defect) = ",g15.8)') &
-                      !                       iter,n,tres
                       write(unit=*, fmt='("F90mg: Iteration   ",i3," Lev ",i1," resid/resid0 = ",g15.8)') &
                            iter,n,tres/tres0
                    end if
                 end do
-                !            tres = ml_norm_inf(res,fine_mask)
-                !            if ( parallel_ioprocessor() ) then
-                !               write(unit=*, fmt='(i3,": All Levels: ML_Ninf(defect) = ",g15.8)') iter, tres
-                !            end if
              end if
 
           else 
@@ -582,7 +597,8 @@ contains
        ! ****************************************************************************
        if (solved) then
           if ( mgt(nlevs)%verbose > 0 ) then
-             tres = ml_norm_inf(res,fine_mask)
+             ttres = ml_norm_inf(res,fine_mask,local=.true.)
+             call parallel_reduce(tres, ttres, MPI_MAX, proc = parallel_IOProcessorNode())
              if ( parallel_IOProcessor() ) then
                 if (tres0 .gt. 0.0_dp_t) then
                    write(unit=*, fmt='("F90mg: Final Iter. ",i3," resid/resid0 = ",g15.8)') iter,tres/tres0
@@ -600,7 +616,6 @@ contains
        end if
 
     endif
-
 
     if (solved) then
        do n = 1,nlevs
@@ -666,16 +681,11 @@ contains
     call destroy(bpt)
 
     if (solved) then
-       if ( present(final_resnorm) ) &
-            final_resnorm = ni_res
-       
-       r2 = parallel_wtime() - r1
-       
+       if ( present(final_resnorm) ) final_resnorm = ni_res
+       r2 = (parallel_wtime() - r1)
        call parallel_reduce(r1, r2, MPI_MAX, proc = parallel_IOProcessorNode())
-       
        if ( parallel_IOProcessor() .and. mgt(nlevs)%verbose > 0 ) &
             print*, 'Solve Time = ', r1
-       
     endif
 
   contains
@@ -684,11 +694,20 @@ contains
       logical :: r
       type(multifab), intent(in) :: res(:), sol(:)
       real(dp_t), intent(in) :: Anorm, rel_eps, abs_eps, bnorm
-      real(dp_t) :: ni_res, ni_sol
+      real(dp_t) :: ni_res, ni_sol, t1(2), t2(2)
       integer    :: nlevs
       nlevs = size(res)
-      ni_res = norm_inf(res(nlevs))
-      ni_sol = norm_inf(sol(nlevs))
+      !
+      ! Reduce these two norms together.
+      !
+      t1(1) = norm_inf(res(nlevs),local=.true.)
+      t1(2) = norm_inf(sol(nlevs),local=.true.)
+
+      call parallel_reduce(t2, t1, MPI_MAX)
+
+      ni_res = t2(1)
+      ni_sol = t2(2)
+      !
       !     r =  ni_res <= rel_eps*(Anorm*ni_sol + bnorm) .or. &
       !          ni_res <= abs_eps .or. &
       !          ni_res <= epsilon(Anorm)*Anorm
@@ -706,11 +725,18 @@ contains
       type(lmultifab), intent(in) :: mask(:)
       real(dp_t), intent(in   ) :: Anorm, rel_eps, abs_eps, bnorm
       real(dp_t), intent(  out) :: ni_res
-      real(dp_t) :: ni_sol
+      real(dp_t) :: ni_sol, t1(2), t2(2)
+      !
+      ! Reduce these two norms together.
+      !
+      t1(1) = ml_norm_inf(res, mask, local=.true.)
+      t1(2) = ml_norm_inf(sol, mask, local=.true.)
 
-      ni_res = ml_norm_inf(res, mask)
-      ni_sol = ml_norm_inf(sol, mask)
+      call parallel_reduce(t2, t1, MPI_MAX)
 
+      ni_res = t2(1)
+      ni_sol = t2(2)
+      !
       !     r =  ni_res <= rel_eps*(Anorm*ni_sol + bnorm) .or. &
       !          ni_res <= abs_eps .or. &
       !          ni_res <= epsilon(Anorm)*Anorm
@@ -719,9 +745,9 @@ contains
            ni_res <= abs_eps 
 
       if ( r .and. parallel_IOProcessor() .and. verbose > 1) then
-         if (ni_res <= rel_eps*bnorm) then
+         if ( ni_res <= rel_eps*bnorm ) then
             print *,'Converged res < rel_eps*bnorm '
-         else if (ni_res <= abs_eps) then
+         else if ( ni_res <= abs_eps ) then
             print *,'Converged res < abs_eps '
             !        else if (ni_res <= rel_eps*Anorm*ni_sol) then
             !           print *,'Converged res < rel_eps*Anorm*sol'
@@ -732,9 +758,5 @@ contains
     end function ml_converged
 
   end subroutine ml_cc
-
-  !
-  ! ******************************************************************************************
-  !
 
 end module ml_cc_module

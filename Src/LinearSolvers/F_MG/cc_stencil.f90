@@ -35,7 +35,7 @@ contains
     type(multifab), intent(in) :: ss
     type(lmultifab), intent(in), optional :: mask
     logical, intent(in), optional :: local
-    integer :: i,j,k,n,b
+    integer :: i,j,k,n,b,lo(4),hi(4),cnt
     real(kind=dp_t) :: r1, sum_comps
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     logical, pointer :: lp(:,:,:,:)
@@ -48,17 +48,21 @@ contains
 
     r1 = -Huge(r1)
 
+    cnt = nfabs(ss)
+
     if ( present(mask) ) then
-       do b = 1, nfabs(ss)
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
+       do b = 1, cnt
           sp => dataptr(ss, b)
           lp => dataptr(mask, b)
-          !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps) REDUCTION(max : r1)
-          do k = lbound(sp,dim=4), ubound(sp,dim=4)
-             do j = lbound(sp,dim=3), ubound(sp,dim=3)
-                do i = lbound(sp,dim=2), ubound(sp,dim=2)
+          lo =  lbound(sp)
+          hi =  ubound(sp)
+          do k = lo(4), hi(4)
+             do j = lo(3), hi(3)
+                do i = lo(2), hi(2)
                    if ( lp(i,j,k,1) ) then
                       sum_comps = ZERO
-                      do n = lbound(sp,dim=1), ubound(sp,dim=1)
+                      do n = lo(1), hi(1)
                          sum_comps = sum_comps + abs(sp(n,i,j,k))
                       end do
                       r1 = max(r1,sum_comps)
@@ -66,25 +70,27 @@ contains
                 end do
              end do
           end do
-          !$OMP END PARALLEL DO
        end do
+       !OMP END PARALLEL DO
     else
-       do b = 1, nfabs(ss)
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
+       do b = 1, cnt
           sp => dataptr(ss, b)
-          !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps) REDUCTION(max : r1)
-          do k = lbound(sp,dim=4), ubound(sp,dim=4)
-             do j = lbound(sp,dim=3), ubound(sp,dim=3)
-                do i = lbound(sp,dim=2), ubound(sp,dim=2)
+          lo =  lbound(sp)
+          hi =  ubound(sp)
+          do k = lo(4), hi(4)
+             do j = lo(3), hi(3)
+                do i = lo(2), hi(2)
                    sum_comps = ZERO
-                   do n = lbound(sp,dim=1), ubound(sp,dim=1)
+                   do n = lo(1), hi(1)
                       sum_comps = sum_comps + abs(sp(n,i,j,k))
                    end do
                    r1 = max(r1,sum_comps)
                 end do
              end do
           end do
-          !$OMP END PARALLEL DO
        end do
+       !OMP END PARALLEL DO
     end if
 
     r = r1
@@ -94,32 +100,43 @@ contains
     call destroy(bpt)
   end function stencil_norm
 
-  function max_of_stencil_sum(ss, mask) result(r)
+  function max_of_stencil_sum(ss, mask, local) result(r)
     use bl_prof_module
     real(kind=dp_t) :: r
     type(multifab), intent(in) :: ss
     type(lmultifab), intent(in), optional :: mask
-    integer :: i,j,k,n,b
+    logical, intent(in), optional :: local
+    integer :: i,j,k,n,b,lo(4),hi(4),cnt
     real(kind=dp_t) :: r1, sum_comps
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     logical, pointer :: lp(:,:,:,:)
+    logical :: llocal
     type(bl_prof_timer), save :: bpt
 
+    llocal = .false.; if ( present(local) ) llocal = local
+    !
     ! NOTE: this is exactly the same as the stencil_norm function except that we sum the
-    !       components of the stencil, not the absolute value of each component
-
+    ! components of the stencil, not the absolute value of each component.
+    !
     call build(bpt, "st_sum")
+
     r1 = -Huge(r1)
+
+    cnt = nfabs(ss)
+
     if ( present(mask) ) then
-       do b = 1, nfabs(ss)
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
+       do b = 1, cnt
           sp => dataptr(ss, b)
           lp => dataptr(mask, b)
-          do k = lbound(sp,dim=4), ubound(sp,dim=4)
-             do j = lbound(sp,dim=3), ubound(sp,dim=3)
-                do i = lbound(sp,dim=2), ubound(sp,dim=2)
+          lo =  lbound(sp)
+          hi =  ubound(sp)
+          do k = lo(4), hi(4)
+             do j = lo(3), hi(3)
+                do i = lo(2), hi(2)
                    if ( lp(i,j,k,1) ) then
                       sum_comps = ZERO
-                      do n = lbound(sp,dim=1), ubound(sp,dim=1)
+                      do n = lo(1), hi(1)
                          sum_comps = sum_comps + sp(n,i,j,k)
                       end do
                       r1 = max(r1,sum_comps)
@@ -128,14 +145,18 @@ contains
              end do
           end do
        end do
+       !OMP END PARALLEL DO
     else
-       do b = 1, nfabs(ss)
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
+       do b = 1, cnt
           sp => dataptr(ss, b)
-          do k = lbound(sp,dim=4), ubound(sp,dim=4)
-             do j = lbound(sp,dim=3), ubound(sp,dim=3)
-                do i = lbound(sp,dim=2), ubound(sp,dim=2)
+          lo =  lbound(sp)
+          hi =  ubound(sp)
+          do k = lo(4), hi(4)
+             do j = lo(3), hi(3)
+                do i = lo(2), hi(2)
                    sum_comps = ZERO
-                   do n = lbound(sp,dim=1), ubound(sp,dim=1)
+                   do n = lo(1), hi(1)
                       sum_comps = sum_comps + sp(n,i,j,k)
                    end do
                    r1 = max(r1,sum_comps)
@@ -143,9 +164,13 @@ contains
              end do
           end do
        end do
+       !$OMP END PARALLEL DO
     end if
 
-    call parallel_reduce(r,r1,MPI_MAX)
+    r = r1
+
+    if ( .not. llocal ) call parallel_reduce(r, r1, MPI_MAX)
+
     call destroy(bpt)
   end function max_of_stencil_sum
 
@@ -1252,6 +1277,7 @@ contains
     nz = hi(3)-lo(3)+1
     f1 = ONE/dh**2
 
+    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1268,6 +1294,7 @@ contains
           end do
        end do
     end do
+    !OMP END PARALLEL DO
 
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,-1))
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,+1))
@@ -1431,6 +1458,7 @@ contains
     nz = hi(3)-lo(3)+1
     f1 = ONE/dh**2
 
+    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1447,6 +1475,7 @@ contains
           end do
        end do
     end do
+    !OMP END PARALLEL DO
 
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,-1))
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,+1))

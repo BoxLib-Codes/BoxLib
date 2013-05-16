@@ -278,7 +278,7 @@ public:
 
     void Increment (MultiFab& mf, int level, ID base_region = ROOT_ID);
 
-    long IncrementWithTotal (MultiFab& mf, int level, ID base_region = ROOT_ID);
+    long long IncrementWithTotal (MultiFab& mf, int level, ID base_region = ROOT_ID);
 
     void AssignDensitySingleRegion (MultiFab& mf, ID region_id, int ncomp=1, int particle_lvl_offset = 0) const;
 
@@ -331,15 +331,15 @@ public:
     //
     // If "only_valid" is true it only counts valid particles.
     //
-    long NumberOfParticlesAtLevel (int level, bool only_valid = true, bool only_local = false) const;
+    long long NumberOfParticlesAtLevel (int level, bool only_valid = true, bool only_local = false) const;
 
-    long NumberOfParticlesInRegion (ID region_id, bool only_valid = true, bool only_local = false) const;
+    long long NumberOfParticlesInRegion (ID region_id, bool only_valid = true, bool only_local = false) const;
     //
     // Returns # of particles at all levels
     //
     // If "only_valid" is true it only counts valid particles.
     //
-    long TotalNumberOfParticles (bool only_valid=true, bool only_local=false) const;
+    long long TotalNumberOfParticles (bool only_valid=true, bool only_local=false) const;
 
     void MoveRandom ();
 
@@ -454,23 +454,27 @@ ParticleContainer<N>::ParticleContainer(Amr* amr)
 }
 
 template <int N>
-long
+long long
 ParticleContainer<N>::TotalNumberOfParticles (bool only_valid, bool only_local) const
 {
-    long nparticles = 0;
+    long long nparticles = 0;
     for (int lev = 0; lev <= m_amr->finestLevel(); lev++)
         nparticles += NumberOfParticlesAtLevel(lev,only_valid,only_local);
     return nparticles;
 }
 
 template <int N>
-long
+long long
 ParticleContainer<N>::NumberOfParticlesAtLevel (int  lev,
                                                 bool only_valid,
                                                 bool only_local) const
 {
-    long nparticles = 0;
+    long long nparticles = 0;
+//  QUESTION  -- WHAT IS RIGHT TEST HERE ???
+//    FIRST WAS IN REGIONS
+//    SECOND WAS IN MASTER but I think we need that version
     if (lev >= 0 && lev > m_amr->finestLevel())
+    if (lev >= 0 && lev < m_particles.size())
     {
         PTreeConstIterator<PMap> ptree_it = m_particles.getConstIterator(lev);
         for( ; !ptree_it.isFinished(); ++ptree_it)
@@ -538,7 +542,7 @@ ParticleContainer<N>::NumberOfParticlesInRegion (ID region_id,
     }
 
     if (!only_local)
-        ParallelDescriptor::ReduceLongSum(nparticles);
+        ParallelDescriptor::ReduceLongLongSum(nparticles);
 
     return nparticles;
 }
@@ -551,7 +555,7 @@ template <int N>
 void
 ParticleContainer<N>::ByteSpread () const
 {
-    long cnt = 0;
+    long long cnt = 0;
 
     PTreeConstIterator<PMap> ptree_it = m_particles.getConstIterator();
         for( ; !ptree_it.isFinished(); ++ptree_it)
@@ -568,9 +572,9 @@ ParticleContainer<N>::ByteSpread () const
 
     const int IOProc = ParallelDescriptor::IOProcessorNumber();
 
-    ParallelDescriptor::ReduceLongMin(mn, IOProc);
-    ParallelDescriptor::ReduceLongMax(mx, IOProc);
-    ParallelDescriptor::ReduceLongSum(cnt,IOProc);
+    ParallelDescriptor::ReduceLongMin    (mn, IOProc);
+    ParallelDescriptor::ReduceLongMax    (mx, IOProc);
+    ParallelDescriptor::ReduceLongLongSum(cnt,IOProc);
 
     if (ParallelDescriptor::IOProcessor())
     {
@@ -1851,7 +1855,7 @@ ParticleContainer<N>::Increment (MultiFab& mf,
 }
 
 template <int N>
-long
+long long
 ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
                                           int       lev,
                                           ID base_region)
@@ -1860,7 +1864,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
 
     BL_ASSERT(lev >= 0);
 
-    long num_particles_in_domain = 0;
+    long long num_particles_in_domain = 0;
     std::vector< std::pair<int,Box> > scratch_space;
     
     PTreeIterator<PMap> ptree_it = m_particles.getIterator(base_region, lev);
@@ -1887,7 +1891,7 @@ ParticleContainer<N>::IncrementWithTotal (MultiFab& mf,
         }
     }
 
-    ParallelDescriptor::ReduceLongSum(num_particles_in_domain);
+    ParallelDescriptor::ReduceLongLongSum(num_particles_in_domain);
 
     return num_particles_in_domain;
 }
@@ -1917,7 +1921,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
 
     Array<Real> ldt(tnum,1e50);
 
-    long num_particles_at_level = 0;
+    long long num_particles_at_level = 0;
 
     for (typename PMap::const_iterator pmap_it = pmap.begin(), pmapEnd = pmap.end(); pmap_it != pmapEnd; ++pmap_it)
     {
@@ -1979,7 +1983,7 @@ ParticleContainer<N>::estTimestep (const MultiFab& gv,
     //
     // Set dt negative if there are no particles at this level.
     //
-    ParallelDescriptor::ReduceLongSum(num_particles_at_level);
+    ParallelDescriptor::ReduceLongLongSum(num_particles_at_level);
 
     if (num_particles_at_level == 0) dt = -1.e50;
 
@@ -5162,7 +5166,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
     //
     std::ofstream HdrFile;
 
-    long nparticles = 0;
+    long long nparticles = 0;
 
     PTreeConstIterator<PMap> ptree_it = m_particles.getConstIterator();
     for( ; !ptree_it.isFinished(); ++ptree_it)
@@ -5184,7 +5188,7 @@ ParticleContainer<N>::Checkpoint (const std::string& dir,
         }
     }
 
-    ParallelDescriptor::ReduceLongSum(nparticles,IOProc);
+    ParallelDescriptor::ReduceLongLongSum(nparticles,IOProc);
 
     int maxnextid = ParticleBase::NextID();
 
@@ -5688,7 +5692,7 @@ ParticleContainer<N>::Restart_Region_OneDotZero (const std::string& fullname,
     }
     ParallelDescriptor::Bcast(&n, 1, IOProc);
 
-    long nparticles;
+    long long nparticles;
 
     if (ParallelDescriptor::IOProcessor())
     {
@@ -6105,7 +6109,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     //
     // Count # of valid particles.
     //
-    long nparticles = 0;
+    long long nparticles = 0;
 
     PTreeIterator<PMap> it = m_particles.getIterator(Prefix);
     for ( ; !it.isFinished(); ++it)
@@ -6129,7 +6133,7 @@ ParticleContainer<N>::WriteAsciiFile (const std::string& filename)
     //
     // And send count to I/O processor.
     //
-    ParallelDescriptor::ReduceLongSum(nparticles,ParallelDescriptor::IOProcessorNumber());
+    ParallelDescriptor::ReduceLongLongSum(nparticles,ParallelDescriptor::IOProcessorNumber());
 
     if (ParallelDescriptor::IOProcessor())
     {
@@ -6240,7 +6244,7 @@ ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
     //
     // Count # of valid particles.
     //
-    long nparticles = 0;
+    long long nparticles = 0;
 
     PTreeIterator<PMap> ptree_it = m_particles.getIterator(ROOT_ID);
     for ( ; !ptree_it.isFinished() && !ptree_it.isFinished(); ++ptree_it,++ptree_it)
@@ -6266,7 +6270,7 @@ ParticleContainer<N>::WriteCoarsenedAsciiFile (const std::string& filename)
     //
     // And send count to I/O processor.
     //
-    ParallelDescriptor::ReduceLongSum(nparticles,ParallelDescriptor::IOProcessorNumber());
+    ParallelDescriptor::ReduceLongLongSum(nparticles,ParallelDescriptor::IOProcessorNumber());
 
     if (ParallelDescriptor::IOProcessor())
     {

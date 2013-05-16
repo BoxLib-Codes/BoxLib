@@ -317,7 +317,7 @@ ifeq ($(MACHINE), Linux)
       LIBRARY_LOCATIONS += $(mpihome)/lib
       INCLUDE_LOCATIONS += $(mpihome)/include
       CPPFLAGS += -DMPICH_SKIP_MPICXX
-      BL_MPI_LIBS += -lpthread
+      BL_MPI_LIBS += -lpthread -lmpich
     endif
 
     ifeq ($(HOST),hedorah)

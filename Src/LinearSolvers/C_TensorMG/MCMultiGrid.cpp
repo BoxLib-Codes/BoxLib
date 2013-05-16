@@ -132,15 +132,12 @@ MCMultiGrid::errorEstimate (int       level,
     //
     // Get inf-norm of residual.
     //
-    int p = 0;
+    const int p = 0;
     Lp.residual(*res[level], *rhs[level], *cor[level], level, bc_mode);
     Real restot = 0.0;
-    Real resk   = 0.0;
     for (MFIter resmfi(*res[level]); resmfi.isValid(); ++resmfi)
     {
-        resk = (*res[level])[resmfi].norm(resmfi.validbox(),p,0,numcomps);
-
-        restot = std::max(restot, resk);
+        restot = std::max(restot, (*res[level])[resmfi].norm(resmfi.validbox(),p,0,numcomps));
     }
     ParallelDescriptor::ReduceRealMax(restot);
     return restot;
@@ -220,6 +217,8 @@ MCMultiGrid::solve_ (MultiFab& _sol,
     // Relax system maxiter times, stop if relative error <= _eps_rel or
     // if absolute err <= _abs_eps
     //
+    const Real strt_time = ParallelDescriptor::second();
+
     int  returnVal = 0;  // should use bool for return value from this function
     Real error0    = errorEstimate(level, bc_mode);
     Real error     = error0;
@@ -265,9 +264,24 @@ MCMultiGrid::solve_ (MultiFab& _sol,
 		std::cout << "MCMultiGrid: Iteration "
                           << nit
                           << " error/error0 "
-                          << error/error0 << '\n';
+                          << error/error0;
 	    }
 	}
+    }
+
+    if ( verbose )
+    {
+        Real run_time = (ParallelDescriptor::second() - strt_time);
+
+        if ( verbose > 1 )
+        {
+            ParallelDescriptor::ReduceRealMax(run_time,ParallelDescriptor::IOProcessorNumber());
+
+            if ( ParallelDescriptor::IOProcessor() )
+                std::cout << ", Solve time: " << run_time;
+        }
+
+        if ( ParallelDescriptor::IOProcessor() ) std::cout << '\n';
     }
     
     if (nit == numiter || error <= eps_rel*error0 || error <= eps_abs)

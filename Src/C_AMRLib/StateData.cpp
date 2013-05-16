@@ -144,6 +144,7 @@ StateData::restart (std::istream&          is,
                     const std::string&     chkfile,
                     bool                   bReadSpecial)
 {
+    BL_PROFILE("StateData::restart()");
     if (bReadSpecial)
     {
 	std::cerr << "StateData:: restart:: w/bReadSpecial not implemented" << std::endl;
@@ -317,6 +318,7 @@ StateData::FillBoundary (FArrayBox&     dest,
                          int            src_comp,
                          int            num_comp)
 {
+    BL_PROFILE("StateData::FillBoundary()");
     BL_ASSERT(dest.box().ixType() == desc->getType());
    
     if (domain.contains(dest.box())) return;
@@ -485,6 +487,7 @@ StateData::linInterpFillFab (MultiFabCopyDescriptor&  multiFabCopyDesc,
                              int                      num_comp,
                              bool                     extrap)
 {
+    BL_PROFILE("StateData::linInterpFillFab()");
     if (desc->timeType() == StateDescriptor::Point)
     {
         if (old_data == 0)
@@ -535,6 +538,7 @@ StateData::checkPoint (const std::string& name,
                        VisMF::How     how,
                        bool           dump_old)
 {
+    BL_PROFILE("StateData::checkPoint()");
     static const std::string NewSuffix("_New_MF");
     static const std::string OldSuffix("_Old_MF");
 

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <cstdio>
+#include <math.h>
 
 #include <ParmParse.H>
 #include <ParallelDescriptor.H>
@@ -11,9 +11,21 @@
 #include <CG_F.H>
 #include <CGSolver.H>
 #include <MultiGrid.H>
+//
+// The largest value allowed for SSS - the "S" in the Communicaton-avoiding BiCGStab.
+//
+static const int SSS_MAX = 4;
 
 namespace
 {
+    //
+    // Set default values for these in Initialize()!!!
+    //
+    int  SSS;
+    bool variable_SSS;
+    //
+    // Has Initialized() been called?
+    //
     bool initialized = false;
 }
 //
@@ -33,7 +45,9 @@ CGSolver::Initialize ()
     //
     // Set defaults here!!!
     //
-    CGSolver::def_maxiter            = 40;
+    SSS                              = SSS_MAX;
+    variable_SSS                     = true;
+    CGSolver::def_maxiter            = 80;
     CGSolver::def_verbose            = 0;
     CGSolver::def_cg_solver          = BiCGStab;
     CGSolver::use_jbb_precond        = 0;
@@ -43,11 +57,16 @@ CGSolver::Initialize ()
     ParmParse pp("cg");
 
     pp.query("v",                  def_verbose);
+    pp.query("SSS",                SSS);
     pp.query("maxiter",            def_maxiter);
     pp.query("verbose",            def_verbose);
+    pp.query("variable_SSS",       variable_SSS);
     pp.query("use_jbb_precond",    use_jbb_precond);
     pp.query("use_jacobi_precond", use_jacobi_precond);
     pp.query("unstable_criterion", def_unstable_criterion);
+
+    if (SSS < 1      ) BoxLib::Abort("SSS must be >= 1");
+    if (SSS > SSS_MAX) BoxLib::Abort("SSS must be <= SSS_MAX");
 
     int ii;
     if (pp.query("cg_solver", ii))
@@ -62,7 +81,7 @@ CGSolver::Initialize ()
         }
     }
 
-    if (ParallelDescriptor::IOProcessor() && (def_verbose > 2))
+    if ( def_verbose > 2 && ParallelDescriptor::IOProcessor() )
     {
         std::cout << "CGSolver settings ...\n";
 	std::cout << "   def_maxiter            = " << def_maxiter            << '\n';
@@ -70,6 +89,7 @@ CGSolver::Initialize ()
 	std::cout << "   def_cg_solver          = " << def_cg_solver          << '\n';
 	std::cout << "   use_jbb_precond        = " << use_jbb_precond        << '\n';
 	std::cout << "   use_jacobi_precond     = " << use_jacobi_precond     << '\n';
+	std::cout << "   SSS                    = " << SSS                    << '\n';
     }
 
     BoxLib::ExecOnFinalize(CGSolver::Finalize);
@@ -127,14 +147,14 @@ static
 Real
 norm_inf (const MultiFab& res, bool local = false)
 {
-    Real restot = 0.0;
+    Real restot = 0;
 
     for (MFIter mfi(res); mfi.isValid(); ++mfi) 
     {
         restot = std::max(restot, res[mfi].norm(mfi.validbox(), 0));
     }
 
-    if (!local)
+    if ( !local )
         ParallelDescriptor::ReduceRealMax(restot);
 
     return restot;
@@ -167,89 +187,114 @@ void
 sxay (MultiFab&       ss,
       const MultiFab& xx,
       Real            a,
-      const MultiFab& yy)
+      const MultiFab& yy,
+      int             yycomp)
 {
-    const int ncomp = ss.nComp();
+    BL_ASSERT(yy.nComp() > yycomp);
+
+    const int ncomp  = 1;
+    const int sscomp = 0;
+    const int xxcomp = 0;
 
     for (MFIter mfi(ss); mfi.isValid(); ++mfi)
     {
-        const int k = mfi.index();
+        const Box&       ssbx  = mfi.validbox();
+        FArrayBox&       ssfab = ss[mfi];
+        const FArrayBox& xxfab = xx[mfi];
+        const FArrayBox& yyfab = yy[mfi];
 
-        const Box&       ssbx  = ss.box(k);
-        FArrayBox&       ssfab = ss[k];
-        const FArrayBox& xxfab = xx[k];
-        const FArrayBox& yyfab = yy[k];
-
-        FORT_CGSXAY(ssfab.dataPtr(),
+        FORT_CGSXAY(ssfab.dataPtr(sscomp),
                     ARLIM(ssfab.loVect()), ARLIM(ssfab.hiVect()),
-                    xxfab.dataPtr(),
+                    xxfab.dataPtr(xxcomp),
                     ARLIM(xxfab.loVect()), ARLIM(xxfab.hiVect()),
                     &a,
-                    yyfab.dataPtr(),
+                    yyfab.dataPtr(yycomp),
                     ARLIM(yyfab.loVect()), ARLIM(yyfab.hiVect()),
                     ssbx.loVect(), ssbx.hiVect(),
                     &ncomp);
     }
 }
 
+inline
+void
+sxay (MultiFab&       ss,
+      const MultiFab& xx,
+      Real            a,
+      const MultiFab& yy)
+{
+    sxay(ss,xx,a,yy,0);
+}
+
+//
+// Do a one-component dot product of r & z using supplied components.
+//
 static
+Real
+dotxy (const MultiFab& r,
+       int             rcomp,
+       const MultiFab& z,
+       int             zcomp,
+       bool            local)
+{
+    BL_ASSERT(r.nComp() > rcomp);
+    BL_ASSERT(z.nComp() > zcomp);
+    BL_ASSERT(r.boxArray() == z.boxArray());
+
+    const int ncomp = 1;
+
+    Real dot = 0;
+
+    for (MFIter mfi(r); mfi.isValid(); ++mfi)
+    {
+        const Box&       rbx  = mfi.validbox();
+        const FArrayBox& rfab = r[mfi];
+        const FArrayBox& zfab = z[mfi];
+
+        Real tdot;
+
+        FORT_CGXDOTY(&tdot,
+                     zfab.dataPtr(zcomp),
+                     ARLIM(zfab.loVect()),ARLIM(zfab.hiVect()),
+                     rfab.dataPtr(rcomp),
+                     ARLIM(rfab.loVect()),ARLIM(rfab.hiVect()),
+                     rbx.loVect(),rbx.hiVect(),
+                     &ncomp);
+        dot += tdot;
+    }
+
+    if ( !local )
+        ParallelDescriptor::ReduceRealSum(dot);
+
+    return dot;
+}
+
+inline
 Real
 dotxy (const MultiFab& r,
        const MultiFab& z,
        bool            local = false)
 {
-    const int ncomp = z.nComp();
-
-    Real rho = 0.0;
-
-    for (MFIter mfi(r); mfi.isValid(); ++mfi)
-    {
-        const int k = mfi.index();
-        Real trho;
-
-        const Box&       rbx  = r.box(k);
-        const FArrayBox& rfab = r[k];
-        const FArrayBox& zfab = z[k];
-
-        FORT_CGXDOTY(&trho,
-                     zfab.dataPtr(),
-                     ARLIM(zfab.loVect()),ARLIM(zfab.hiVect()),
-                     rfab.dataPtr(),
-                     ARLIM(rfab.loVect()),ARLIM(rfab.hiVect()),
-                     rbx.loVect(),rbx.hiVect(),
-                     &ncomp);
-        rho += trho;
-    }
-
-    if (!local)
-        ParallelDescriptor::ReduceRealSum(rho);
-
-    return rho;
+    return dotxy(r,0,z,0,local);
 }
-//
-// The "S" in the Communication-avoiding BiCGStab algorithm.
-//
-const int SSS = 4;
 
 //
 // z[m] = alpha*A[m][n]*x[n]+beta*y[m]   [row][col]
 //
 inline
-static
 void
-__gemv (double* z,
-        double  alpha,
-        double  A[((4*SSS)+1)][((4*SSS)+1)],
-        double* x,
-        double  beta,
-        double* y,
-        int     rows,
-        int     cols)
+gemv (Real* z,
+      Real  alpha,
+      Real  A[((4*SSS_MAX)+1)][((4*SSS_MAX)+1)],
+      Real* x,
+      Real  beta,
+      Real* y,
+      int   rows,
+      int   cols)
 {
-    for (int r = 0;r < rows; r++)
+    for (int r = 0; r < rows; r++)
     {
-        double sum = 0.0;
-        for (int c = 0;c < cols; c++)
+        Real sum = 0;
+        for (int c = 0; c < cols; c++)
         {
             sum += A[r][c]*x[c];
         }
@@ -261,16 +306,15 @@ __gemv (double* z,
 // z[n] = alpha*x[n]+beta*y[n]
 //
 inline
-static
 void
-__axpy (double* z,
-        double  alpha,
-        double* x,
-        double  beta,
-        double* y,
-        int     n)
+axpy (Real* z,
+        Real  alpha,
+        Real* x,
+        Real  beta,
+        Real* y,
+        int   n)
 {
-    for (int nn=0;nn<n;nn++)
+    for (int nn = 0; nn < n; nn++)
     {
         z[nn] = alpha*x[nn] + beta*y[nn];
     }
@@ -280,14 +324,11 @@ __axpy (double* z,
 // x[n].y[n]
 //
 inline
-static
-double
-__dot (double* x,
-       double* y,
-       int     n)
+Real
+dot (Real* x, Real* y, int n)
 {
-    double sum = 0.0;
-    for (int nn=0;nn<n;nn++)
+    Real sum = 0;
+    for (int nn = 0; nn < n; nn++)
     {
         sum += x[nn]*y[nn];
     }
@@ -295,18 +336,95 @@ __dot (double* x,
 }
 
 //
-// z[n] = 0.0
+// z[n] = 0
 //
 inline
+void
+zero (Real* z, int n)
+{
+    for (int nn = 0; nn < n;nn++)
+    {
+        z[nn] = 0;
+    }
+}
+
 static
 void
-__zero (double* z,
-        int     n)
+SetMonomialBasis (Real  Tp[((4*SSS_MAX)+1)][((4*SSS_MAX)+1)],
+                  Real Tpp[((4*SSS_MAX)+1)][((4*SSS_MAX)+1)],
+                  int   sss)
 {
-    for (int nn=0;nn<n;nn++)
+    for (int i = 0; i < 4*sss+1; i++)
     {
-        z[nn] = 0.0;
+        for (int j = 0; j < 4*sss+1; j++)
+        {
+            Tp[i][j] = 0;
+        }
     }
+    for (int i = 0; i < 2*sss; i++)
+    {
+        Tp[i+1][i] = 1;
+    }
+    for (int i = 2*sss+1; i < 4*sss; i++)
+    {
+        Tp[i+1][i] = 1;
+    }
+
+    for (int i = 0; i < 4*sss+1; i++)
+    {
+        for (int j = 0; j < 4*sss+1; j++)
+        {
+            Tpp[i][j] = 0;
+        }
+    }
+    for (int i = 0; i < 2*sss-1; i++)
+    {
+        Tpp[i+2][i] = 1;
+    }
+    for (int i = 2*sss+1; i < 4*sss-1; i++)
+    {
+        Tpp[i+2][i] = 1;
+    }
+}
+
+static
+void
+BuildGramMatrix (Real*           Gg,
+                 const MultiFab& PR,
+                 const MultiFab& rt,
+                 int             sss)
+{
+    BL_ASSERT(rt.nComp() == 1);
+    BL_ASSERT(PR.nComp() >= 4*sss+1);
+
+    const int Nrows = 4*sss+1, Ncols = Nrows + 1;
+    //
+    // Gg is dimensioned (Ncols*Nrows).
+    //
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static,1)
+#endif
+    for (int mm = 0; mm < Nrows; mm++)
+    {
+        for (int nn = mm; nn < Nrows; nn++)
+        {
+            Gg[mm*Ncols + nn] = dotxy(PR, mm, PR, nn, true);
+        }
+
+        Gg[mm*Ncols + Nrows] = dotxy(PR, mm, rt, 0, true);
+    }
+    //
+    // Fill in strict lower triangle using symmetry.
+    //
+    for (int mm = 0; mm < Nrows; mm++)
+    {
+        for (int nn = 0; nn < mm; nn++)
+        {
+            Gg[mm*Ncols + nn] = Gg[nn*Ncols + mm];
+        }
+    }
+
+    ParallelDescriptor::ReduceRealSum(Gg, Nrows*Ncols);
 }
 
 //
@@ -326,238 +444,356 @@ CGSolver::solve_cabicgstab (MultiFab&       sol,
                             Real            eps_abs,
                             LinOp::BC_Mode  bc_mode)
 {
-    BoxLib::Abort("CGSolver::solve_cabicgstab: not fully implemented");
+    BL_PROFILE("CGSolver::solve_cabicgstab()");
 
-  double  temp1[4*SSS+1];
-  double  temp2[4*SSS+1];
-  double     Tp[4*SSS+1][4*SSS+1];
-  double    Tpp[4*SSS+1][4*SSS+1];
-  double     aj[4*SSS+1];
-  double     cj[4*SSS+1];
-  double     ej[4*SSS+1];
-  double   Tpaj[4*SSS+1];
-  double   Tpcj[4*SSS+1];
-  double  Tppaj[4*SSS+1];
-  double      G[4*SSS+1][4*SSS+1];   // extracted from first 4*SSS+1 columns of Gg[][].  indexed as [row][col]
-  double      g[4*SSS+1];            // extracted from last [4*SSS+1] column of Gg[][].
-  double   Gg[(4*SSS+1)*(4*SSS+2)];  // buffer to hold the Gram-like matrix produced by matmul().  indexed as [row*(4*SSS+2) + col]
+    BL_ASSERT(sol.nComp() == 1);
+    BL_ASSERT(sol.boxArray() == Lp.boxArray(lev));
+    BL_ASSERT(rhs.boxArray() == Lp.boxArray(lev));
 
-  int      PRrt[4*SSS+2];            // grid_id's of the concatenation of the 2S+1 matrix powers of P, 2S matrix powers of R, and rt
-  int *P = PRrt+ 0;                  // grid_id's of the 2S+1 Matrix Powers of P.  P[i] is the grid_id of A^i(p)
-  int *R = PRrt+2*SSS+1;             // grid_id's of the 2S   Matrix Powers of R.  R[i] is the grid_id of A^i(r)
+    Real  temp1[4*SSS_MAX+1];
+    Real  temp2[4*SSS_MAX+1];
+    Real  temp3[4*SSS_MAX+1];
+    Real     Tp[4*SSS_MAX+1][4*SSS_MAX+1];
+    Real    Tpp[4*SSS_MAX+1][4*SSS_MAX+1];
+    Real     aj[4*SSS_MAX+1];
+    Real     cj[4*SSS_MAX+1];
+    Real     ej[4*SSS_MAX+1];
+    Real   Tpaj[4*SSS_MAX+1];
+    Real   Tpcj[4*SSS_MAX+1];
+    Real  Tppaj[4*SSS_MAX+1];
+    Real      G[4*SSS_MAX+1][4*SSS_MAX+1];    // Extracted from first 4*SSS+1 columns of Gg[][].  indexed as [row][col]
+    Real      g[4*SSS_MAX+1];                 // Extracted from last [4*SSS+1] column of Gg[][].
+    Real     Gg[(4*SSS_MAX+1)*(4*SSS_MAX+2)]; // Buffer to hold the Gram-like matrix produced by matmul().  indexed as [row*(4*SSS+2) + col]
+    //
+    // If variable_SSS we "telescope" SSS.
+    // We start with 1 and increase it up to SSS_MAX on the outer iterations.
+    //
+    if (variable_SSS) SSS = 1;
 
-  const int mMax = maxiter / SSS;
+    zero(   aj, 4*SSS_MAX+1);
+    zero(   cj, 4*SSS_MAX+1);
+    zero(   ej, 4*SSS_MAX+1);
+    zero( Tpaj, 4*SSS_MAX+1);
+    zero( Tpcj, 4*SSS_MAX+1);
+    zero(Tppaj, 4*SSS_MAX+1);
+    zero(temp1, 4*SSS_MAX+1);
+    zero(temp2, 4*SSS_MAX+1);
+    zero(temp3, 4*SSS_MAX+1);
 
-  bool BiCGStabFailed    = false;
-  bool BiCGStabConverged = 0;
+    SetMonomialBasis(Tp,Tpp,SSS);
 
-//  double g_dot_Tpaj,alpha,omega_numerator,omega_denominator,omega,delta,delta_next,beta;
-//  double L2_norm_of_rt,L2_norm_of_residual,cj_dot_Gcj;
+    const int ncomp = 1, nghost = 1;
 
-  __zero(   aj,4*SSS+1);
-  __zero(   cj,4*SSS+1);
-  __zero(   ej,4*SSS+1);
-  __zero( Tpaj,4*SSS+1);
-  __zero( Tpcj,4*SSS+1);
-  __zero(Tppaj,4*SSS+1);
-  __zero(temp1,4*SSS+1);
-  __zero(temp2,4*SSS+1);
-  //
-  // Initialize Tp[][] and Tpp[][] ...
-  //
-  // This is the monomial basis stuff.
-  //
-  for (int i = 0; i < 4*SSS+1; i++)
-      for (int j = 0; j < 4*SSS+1; j++)
-          Tp[i][j] = 0;
-  for (int i = 0; i < 2*SSS; i++)
-      Tp[i+1][i] = 1;
-  for (int i = 2*SSS+1; i < 4*SSS; i++)
-      Tp[i+1][i] = 1;
+    MultiFab  p(sol.boxArray(), ncomp, nghost);
+    MultiFab  r(sol.boxArray(), ncomp, nghost);
+    MultiFab rt(sol.boxArray(), ncomp, nghost);
+    //
+    // Contains the matrix powers of p[] and r[].
+    //
+    // First 2*SSS+1 components are powers of p[].
+    // Next  2*SSS   components are powers of r[].
+    //
+    MultiFab PR(sol.boxArray(), 4*SSS_MAX+1, nghost);
 
-  for (int i = 0; i < 4*SSS+1; i++)
-      for (int j = 0; j < 4*SSS+1; j++)
-          Tpp[i][j] = 0;
-  for (int i = 0; i < 2*SSS-1; i++)
-      Tpp[i+2][i] = 1;
-  for (int i = 2*SSS+1; i < 4*SSS-1; i++)
-      Tpp[i+2][i] = 1;
+    MultiFab tmp(sol.boxArray(), 4, nghost);
 
-  if (verbose > 0 && ParallelDescriptor::IOProcessor())
-  {
-      std::printf("T' = \n");
-      for(int i=0;i<4*SSS+1;i++){std::printf("| ");
-          for(int j=0;j<4*SSS+1;j++){std::printf("%2.1f ",Tp[i][j]);}std::printf("|\n");}
-      std::printf("\n");
-      std::printf("T'' = \n");
-      for(int i=0;i<4*SSS+1;i++){std::printf("| ");
-          for(int j=0;j<4*SSS+1;j++){std::printf("%2.1f ",Tpp[i][j]);}std::printf("|\n");}
-      std::printf("\n");
-  }
+    Lp.residual(r, rhs, sol, lev, bc_mode);
 
-#if 0
+    MultiFab::Copy(rt,r,0,0,1,0);
+    MultiFab::Copy( p,r,0,0,1,0);
 
-  exchange_boundary(domain,level,e_id,1,0,0);                                                    // exchange_boundary(e_id)
-  residual(domain,level,__rt,e_id,R_id,a,b,hLevel);                                              // rt[] = R_id[] - A(e_id)
-  scale_grid(domain,level,__r,1.0,__rt);                                                         // r[] = rt[]
-  scale_grid(domain,level,__p,1.0,__rt);                                                         // p[] = rt[]
-  double norm_of_rt = norm(domain,level,__rt);                                                   // the norm of the initial residual...
-  #ifdef __VERBOSE
-  if(domain->rank==0)std::printf("m=%8d, norm=%0.20f\n",m,norm_of_rt);
-  #endif
-  if(norm_of_rt == 0.0){BiCGStabConverged=true;}                                                    // entered BiCGStab with exact solution
-  delta = dot(domain,level,__r,__rt);                                                            // delta = dot(r,rt)
-  if(delta==0.0){BiCGStabConverged=true;}                                                           // entered BiCGStab with exact solution (square of L2 norm of __r)
-  L2_norm_of_rt = sqrt(delta);
+    const Real           rnorm0        = norm_inf(r);
+    Real                 delta         = dotxy(r,rt);
+    const Real           L2_norm_of_rt = sqrt(delta);
+    const LinOp::BC_Mode temp_bc_mode  = LinOp::Homogeneous_BC;
 
-
-
-  for(i=0;i<4*SSS+1;i++){PRrt[                 i] = __PRrt+i;}                        // columns of PRrt map to the consecutive spare grids allocated for the bottom solver starting at __PRrt
-                                    PRrt[4*SSS+1] = __rt;                             // last column or PRrt (r tilde) maps to rt
-
-
-  while( (m<mMax) && (!BiCGStabFailed) && (!BiCGStabConverged) ){                                // while(not done){
-    // Compute 2s+1 matrix powers on p[] (monomial basis)
-    scale_grid(domain,level,P[0],1.0,__p);                                                       // P[0] = A^0p = __p
-    for(n=1;n<2*SSS+1;n++){                                                           // naive way of calculating the monomial basis.  FIX - s-steps, better basis?
-      exchange_boundary(domain,level,P[n-1],1,0,0);                                              // exchange_boundary(A^(n-1)p)
-      apply_op(domain,level,P[n],P[n-1],a,b,hLevel);                                             // P[n] = A(P[n-1]) = A^(n)p
-    }
-    // Compute 2s matrix powers on r[] (monomial basis)
-    scale_grid(domain,level,R[0],1.0,__r);                                                       // R[0] = A^0r = __r
-    for(n=1;n<2*SSS;n++){                                                             // naive way of calculating the monomial basis.  FIX - s-steps, better basis?
-      exchange_boundary(domain,level,R[n-1],1,0,0);                                              // exchange_boundary(A^(n-1)r)
-      apply_op(domain,level,R[n],R[n-1],a,b,hLevel);                                             // R[n] = A(R[n-1]) = A^(n)r
-    }
-    // form G[][] and g[]
-    matmul_grids(domain,level,Gg,PRrt,PRrt,4*SSS+1,4*SSS+2);               // Compute Gg[][] = [P,R]^T * [P,R,rt] (Matmul with grids but only one MPI_AllReduce)
-    for(i=0,k=0;i<4*SSS+1;i++){                                                       // extract G[][] and g[] from Gg[]
-    for(j=0    ;j<4*SSS+1;j++){G[i][j] = Gg[k++];}                                    // first 4*SSS+1 elements in each row go to G[][].
-                                          g[i]    = Gg[k++];                                     // last element in row goes to g[].
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
+    {
+        Spacer(std::cout, lev);
+        std::cout << "CGSolver_CABiCGStab: Initial error (error0) =        " << rnorm0 << '\n';
     }
 
-    #ifdef __VERBOSE // print G[][] and g[]
-    if(domain->rank==0){
-      std::printf("G[][] = \n");
-      for(i=0;i<4*SSS+1;i++){//std::printf("| ");
-      for(j=0;j<4*SSS+1;j++){std::printf("%21.15e ",G[i][j]);}
-                                        std::printf(";\n");}
-      std::printf("\n");
-      std::printf("g[] = \n");
-      for(i=0;i<4*SSS+1;i++){std::printf(" %21.15e \n",g[i]);}
-      std::printf("\n");
-    } 
-    #endif
-
-    for(i=0;i<4*SSS+1;i++)aj[i]=0.0;aj[                 0]=1.0;                       // initialized based on (3.26)
-    for(i=0;i<4*SSS+1;i++)cj[i]=0.0;cj[2*SSS+1]=1.0;                       // initialized based on (3.26)
-    for(i=0;i<4*SSS+1;i++)ej[i]=0.0;                                                  // initialized based on (3.26)
-
-    #ifdef __VERBOSE // print aj[], cj[], and ej[]
-    if(domain->rank==0){
-      std::printf("aj[] =           cj[] =           ej[] =           \n");
-      for(i=0;i<4*SSS+1;i++){std::printf(" %21.15e ,   %21.15e ,   %21.15e ;   \n",aj[i],cj[i],ej[i]);}
-      std::printf("\n");
+    if ( rnorm0 == 0 || delta == 0 || rnorm0 < eps_abs )
+    {
+        if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
+	{
+            Spacer(std::cout, lev);
+            std::cout << "CGSolver_CABiCGStab: niter = 0,"
+                      << ", rnorm = "   << rnorm0
+                      << ", delta = "   << delta
+                      << ", eps_abs = " << eps_abs << '\n';
+	}
+        return 0;
     }
-    #endif
 
-    for(n=0;n<SSS;n++){                                                               // for(n=0;n<SSS;n++){
-      domain->CABiCGStab_j_iterations++;                                                         // record number of inner-loop (j) iterations for comparison
-      if(delta == 0.0){BiCGStabFailed=true;if(domain->rank==0){std::printf("delta == 0.0\n");}break;} // ??? breakdown (delta==0)
-      __gemv( Tpaj,   1.0, Tp,   aj,   0.0, Tpaj,4*SSS+1,4*SSS+1);         //                         T'aj
-      __gemv( Tpcj,   1.0, Tp,   cj,   0.0, Tpcj,4*SSS+1,4*SSS+1);         //                         T'cj
-      __gemv(Tppaj,   1.0,Tpp,   aj,   0.0,Tppaj,4*SSS+1,4*SSS+1);         //                        T''aj
-                       g_dot_Tpaj = __dot(g,Tpaj,4*SSS+1);                            // (g,T'aj)
-      if(g_dot_Tpaj == 0.0){BiCGStabFailed=true;if(domain->rank==0){std::printf("g_dot_Tpaj == 0.0\n");}break;} // ??? breakdown
-                                                             alpha = delta / g_dot_Tpaj;         // delta / (g,T'aj)
+    int niters = 0, ret = 0;
 
-      #if 0                                                                                      // seems to have accuracy problems in finite precision...
-      __gemv(temp1,-alpha,  G, Tpaj,   0.0,temp1,4*SSS+1,4*SSS+1);         //  temp1[] =      - alpha*GT'aj
-      __gemv(temp1,   1.0,  G,   cj,   1.0,temp1,4*SSS+1,4*SSS+1);         //  temp1[] =  Gcj - alpha*GT'aj
-      __gemv(temp2,   1.0, Tp,   cj,-alpha,Tppaj,4*SSS+1,4*SSS+1);         //  temp2[] = T'cj - alpha*T''aj  // FIX, just to __axpy
-             omega_numerator = __dot(temp2,temp1,4*SSS+1);                            //  (temp2,temp1) = ( T'cj-alpha*T''aj , Gcj-alpha*GT'aj )
-      __gemv(temp1,-alpha,  G,Tppaj,   0.0,temp1,4*SSS+1,4*SSS+1);         //  temp1[] =       − alpha*GT′′aj
-      __gemv(temp1,   1.0,  G, Tpcj,   1.0,temp1,4*SSS+1,4*SSS+1);         //  temp1[] = GT′cj − alpha*GT′′aj
-      __axpy(temp2,   1.0,     Tpcj,-alpha,Tppaj,4*SSS+1);                            //  temp2[] =  T′cj − alpha*T′′aj
-           omega_denominator = __dot(temp2,temp1,4*SSS+1);                            //  (temp2,temp1) = ( T′cj−alpha*T′′aj , GT′cj−alpha*GT′′aj )
-      #else                                                                                      // better to change the order of operations Gx-Gy -> G(x-y) ...
-      __axpy(temp1,   1.0,     Tpcj,-alpha,Tppaj,4*SSS+1);                            //  temp1[] =  (T'cj - alpha*T''aj)
-      __gemv(temp2,   1.0,  G,temp1,   0.0,temp2,4*SSS+1,4*SSS+1);         //  temp2[] = G(T'cj - alpha*T''aj)
-      __axpy(temp1,   1.0,       cj,-alpha, Tpaj,4*SSS+1);                            //  temp1[] =     cj - alpha*T'aj
-             omega_numerator = __dot(temp1,temp2,4*SSS+1);                            //  (temp1,temp2) = ( (cj - alpha*T'aj) , G(T'cj - alpha*T''aj) )
-      __axpy(temp1,   1.0,     Tpcj,-alpha,Tppaj,4*SSS+1);                            //  temp1[] =  (T'cj - alpha*T''aj)
-      __gemv(temp2,   1.0,  G,temp1,   0.0,temp2,4*SSS+1,4*SSS+1);         //  temp2[] = G(T'cj - alpha*T''aj)
-           omega_denominator = __dot(temp1,temp2,4*SSS+1);                            //  (temp1,temp2) = ( (T'cj - alpha*T''aj) , G(T'cj - alpha*T''aj) )
-      #endif                                                                                     // 
+    Real L2_norm_of_resid = 0;
 
-      __axpy(   ej,1.0,ej,       alpha,   aj,4*SSS+1);                                // ej[] = ej[] + alpha*aj[]
-      if(omega_denominator == 0.0){BiCGStabFailed=true;if(domain->rank==0){std::printf("omega_denominator == 0.0\n");}break;} // ??? breakdown
-      omega = omega_numerator / omega_denominator;                                               // 
-      __axpy(   ej,1.0,ej,       omega,   cj,4*SSS+1);                                // ej[] = ej[] + alpha*aj[] + omega*cj[]
-      __axpy(   ej,1.0,ej,-omega*alpha, Tpaj,4*SSS+1);                                // ej[] = ej[] + alpha*aj[] + omega*cj[] - omega*alpha*T'aj[]
-      __axpy(   cj,1.0,cj,      -omega, Tpcj,4*SSS+1);                                // cj[] = cj[] - omega*T'cj[]
-      __axpy(   cj,1.0,cj,      -alpha, Tpaj,4*SSS+1);                                // cj[] = cj[] - omega*T'cj[] - alpha*T'aj[]
-      __axpy(   cj,1.0,cj, omega*alpha,Tppaj,4*SSS+1);                                // cj[] = cj[] - omega*T'cj[] - alpha*T'aj[] + omega*alpha*T''aj[]
+    bool BiCGStabFailed = false, BiCGStabConverged = false;
 
+    Real atime = 0, gtime = 0;
 
-      // do a early check of the residual to determine if convergence...
-      __gemv(temp1,   1.0,  G,   cj,   0.0,temp1,4*SSS+1,4*SSS+1);         // temp1[] = Gcj
-                                        cj_dot_Gcj = __dot(cj,temp1,4*SSS+1);         // sqrt( (cj,Gcj) ) == L2 norm of the intermediate residual in exact arithmetic
-      L2_norm_of_residual = 0.0;if(cj_dot_Gcj>0)L2_norm_of_residual=sqrt(cj_dot_Gcj);            // However, finite precision can lead to the norm^2 being < 0 (Jim Demmel)
-      #ifdef __VERBOSE // print cj[], and Gcj[]
-      if(domain->rank==0){
-        std::printf("cj[] =           Gcj[] =\n");
-        for(i=0;i<4*SSS+1;i++){std::printf("| %21.15e |   | %21.15e |\n",cj[i],temp1[i]);}
-        std::printf("\n");
-      }
-      if(domain->rank==0)std::printf("m=%8d, norm=%0.20f (cj_dot_Gcj=%0.20e)\n",m+n,L2_norm_of_residual,cj_dot_Gcj);
-      #endif
-      if(L2_norm_of_residual < eps_rel*L2_norm_of_rt){BiCGStabConverged=true;break;} // terminate the inner n-loop
-      // convergence chech done.
+    for (int m = 0; m < maxiter && !BiCGStabFailed && !BiCGStabConverged; )
+    {
+        const Real time1 = ParallelDescriptor::second();
+        //
+        // Compute the matrix powers on p[] & r[] (monomial basis).
+        // The 2*SSS+1 powers of p[] followed by the 2*SSS powers of r[].
+        //
+        MultiFab::Copy(PR,p,0,0,1,0);
+        MultiFab::Copy(PR,r,0,2*SSS+1,1,0);
+        //
+        // We use "tmp" to minimize the number of Lp.apply()s.
+        // We do this by doing p & r together in a single call.
+        //
+        MultiFab::Copy(tmp,p,0,0,1,0);
+        MultiFab::Copy(tmp,r,0,1,1,0);
 
+        for (int n = 1; n < 2*SSS; n++)
+        {
+            Lp.apply(tmp, tmp, lev, temp_bc_mode, false, 0, 2, 2);
 
-      if(omega             == 0.0){BiCGStabFailed=true;if(domain->rank==0){std::printf("omega == 0.0\n");}break;} // ??? breakdown (omega==0)
-      if(omega_numerator   == 0.0){BiCGStabFailed=true;if(domain->rank==0){std::printf("omega_numerator   == 0.0\n");}break;} // ??? breakdown (omega==0)
-                     delta_next = __dot(g,cj,4*SSS+1);                                // (g,cj)
-      beta = (delta_next/delta)*(alpha/omega);                                                   // (delta_next/delta)*(alpha/omega)
-      __axpy(   aj,1.0,cj,        beta,   aj,4*SSS+1);                                // aj[] = cj[] + beta*aj[]
-      __axpy(   aj,1.0,aj, -omega*beta, Tpaj,4*SSS+1);                                // aj[] = cj[] + beta*aj[] - omega*beta*T'aj
-      delta = delta_next;                                                                        // delta = delta_next
+            MultiFab::Copy(tmp,tmp,2,0,2,0);
 
-      #ifdef __VERBOSE // print aj[], cj[], and ej[]
-      if(domain->rank==0){
-        std::printf("aj[] =           cj[] =           ej[] =           \n");
-        for(i=0;i<4*SSS+1;i++){std::printf("| %21.15e |   | %21.15e |   | %21.15e |   \n",aj[i],cj[i],ej[i]);}
-        std::printf("\n");
-      }
-      #endif
+            MultiFab::Copy(PR,tmp,0,        n,1,0);
+            MultiFab::Copy(PR,tmp,1,2*SSS+n+1,1,0);
+        }
 
+        Lp.apply(PR, PR, lev, temp_bc_mode, false, 2*SSS-1, 2*SSS, 1);
 
-    }                                                                                            // inner n (j) loop
+        Real time2 = ParallelDescriptor::second();
 
-    // update iterates...
-    for(i=0;i<4*SSS+1;i++){add_grids(domain,level,e_id,1.0,e_id,ej[i],PRrt[i]);}      // e_id[] = [P,R]ej + e_id[]
-                                      add_grids(domain,level, __p,0.0, __p,aj[0],PRrt[0]);       //    p[] = [P,R]aj
-    for(i=1;i<4*SSS+1;i++){add_grids(domain,level, __p,1.0, __p,aj[i],PRrt[i]);}      //          ...
-                                      add_grids(domain,level, __r,0.0, __r,cj[0],PRrt[0]);       //    r[] = [P,R]cj
-    for(i=1;i<4*SSS+1;i++){add_grids(domain,level, __r,1.0, __r,cj[i],PRrt[i]);}      //          ...
-                              m+=SSS;                                                 //   m+=SSS;
-    domain->BiCGStab_iterations+=SSS;                                                 //   BiCGStab_iterations is a multiple of s
+        atime += (time2-time1);
 
-    // Superfluous if you are calculating (cj,Gcj) and expensive as it adds another AllReduce- - - - - - - - - - - - - - - - - -
-    //exchange_boundary(domain,level,e_id,1,0,0);                                                  // calculate the norm of the true residual...
-    //residual(domain,level,__temp,e_id,R_id,a,b,hLevel);                                          // true residual
-    //double norm_of_residual = norm(domain,level,__temp);                                         // norm of true residual
-    //#ifdef __VERBOSE
-    //if(domain->rank==0)std::printf("m=%8d, norm=%0.20f\n",m,norm_of_residual);
-    //#endif
-    //if(norm_of_residual < eps_rel*norm_of_rt){BiCGStabConverged=true;break;}      // convergence ?
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  }                                                                                              // } // outer m loop
+        BuildGramMatrix(Gg, PR, rt, SSS);
 
-#endif
+        const Real time3 = ParallelDescriptor::second();
 
-    return 0;
+        gtime += (time3-time2);
+        //
+        // Form G[][] and g[] from Gg.
+        //
+        for (int i = 0, k = 0; i < 4*SSS+1; i++)
+        {
+            for (int j = 0; j < 4*SSS+1; j++)
+                //
+                // First 4*SSS+1 elements in each row go to G[][].
+                //
+                G[i][j] = Gg[k++];
+            //
+            // Last element in row goes to g[].
+            //
+            g[i] = Gg[k++];
+        }
+
+        zero(aj, 4*SSS+1); aj[0]       = 1;
+        zero(cj, 4*SSS+1); cj[2*SSS+1] = 1;
+        zero(ej, 4*SSS+1);
+
+        for (int nit = 0; nit < SSS; nit++)
+        {
+            gemv( Tpaj, 1.0,  Tp, aj, 0.0,  Tpaj, 4*SSS+1, 4*SSS+1);
+            gemv( Tpcj, 1.0,  Tp, cj, 0.0,  Tpcj, 4*SSS+1, 4*SSS+1);
+            gemv(Tppaj, 1.0, Tpp, aj, 0.0, Tppaj, 4*SSS+1, 4*SSS+1);
+
+            const Real g_dot_Tpaj = dot(g, Tpaj, 4*SSS+1);
+
+            if ( g_dot_Tpaj == 0 )
+            {
+                if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+                    std::cout << "CGSolver_CABiCGStab: g_dot_Tpaj == 0, nit = " << nit << '\n';
+                BiCGStabFailed = true; ret = 1; break;
+            }
+
+            const Real alpha = delta / g_dot_Tpaj;
+
+            if ( isinf(alpha) )
+            {
+                if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+                    std::cout << "CGSolver_CABiCGStab: alpha == inf, nit = " << nit << '\n';
+                BiCGStabFailed = true; ret = 2; break;
+            }
+
+            axpy(temp1, 1.0,     Tpcj, -alpha, Tppaj, 4*SSS+1);
+            gemv(temp2, 1.0, G, temp1,    0.0, temp2, 4*SSS+1, 4*SSS+1);
+            axpy(temp3, 1.0,       cj, -alpha,  Tpaj, 4*SSS+1);
+
+            const Real omega_numerator   = dot(temp3, temp2, 4*SSS+1);
+            const Real omega_denominator = dot(temp1, temp2, 4*SSS+1);
+            //
+            // NOTE: omega_numerator/omega_denominator can be 0/x or 0/0, but should never be x/0.
+            //
+            // If omega_numerator==0, and ||s||==0, then convergence, x=x+alpha*aj.
+            // If omega_numerator==0, and ||s||!=0, then stabilization breakdown.
+            //
+            // Partial update of ej must happen before the check on omega to ensure forward progress !!!
+            //
+            axpy(ej, 1.0, ej, alpha, aj, 4*SSS+1);
+            //
+            // ej has been updated so consider that we've done an iteration since
+            // even if we break out of the loop we'll be able to update both sol.
+            //
+            niters++;
+            //
+            // Calculate the norm of Saad's vector 's' to check intra s-step convergence.
+            //
+            axpy(temp1, 1.0,       cj,-alpha,  Tpaj, 4*SSS+1);
+            gemv(temp2, 1.0, G, temp1,   0.0, temp2, 4*SSS+1, 4*SSS+1);
+
+            const Real L2_norm_of_s = dot(temp1,temp2,4*SSS+1);
+
+            L2_norm_of_resid = (L2_norm_of_s < 0 ? 0 : sqrt(L2_norm_of_s));
+
+            if ( L2_norm_of_resid < eps_rel*L2_norm_of_rt )
+            {
+                if ( verbose > 1 && L2_norm_of_resid == 0 && ParallelDescriptor::IOProcessor() )
+                    std::cout << "CGSolver_CABiCGStab: L2 norm of s: " << L2_norm_of_s << '\n';
+                BiCGStabConverged = true; break;
+            }
+
+            if ( omega_denominator == 0 )
+            {
+                if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+                    std::cout << "CGSolver_CABiCGStab: omega_denominator == 0, nit = " << nit << '\n';
+                BiCGStabFailed = true; ret = 3; break;
+            }
+
+            const Real omega = omega_numerator / omega_denominator;
+
+            if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+            {
+                if ( omega == 0   ) std::cout << "CGSolver_CABiCGStab: omega == 0, nit = " << nit << '\n';
+                if ( isinf(omega) ) std::cout << "CGSolver_CABiCGStab: omega == inf, nit = " << nit << '\n';
+            }
+
+            if ( omega == 0   ) { BiCGStabFailed = true; ret = 4; break; }
+            if ( isinf(omega) ) { BiCGStabFailed = true; ret = 4; break; }
+            //
+            // Complete the update of ej & cj now that omega is known to be ok.
+            //
+            axpy(ej, 1.0, ej,       omega,    cj, 4*SSS+1);
+            axpy(ej, 1.0, ej,-omega*alpha,  Tpaj, 4*SSS+1);
+            axpy(cj, 1.0, cj,      -omega,  Tpcj, 4*SSS+1);
+            axpy(cj, 1.0, cj,      -alpha,  Tpaj, 4*SSS+1);
+            axpy(cj, 1.0, cj, omega*alpha, Tppaj, 4*SSS+1);
+            //
+            // Do an early check of the residual to determine convergence.
+            //
+            gemv(temp1, 1.0, G, cj, 0.0, temp1, 4*SSS+1, 4*SSS+1);
+            //
+            // sqrt( (cj,Gcj) ) == L2 norm of the intermediate residual in exact arithmetic.
+            // However, finite precision can lead to the norm^2 being < 0 (Jim Demmel).
+            // If cj_dot_Gcj < 0 we flush to zero and consider ourselves converged.
+            //
+            const Real L2_norm_of_r = dot(cj, temp1, 4*SSS+1);
+
+            L2_norm_of_resid = (L2_norm_of_r > 0 ? sqrt(L2_norm_of_r) : 0);
+
+            if ( L2_norm_of_resid < eps_rel*L2_norm_of_rt )
+            {
+                if ( verbose > 1 && L2_norm_of_resid == 0 && ParallelDescriptor::IOProcessor() )
+                    std::cout << "CGSolver_CABiCGStab: L2_norm_of_r: " << L2_norm_of_r << '\n';
+                BiCGStabConverged = true; break;
+            }
+
+            const Real delta_next = dot(g, cj, 4*SSS+1);
+
+            if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+            {
+                if ( delta_next == 0   ) std::cout << "CGSolver_CABiCGStab: delta == 0, nit = " << nit << '\n';
+                if ( isinf(delta_next) ) std::cout << "CGSolver_CABiCGStab: delta == inf, nit = " << nit << '\n';
+            }
+
+            if ( isinf(delta_next) ) { BiCGStabFailed = true; ret = 5; break; } // delta = inf?
+            if ( delta_next  == 0  ) { BiCGStabFailed = true; ret = 5; break; } // Lanczos breakdown...
+
+            const Real beta = (delta_next/delta)*(alpha/omega);
+
+            if ( verbose > 1 && ParallelDescriptor::IOProcessor() )
+            {
+                if ( beta == 0   ) std::cout << "CGSolver_CABiCGStab: beta == 0, nit = " << nit << '\n';
+                if ( isinf(beta) ) std::cout << "CGSolver_CABiCGStab: beta == inf, nit = " << nit << '\n';
+            }
+
+            if ( isinf(beta) ) { BiCGStabFailed = true; ret = 6; break; } // beta = inf?
+            if ( beta == 0   ) { BiCGStabFailed = true; ret = 6; break; } // beta = 0?  can't make further progress(?)
+
+            axpy(aj, 1.0, cj,        beta,   aj, 4*SSS+1);
+            axpy(aj, 1.0, aj, -omega*beta, Tpaj, 4*SSS+1);
+
+            delta = delta_next;
+        }
+        //
+        // Update iterates.
+        //
+        for (int i = 0; i < 4*SSS+1; i++)
+            sxay(sol,sol,ej[i],PR,i);
+
+        MultiFab::Copy(p,PR,0,0,1,0);
+        p.mult(aj[0],0,1);
+        for (int i = 1; i < 4*SSS+1; i++)
+            sxay(p,p,aj[i],PR,i);
+
+        MultiFab::Copy(r,PR,0,0,1,0);
+        r.mult(cj[0],0,1);
+        for (int i = 1; i < 4*SSS+1; i++)
+            sxay(r,r,cj[i],PR,i);
+
+        if ( !BiCGStabFailed && !BiCGStabConverged )
+        {
+            m += SSS;
+
+            if ( variable_SSS && SSS < SSS_MAX ) { SSS++; SetMonomialBasis(Tp,Tpp,SSS); }
+        }
+    }
+
+    if ( verbose > 0 )
+    {
+        if ( ParallelDescriptor::IOProcessor() )
+        {
+            Spacer(std::cout, lev);
+            std::cout << "CGSolver_CABiCGStab: Final: Iteration "
+                      << std::setw(4) << niters
+                      << " rel. err. "
+                      << L2_norm_of_resid << '\n';
+        }
+
+        if ( verbose > 1 )
+        {
+            Real tmp[2] = { atime, gtime };
+
+            ParallelDescriptor::ReduceRealMax(tmp,2,ParallelDescriptor::IOProcessorNumber());
+
+            if ( ParallelDescriptor::IOProcessor() )
+            {
+                Spacer(std::cout, lev);
+                std::cout << "CGSolver_CABiCGStab apply time: " << tmp[0] << ", gram time: " << tmp[1] << '\n';
+            }
+        }
+    }
+
+    if ( niters == maxiter && !BiCGStabFailed && !BiCGStabConverged)
+    {
+        if ( L2_norm_of_resid > L2_norm_of_rt )
+        {
+            if ( ParallelDescriptor::IOProcessor() )
+                BoxLib::Warning("CGSolver_CABiCGStab: failed to converge!");
+            //
+            // Return code 8 tells the MultiGrid driver to zero out the solution!
+            //
+            ret = 8;
+        }
+        else
+        {
+            //
+            // Return codes 1-7 tells the MultiGrid driver to smooth the solution!
+            //
+            ret = 7;
+        }
+    }
+
+    return ret;
 }
 
 int
@@ -567,10 +803,11 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
                           Real            eps_abs,
                           LinOp::BC_Mode  bc_mode)
 {
-    const int nghost = 1;
-    const int ncomp  = 1;
+    BL_PROFILE("CGSolver::solve_bicgstab()");
 
-    BL_ASSERT(sol.nComp() == 1);
+    const int nghost = 1, ncomp = 1;
+
+    BL_ASSERT(sol.nComp() == ncomp);
     BL_ASSERT(sol.boxArray() == Lp.boxArray(lev));
     BL_ASSERT(rhs.boxArray() == Lp.boxArray(lev));
 
@@ -584,52 +821,50 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
     MultiFab v(sol.boxArray(), ncomp, nghost);
     MultiFab t(sol.boxArray(), ncomp, nghost);
 
-    if (verbose && false)
-    {
-        std::cout << "eps_rel = "      << eps_rel         << std::endl;
-        std::cout << "eps_abs = "      << eps_abs         << std::endl;
-        std::cout << "lp.norm = "      << Lp.norm(0, lev) << std::endl;
-        std::cout << "sol.norm_inf = " << norm_inf(sol)   << std::endl;
-        std::cout << "rhs.norm_inf = " << norm_inf(rhs)   << std::endl;
-    }
+    MultiFab::Copy(sorig,sol,0,0,1,0);
 
-    sorig.copy(sol);
     Lp.residual(r, rhs, sorig, lev, bc_mode);
-    rh.copy(r);
-    sol.setVal(0.0);
-    const LinOp::BC_Mode temp_bc_mode=LinOp::Homogeneous_BC;
+
+    MultiFab::Copy(rh,r,0,0,1,0);
+
+    sol.setVal(0);
+
+    const LinOp::BC_Mode temp_bc_mode = LinOp::Homogeneous_BC;
+
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
+    Real rnorm = norm_inf(r);
+#else
     //
     // Calculate the local values of these norms & reduce their values together.
     //
     Real vals[2] = { norm_inf(r, true), Lp.norm(0, lev, true) };
 
-    ParallelDescriptor::ReduceRealMax(&vals[0],2);
+    ParallelDescriptor::ReduceRealMax(vals,2);
 
     Real       rnorm    = vals[0];
     const Real Lp_norm  = vals[1];
+    Real       sol_norm = 0;
+#endif
     const Real rnorm0   = rnorm;
-    const Real rh_norm  = rnorm0;
-    Real       sol_norm = 0.0;
-  
-    if (verbose > 0 && ParallelDescriptor::IOProcessor())
+
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
     {
         Spacer(std::cout, lev);
-        std::cout << "CGSolver_bicgstab: Initial error (error0) =        " << rnorm0 << '\n';
+        std::cout << "CGSolver_BiCGStab: Initial error (error0) =        " << rnorm0 << '\n';
     }
     int ret = 0, nit = 1;
     Real rho_1 = 0, alpha = 0, omega = 0;
 
-    if ( rnorm == 0.0 || rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm ) || rnorm < eps_abs )
+    if ( rnorm0 == 0 || rnorm0 < eps_abs )
     {
-        if (verbose > 0 && ParallelDescriptor::IOProcessor())
+        if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
 	{
             Spacer(std::cout, lev);
-            std::cout << "CGSolver_bicgstab: niter = 0,"
+            std::cout << "CGSolver_BiCGStab: niter = 0,"
                       << ", rnorm = " << rnorm 
-                      << ", eps_rel*(Lp_norm*sol_norm + rh_norm )" <<  eps_rel*(Lp_norm*sol_norm + rh_norm ) 
                       << ", eps_abs = " << eps_abs << std::endl;
 	}
-        return 0;
+        return ret;
     }
 
     for (; nit <= maxiter; ++nit)
@@ -637,12 +872,11 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
         const Real rho = dotxy(rh,r);
         if ( rho == 0 ) 
 	{
-            ret = 1;
-            break;
+            ret = 1; break;
 	}
         if ( nit == 1 )
         {
-            p.copy(r);
+            MultiFab::Copy(p,r,0,0,1,0);
         }
         else
         {
@@ -652,17 +886,17 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
         }
         if ( use_mg_precond )
         {
-            ph.setVal(0.0);
+            ph.setVal(0);
             mg_precond->solve(ph, p, eps_rel, eps_abs, temp_bc_mode);
         }
         else if ( use_jacobi_precond )
         {
-            ph.setVal(0.0);
+            ph.setVal(0);
             Lp.jacobi_smooth(ph, p, lev, temp_bc_mode);
         }
         else 
         {
-            ph.copy(p);
+            MultiFab::Copy(ph,p,0,0,1,0);
         }
         Lp.apply(v, ph, lev, temp_bc_mode);
 
@@ -672,48 +906,41 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
 	}
         else
 	{
-            ret = 2;
-            break;
+            ret = 2; break;
 	}
         sxay(sol, sol,  alpha, ph);
         sxay(s,     r, -alpha,  v);
 
         rnorm = norm_inf(s);
 
-        if (ParallelDescriptor::IOProcessor())
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
         {
-            if (verbose > 1 ||
-                (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-                  (eps_abs > 0. && rnorm < eps_abs)) && verbose))
-            {
-                Spacer(std::cout, lev);
-                std::cout << "CGSolver_bicgstab: Half Iter "
-                          << std::setw(11) << nit
-                          << " rel. err. "
-                          << rnorm/(rh_norm) << '\n';
-            }
+            Spacer(std::cout, lev);
+            std::cout << "CGSolver_BiCGStab: Half Iter "
+                      << std::setw(11) << nit
+                      << " rel. err. "
+                      << rnorm/(rnorm0) << '\n';
         }
 
-#ifndef CG_USE_OLD_CONVERGENCE_CRITERIA
-        sol_norm = norm_inf(sol);
-        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm ) || rnorm < eps_abs ) break;
-#else
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
         if ( rnorm < eps_rel*rnorm0 || rnorm < eps_abs ) break;
+#else
+        sol_norm = norm_inf(sol);
+        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rnorm0 ) || rnorm < eps_abs ) break;
 #endif
-
         if ( use_mg_precond )
         {
-            sh.setVal(0.0);
+            sh.setVal(0);
             mg_precond->solve(sh, s, eps_rel, eps_abs, temp_bc_mode);
         }
         else if ( use_jacobi_precond )
         {
-            sh.setVal(0.0);
+            sh.setVal(0);
             Lp.jacobi_smooth(sh, s, lev, temp_bc_mode);
         }
         else
         {
-            sh.copy(s);
+            MultiFab::Copy(sh,s,0,0,1,0);
         }
         Lp.apply(t, sh, lev, temp_bc_mode);
         //
@@ -723,7 +950,7 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
         //
         Real vals[2] = { dotxy(t,t,true), dotxy(t,s,true) };
 
-        ParallelDescriptor::ReduceRealSum(&vals[0],2);
+        ParallelDescriptor::ReduceRealSum(vals,2);
 
         if ( vals[0] )
 	{
@@ -731,73 +958,62 @@ CGSolver::solve_bicgstab (MultiFab&       sol,
 	}
         else
 	{
-            ret = 3;
-            break;
+            ret = 3; break;
 	}
         sxay(sol, sol,  omega, sh);
         sxay(r,     s, -omega,  t);
 
         rnorm = norm_inf(r);
 
-        if (ParallelDescriptor::IOProcessor())
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
         {
-            if (verbose > 1 ||
-                (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-                  (eps_abs > 0. && rnorm < eps_abs)) && verbose))
-            {
-                Spacer(std::cout, lev);
-                std::cout << "CGSolver_bicgstab: Iteration "
-                          << std::setw(11) << nit
-                          << " rel. err. "
-                          << rnorm/(rh_norm) << '\n';
-            }
+            Spacer(std::cout, lev);
+            std::cout << "CGSolver_BiCGStab: Iteration "
+                      << std::setw(11) << nit
+                      << " rel. err. "
+                      << rnorm/(rnorm0) << '\n';
         }
 
-#ifndef CG_USE_OLD_CONVERGENCE_CRITERIA
-        sol_norm = norm_inf(sol);
-        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm ) || rnorm < eps_abs ) break;
-#else
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
         if ( rnorm < eps_rel*rnorm0 || rnorm < eps_abs ) break;
+#else
+        sol_norm = norm_inf(sol);
+        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rnorm0 ) || rnorm < eps_abs ) break;
 #endif
         if ( omega == 0 )
 	{
-            ret = 4;
-            break;
+            ret = 4; break;
 	}
         rho_1 = rho;
     }
 
-    if (ParallelDescriptor::IOProcessor())
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
     {
-        if (verbose > 0 ||
-            (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-              (eps_abs > 0. && rnorm < eps_abs)) && verbose))
-	{
-            Spacer(std::cout, lev);
-            std::cout << "CGSolver_bicgstab: Final: Iteration "
-                      << std::setw(4) << nit
-                      << " rel. err. "
-                      << rnorm/(rh_norm) << '\n';
-	}
+        Spacer(std::cout, lev);
+        std::cout << "CGSolver_BiCGStab: Final: Iteration "
+                  << std::setw(4) << nit
+                  << " rel. err. "
+                  << rnorm/(rnorm0) << '\n';
     }
-#ifndef CG_USE_OLD_CONVERGENCE_CRITERIA
-    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rh_norm ) && rnorm > eps_abs )
-#else
+
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
     if ( ret == 0 && rnorm > eps_rel*rnorm0 && rnorm > eps_abs)
+#else
+    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rnorm0 ) && rnorm > eps_abs )
 #endif
     {
         if ( ParallelDescriptor::IOProcessor() )
-            BoxLib::Warning("CGSolver_bicgstab:: failed to converge!");
+            BoxLib::Warning("CGSolver_BiCGStab:: failed to converge!");
         ret = 8;
     }
 
-    if ( ( ret == 0 || ret == 8 ) && (rnorm < rh_norm) )
+    if ( ( ret == 0 || ret == 8 ) && (rnorm < rnorm0) )
     {
         sol.plus(sorig, 0, 1, 0);
     } 
     else 
     {
-        sol.setVal(0.0);
+        sol.setVal(0);
         sol.plus(sorig, 0, 1, 0);
     }
 
@@ -811,10 +1027,11 @@ CGSolver::solve_cg (MultiFab&       sol,
 		    Real            eps_abs,
 		    LinOp::BC_Mode  bc_mode)
 {
-    const int nghost = 1;
-    const int ncomp  = sol.nComp();
+    BL_PROFILE("CGSolver::solve_cg()");
 
-    BL_ASSERT(ncomp == 1 );
+    const int nghost = 1, ncomp = 1;
+
+    BL_ASSERT(sol.nComp() == ncomp);
     BL_ASSERT(sol.boxArray() == Lp.boxArray(lev));
     BL_ASSERT(rhs.boxArray() == Lp.boxArray(lev));
 
@@ -829,7 +1046,7 @@ CGSolver::solve_cg (MultiFab&       sol,
     MultiFab r2(sol.boxArray(), ncomp, nghost);
     MultiFab z2(sol.boxArray(), ncomp, nghost);
 
-    sorig.copy(sol);
+    MultiFab::Copy(sorig,sol,0,0,1,0);
 
     Lp.residual(r, rhs, sorig, lev, bc_mode);
 
@@ -841,27 +1058,26 @@ CGSolver::solve_cg (MultiFab&       sol,
     const Real rnorm0   = rnorm;
     Real       minrnorm = rnorm;
 
-    if (verbose > 0 && ParallelDescriptor::IOProcessor())
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
     {
         Spacer(std::cout, lev);
         std::cout << "              CG: Initial error :        " << rnorm0 << '\n';
     }
 
     const Real Lp_norm = Lp.norm(0, lev);
-    const Real rh_norm = rnorm0;
     Real sol_norm      = 0;
     Real rho_1         = 0;
     int  ret           = 0;
     int  nit           = 1;
 
-    if ( rnorm == 0.0 || rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm ) || rnorm < eps_abs )
+    if ( rnorm == 0 || rnorm < eps_abs )
     {
-        if (verbose > 0 && ParallelDescriptor::IOProcessor())
+        if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
 	{
             Spacer(std::cout, lev);
             std::cout << "       CG: niter = 0,"
                       << ", rnorm = " << rnorm 
-                      << ", eps_rel*(Lp_norm*sol_norm + rh_norm )" <<  eps_rel*(Lp_norm*sol_norm + rh_norm ) 
+                      << ", eps_rel*(Lp_norm*sol_norm + rnorm0 )" <<  eps_rel*(Lp_norm*sol_norm + rnorm0 ) 
                       << ", eps_abs = " << eps_abs << std::endl;
 	}
         return 0;
@@ -877,14 +1093,14 @@ CGSolver::solve_cg (MultiFab&       sol,
         }
         else
         {
-            z.copy(r);
+            MultiFab::Copy(z,r,0,0,1,0);
         }
 
         Real rho = dotxy(z,r);
 
         if (nit == 1)
         {
-            p.copy(z);
+            MultiFab::Copy(p,z,0,0,1,0);
         }
         else
         {
@@ -900,11 +1116,10 @@ CGSolver::solve_cg (MultiFab&       sol,
 	}
         else
 	{
-            ret = 1;
-            break;
+            ret = 1; break;
 	}
         
-        if (ParallelDescriptor::IOProcessor() && verbose > 2)
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
         {
             Spacer(std::cout, lev);
             std::cout << "CGSolver_cg:"
@@ -917,30 +1132,23 @@ CGSolver::solve_cg (MultiFab&       sol,
         rnorm = norm_inf(r);
         sol_norm = norm_inf(sol);
 
-        if (ParallelDescriptor::IOProcessor())
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
         {
-            if (verbose > 1 ||
-                (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-                  (eps_abs > 0. && rnorm < eps_abs)) && verbose))
-            {
-                Spacer(std::cout, lev);
-                std::cout << "       CG:       Iteration"
-                          << std::setw(4) << nit
-                          << " rel. err. "
-                          << rnorm/(rh_norm) << '\n';
-            }
+            Spacer(std::cout, lev);
+            std::cout << "       CG:       Iteration"
+                      << std::setw(4) << nit
+                      << " rel. err. "
+                      << rnorm/(rnorm0) << '\n';
         }
 
-#ifndef CG_USE_OLD_CONVERGENCE_CRITERIA
-        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm) || rnorm < eps_abs ) break;
-#else
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
         if ( rnorm < eps_rel*rnorm0 || rnorm < eps_abs ) break;
+#else
+        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rnorm0) || rnorm < eps_abs ) break;
 #endif
-      
         if ( rnorm > def_unstable_criterion*minrnorm )
 	{
-            ret = 2;
-            break;
+            ret = 2; break;
 	}
         else if ( rnorm < minrnorm )
 	{
@@ -950,42 +1158,33 @@ CGSolver::solve_cg (MultiFab&       sol,
         rho_1 = rho;
     }
     
-    if (ParallelDescriptor::IOProcessor())
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
     {
-        if (verbose > 0 ||
-            (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-              (eps_abs > 0. && rnorm < eps_abs)) && verbose))
-	{
-            Spacer(std::cout, lev);
-            std::cout << "       CG: Final Iteration"
-                      << std::setw(4) << nit
-                      << " rel. err. "
-                      << rnorm/(rh_norm) << '\n';
-	}
+        Spacer(std::cout, lev);
+        std::cout << "       CG: Final Iteration"
+                  << std::setw(4) << nit
+                  << " rel. err. "
+                  << rnorm/(rnorm0) << '\n';
     }
-#ifndef CG_USE_OLD_CONVERGENCE_CRITERIA
-    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rh_norm) && rnorm > eps_abs )
-    {
-        if ( ParallelDescriptor::IOProcessor() )
-            BoxLib::Warning("CGSolver_cg:: failed to converge!");
-        ret = 8;
-    }
-#else
-    if ( ret == 0 &&  rnorm > eps_rel*rnorm0 && rnorm > eps_abs )
-    {
-        if ( ParallelDescriptor::IOProcessor() )
-            BoxLib::Warning("CGSolver_cg:: failed to converge!");
-        ret = 8;
-    }
-#endif
 
-    if ( ( ret == 0 || ret == 8 ) && (rnorm < rh_norm) )
+#ifdef CG_USE_OLD_CONVERGENCE_CRITERIA
+    if ( ret == 0 &&  rnorm > eps_rel*rnorm0 && rnorm > eps_abs )
+#else
+    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rnorm0) && rnorm > eps_abs )
+#endif
+    {
+        if ( ParallelDescriptor::IOProcessor() )
+            BoxLib::Warning("CGSolver_cg: failed to converge!");
+        ret = 8;
+    }
+
+    if ( ( ret == 0 || ret == 8 ) && (rnorm < rnorm0) )
     {
         sol.plus(sorig, 0, 1, 0);
     } 
     else 
     {
-        sol.setVal(0.0);
+        sol.setVal(0);
         sol.plus(sorig, 0, 1, 0);
     }
 
@@ -1030,26 +1229,25 @@ CGSolver::jbb_precond (MultiFab&       sol,
     const Real rnorm0   = rnorm;
     Real       minrnorm = rnorm;
 
-    if (verbose > 2 && ParallelDescriptor::IOProcessor())
+    if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
     {
         Spacer(std::cout, lev_loc);
         std::cout << "     jbb_precond: Initial error :        " << rnorm0 << '\n';
     }
 
     const Real Lp_norm = Lp.norm(0, lev_loc, local);
-    const Real rh_norm = rnorm0;
     Real sol_norm = 0;
     int  ret      = 0;			// will return this value if all goes well
     Real rho_1    = 0;
     int  nit      = 1;
-    if ( rnorm == 0.0 || rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm ) || rnorm < eps_abs )
+
+    if ( rnorm0 == 0 || rnorm0 < eps_abs )
     {
-        if (verbose > 2 && ParallelDescriptor::IOProcessor())
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
 	{
             Spacer(std::cout, lev_loc);
             std::cout << "jbb_precond: niter = 0,"
                       << ", rnorm = " << rnorm 
-                      << ", eps_rel*(Lp_norm*sol_norm + rh_norm )" <<  eps_rel*(Lp_norm*sol_norm + rh_norm ) 
                       << ", eps_abs = " << eps_abs << std::endl;
 	}
         return 0;
@@ -1079,11 +1277,10 @@ CGSolver::jbb_precond (MultiFab&       sol,
 	}
         else
 	{
-            ret = 1;
-            break;
+            ret = 1; break;
 	}
         
-        if ( ParallelDescriptor::IOProcessor() && verbose > 3 )
+        if ( verbose > 3 && ParallelDescriptor::IOProcessor() )
         {
             Spacer(std::cout, lev_loc);
             std::cout << "jbb_precond:" << " nit " << nit
@@ -1094,29 +1291,23 @@ CGSolver::jbb_precond (MultiFab&       sol,
         rnorm    = norm_inf(r,   local);
         sol_norm = norm_inf(sol, local);
 
-        if ( ParallelDescriptor::IOProcessor() )
+        if ( verbose > 2 && ParallelDescriptor::IOProcessor() )
         {
-            if ( verbose > 3 ||
-                 (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-                   (eps_abs > 0. && rnorm < eps_abs)) && verbose > 3) )
-            {
-                Spacer(std::cout, lev_loc);
-                std::cout << "jbb_precond:       Iteration"
-                          << std::setw(4) << nit
-                          << " rel. err. "
-                          << rnorm/(rh_norm) << '\n';
-            }
+            Spacer(std::cout, lev_loc);
+            std::cout << "jbb_precond:       Iteration"
+                      << std::setw(4) << nit
+                      << " rel. err. "
+                      << rnorm/(rnorm0) << '\n';
         }
 
-        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rh_norm) || rnorm < eps_abs )
+        if ( rnorm < eps_rel*(Lp_norm*sol_norm + rnorm0) || rnorm < eps_abs )
 	{
             break;
 	}
       
         if ( rnorm > def_unstable_criterion*minrnorm )
 	{
-            ret = 2;
-            break;
+            ret = 2; break;
 	}
         else if ( rnorm < minrnorm )
 	{
@@ -1126,20 +1317,15 @@ CGSolver::jbb_precond (MultiFab&       sol,
         rho_1 = rho;
     }
     
-    if ( ParallelDescriptor::IOProcessor() )
+    if ( verbose > 0 && ParallelDescriptor::IOProcessor() )
     {
-        if ( verbose > 2 ||
-             (((eps_rel > 0. && rnorm < eps_rel*rnorm0) ||
-               (eps_abs > 0. && rnorm < eps_abs)) && (verbose > 2)) )
-	{
-            Spacer(std::cout, lev_loc);
-            std::cout << "jbb_precond: Final Iteration"
-                      << std::setw(4) << nit
-                      << " rel. err. "
-                      << rnorm/(rh_norm) << '\n';
-	}
+        Spacer(std::cout, lev_loc);
+        std::cout << "jbb_precond: Final Iteration"
+                  << std::setw(4) << nit
+                  << " rel. err. "
+                  << rnorm/(rnorm0) << '\n';
     }
-    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rh_norm) && rnorm > eps_abs )
+    if ( ret == 0 && rnorm > eps_rel*(Lp_norm*sol_norm + rnorm0) && rnorm > eps_abs )
     {
         if ( ParallelDescriptor::IOProcessor() )
 	{
@@ -1148,7 +1334,7 @@ CGSolver::jbb_precond (MultiFab&       sol,
         ret = 8;
     }
 
-    if ( ( ret == 0 || ret == 8 ) && (rnorm < rh_norm) )
+    if ( ( ret == 0 || ret == 8 ) && (rnorm < rnorm0) )
     {
         sol.plus(sorig, 0, 1, 0);
     } 
