@@ -38,7 +38,7 @@ contains
     real(kind=dp_t) :: local_eps
 
     if (.not.nodal_q(ff)) then
-       singular_test =  mgt%bottom_singular .and. mgt%coeffs_sum_to_zero
+       singular_test = ( mgt%bottom_singular .and. mgt%coeffs_sum_to_zero )
     end if
 
     pmask = get_pmask(get_layout(uu))
@@ -48,11 +48,13 @@ contains
 
     call build(bpt, "mgt_smoother")
 
-    if (mgt%skewed_not_set(lev)) then 
+    if (mgt%skewed_not_set(lev)) then
+       !$OMP PARALLEL DO PRIVATE(i,mp)
        do i = 1, nfabs(mm)
           mp => dataptr(mm, i)
           mgt%skewed(lev,i) = skewed_q(mp)
        end do
+       !$OMP END PARALLEL DO
        mgt%skewed_not_set(lev) = .false.
     end if
 
@@ -102,6 +104,7 @@ contains
 
                 call multifab_fill_boundary(uu, cross = mgt%lcross)
 
+                !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
                 do i = 1, nfabs(ff)
                    up => dataptr(uu, i)
                    fp => dataptr(ff, i)
@@ -125,12 +128,15 @@ contains
                       end select
                    end do
                 end do
+                !$OMP END PARALLEL DO
 
              end do
 
           case ( MG_SMOOTHER_EFF_RB )
 
              call multifab_fill_boundary(uu, cross = mgt%lcross)
+
+             !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
              do i = 1, nfabs(ff)
                 up => dataptr(uu, i)
                 fp => dataptr(ff, i)
@@ -163,12 +169,14 @@ contains
                    end select
                 end do
              end do
+             !$OMP END PARALLEL DO
 
           case ( MG_SMOOTHER_MINION_CROSS )
 
              do nn = 0, 1
                 call multifab_fill_boundary(uu, cross = mgt%lcross)
 
+                !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
                 do i = 1, nfabs(ff)
                    up => dataptr(uu, i)
                    fp => dataptr(ff, i)
@@ -186,12 +194,15 @@ contains
                       end select
                    end do
                 end do
+                !$OMP END PARALLEL DO
              end do
 
           case ( MG_SMOOTHER_MINION_FULL )
 
              do nn = 0, 1
                 call multifab_fill_boundary(uu, cross = mgt%lcross)
+
+                !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
                 do i = 1, nfabs(ff)
                    up => dataptr(uu, i)
                    fp => dataptr(ff, i)
@@ -209,10 +220,13 @@ contains
                       end select
                    end do
                 end do
+             !$OMP END PARALLEL DO
              end do
 
           case ( MG_SMOOTHER_JACOBI )
              call multifab_fill_boundary(uu, cross = mgt%lcross)
+
+             !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
              do i = 1, nfabs(ff)
                 up => dataptr(uu, i)
                 fp => dataptr(ff, i)
@@ -230,8 +244,12 @@ contains
                    end select
                 end do
              end do
+             !$OMP END PARALLEL DO
+
           case ( MG_SMOOTHER_GS_LEX )
              call multifab_fill_boundary(uu, cross = mgt%lcross)
+
+             !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
              do i = 1, nfabs(ff)
                 up => dataptr(uu, i)
                 fp => dataptr(ff, i)
@@ -249,6 +267,8 @@ contains
                    end select
                 end do
              end do
+             !$OMP END PARALLEL DO
+
           case default
              call bl_error("MG_TOWER_SMOOTHER: no such smoother")
           end select
@@ -282,6 +302,8 @@ contains
           ! k is the red-black parameter
           do k = 0, 1
              call multifab_fill_boundary(uu, cross = mgt%lcross)
+
+             !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
              do i = 1, nfabs(ff)
                 up => dataptr(uu, i)
                 fp => dataptr(ff, i)
@@ -291,9 +313,7 @@ contains
                 do n = 1, mgt%nc
                    select case ( mgt%dim)
                    case (1)
-!                     call nodal_smoother_1d(mgt%omega, sp(:,:,1,1), up(:,1,1,n), &
-!                                            fp(:,1,1,n), mp(:,1,1,1), lo, ng, k)
-                      if (k.eq.0) &
+                      if ( k.eq.0 ) &
                       call nodal_line_solve_1d(sp(:,:,1,1), up(:,1,1,n), &
                                                fp(:,1,1,n), mp(:,1,1,1), lo, ng)
                    case (2)
@@ -307,12 +327,16 @@ contains
                    end select
                 end do
              end do
+             !$OMP END PARALLEL DO
+
           end do
         end if
        else
           call multifab_fill_boundary(uu, cross = mgt%lcross)
           ! This value of k isn't used
           k = 0
+
+          !$OMP PARALLEL DO PRIVATE(i,n,up,fp,sp,mp,lo)
           do i = 1, nfabs(ff)
              up => dataptr(uu, i)
              fp => dataptr(ff, i)
@@ -337,6 +361,8 @@ contains
                 end select
              end do
           end do
+          !$OMP END PARALLEL DO
+
        end if
 
        call multifab_internal_sync(uu)

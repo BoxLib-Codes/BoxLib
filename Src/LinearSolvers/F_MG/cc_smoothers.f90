@@ -260,21 +260,25 @@ contains
 
   subroutine gs_rb_smoother_3d(omega, ss, uu, ff, mm, lo, ng, n, skwd)
     use bl_prof_module
-    integer, intent(in) :: ng
-    integer, intent(in) :: lo(:)
-    integer, intent(in) :: n
-    real (kind = dp_t), intent(in) :: omega
-    real (kind = dp_t), intent(in) :: ff(lo(1):,lo(2):,lo(3):)
-    real (kind = dp_t), intent(inout) :: uu(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:)
-    real (kind = dp_t), intent(in) :: ss(0:,lo(1):, lo(2):, lo(3):)
-    integer            ,intent(in) :: mm(lo(1):,lo(2):,lo(3):)
+    integer,    intent(in   ) :: ng, lo(:), n
+    real(dp_t), intent(in   ) :: ff(lo(1):,lo(2):,lo(3):), omega
+    real(dp_t), intent(inout) :: uu(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:)
+    real(dp_t), intent(in   ) :: ss(0:,lo(1):, lo(2):, lo(3):)
+    integer,    intent(in   ) :: mm(lo(1):,lo(2):,lo(3):)
+
     logical, intent(in), optional :: skwd
-    integer :: i, j, k, ioff
-    integer :: hi(size(lo))
-    integer, parameter ::  XBC = 7, YBC = 8, ZBC = 9
-    logical :: lskwd
-    real(dp_t), allocatable :: lr(:,:,:), tb(:,:,:), fb(:,:,:)
+
+    integer    :: i, j, k, ioff, hi(size(lo))
+    logical    :: lskwd
     real(dp_t) :: dd
+    !
+    ! These are small(ish) so we'll put'm on the stack instead of the heap.
+    !
+    real(dp_t) :: lr(lbound(ff,2):ubound(ff,2), lbound(ff,3):ubound(ff,3), 2)
+    real(dp_t) :: tb(lbound(ff,1):ubound(ff,1), lbound(ff,3):ubound(ff,3), 2)
+    real(dp_t) :: fb(lbound(ff,1):ubound(ff,1), lbound(ff,2):ubound(ff,2), 2)
+
+    integer, parameter ::  XBC = 7, YBC = 8, ZBC = 9
 
     type(bl_prof_timer), save :: bpt
 
@@ -285,7 +289,7 @@ contains
     if ( all(lo == hi) ) then
        k = lo(3); j = lo(2); i = lo(1)
        if ( mod(i + j + k, 2) == n ) then
-          if (abs(ss(0,i,j,k)) .gt. 0.0_dp_t) then
+          if ( abs(ss(0,i,j,k)) .gt. 0.0_dp_t ) then
              dd = ss(0,i,j,k)*uu(i,j,k)   + &
                   ss(1,i,j,k)*uu(i+1,j,k) + ss(2,i,j,k)*uu(i-1,j,k) + &
                   ss(3,i,j,k)*uu(i,j+1,k) + ss(4,i,j,k)*uu(i,j-1,k) + &
@@ -329,10 +333,6 @@ contains
 
 1234 if ( lskwd ) then
 
-       allocate(lr(lbound(ff,2):ubound(ff,2), lbound(ff,3):ubound(ff,3), 2))
-       allocate(tb(lbound(ff,1):ubound(ff,1), lbound(ff,3):ubound(ff,3), 2))
-       allocate(fb(lbound(ff,1):ubound(ff,1), lbound(ff,2):ubound(ff,2), 2))
-
        do k = lo(3), hi(3)
           do i = lo(1), hi(1)
              if (bc_skewed(mm(i,lo(2),k),2,+1)) tb(i,k,1) = uu(i,lo(2)+2,k)
@@ -354,7 +354,6 @@ contains
           end do
        end do
 
-       !$OMP PARALLEL DO PRIVATE(k,j,i,ioff,dd)
        do k = lo(3), hi(3)
           do j = lo(2), hi(2)
              ioff = 0; if ( mod(lo(1) + j + k, 2) /= n ) ioff = 1
@@ -365,22 +364,21 @@ contains
                      ss(3,i,j,k)*uu(i,j+1,k) + ss(4,i,j,k)*uu(i,j-1,k) + &
                      ss(5,i,j,k)*uu(i,j,k+1) + ss(6,i,j,k)*uu(i,j,k-1)
 
-                if ( i == lo(1)) then
+                if ( i == lo(1) ) then
                    if ( bc_skewed(mm(i,j,k),1,+1) ) dd = dd + ss(XBC,i,j,k)*lr(j,k,1)
-                end if
-                if ( i == hi(1)) then
+                else if ( i == hi(1) ) then
                    if ( bc_skewed(mm(i,j,k),1,-1) ) dd = dd + ss(XBC,i,j,k)*lr(j,k,2)
                 end if
-                if ( j == lo(2)) then
+
+                if ( j == lo(2) ) then
                    if ( bc_skewed(mm(i,j,k),2,+1) ) dd = dd + ss(YBC,i,j,k)*tb(i,k,1)
-                end if
-                if ( j == hi(2) ) then
+                else if ( j == hi(2) ) then
                    if ( bc_skewed(mm(i,j,k),2,-1) ) dd = dd + ss(YBC,i,j,k)*tb(i,k,2)
                 end if
-                if ( k == lo(3)) then
+
+                if ( k == lo(3) ) then
                    if ( bc_skewed(mm(i,j,k),3,+1) ) dd = dd + ss(ZBC,i,j,k)*fb(i,j,1)
-                end if
-                if ( k == hi(3) ) then
+                else if ( k == hi(3) ) then
                    if ( bc_skewed(mm(i,j,k),3,-1) ) dd = dd + ss(ZBC,i,j,k)*fb(i,j,2)
                 end if
 
@@ -388,18 +386,16 @@ contains
              end do
           end do
        end do
-       !$OMP END PARALLEL DO
 
-       deallocate(lr,tb,fb)
     else
        !
        ! USE THIS FOR GAUSS-SEIDEL
        !
-       !$OMP PARALLEL DO PRIVATE(k,j,i,ioff,dd)
        do k = lo(3), hi(3)
           do j = lo(2), hi(2)
              ioff = 0; if ( mod (lo(1) + j + k, 2) /= n ) ioff = 1
              do i = lo(1)+ioff, hi(1), 2
+
                   dd = ss(0,i,j,k)*uu(i,j,k)   + &
                        ss(1,i,j,k)*uu(i+1,j,k) + ss(2,i,j,k)*uu(i-1,j,k) + &
                        ss(3,i,j,k)*uu(i,j+1,k) + ss(4,i,j,k)*uu(i,j-1,k) + &
@@ -409,7 +405,6 @@ contains
              end do
           end do
        end do
-       !$OMP END PARALLEL DO
 
     end if
 
@@ -979,7 +974,6 @@ contains
 
     allocate(wrk(nx,ny,nz))
 
-    !$OMP PARALLEL DO PRIVATE(j,i,k,dd)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1014,9 +1008,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(j,i,k)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1024,7 +1016,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
     call destroy(bpt)
 
@@ -1051,7 +1042,6 @@ contains
 
     allocate(wrk(nx,ny,nz))
 
-    !$OMP PARALLEL DO PRIVATE(j,i,k)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1089,9 +1079,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(j,i,k)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1099,7 +1087,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
     call destroy(bpt)
 

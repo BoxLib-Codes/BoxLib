@@ -405,11 +405,10 @@ module multifab_module
   private :: reshape_l_4_1, reshape_l_1_4
   private :: reshape_z_4_1, reshape_z_1_4
 
-  private :: multifab_saxpy_3_doit, multifab_norm_inf_doit
+  private :: multifab_norm_inf_doit
   private :: multifab_div_div_c_doit, multifab_div_div_s_doit
   private :: multifab_mult_mult_c_doit, multifab_mult_mult_s_doit
   private :: multifab_sub_sub_c_doit, multifab_sub_sub_s_doit
-  private :: multifab_plus_plus_c_doit, multifab_plus_plus_s_doit
 
   public  :: cpy_d, cpy_i, cpy_l, cpy_z
   public  :: reshape_d_4_1, reshape_d_1_4, reshape_i_4_1, reshape_i_1_4
@@ -1377,6 +1376,7 @@ contains
     type(box) :: bx, bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,n,bx,bx1)
     do n = 1, nboxes(ba)
        bx = get_box(ba,n)
        do i = 1, nlocal(mf%la)
@@ -1388,6 +1388,7 @@ contains
           if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1)
        end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine multifab_setval_ba
   subroutine lmultifab_setval_ba(mf, val, ba, all)
     type(lmultifab), intent(inout) :: mf
@@ -1398,6 +1399,7 @@ contains
     type(box) :: bx, bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,n,bx,bx1)
     do n = 1, nboxes(ba)
        bx = get_box(ba,n)
        do i = 1, nlocal(mf%la)
@@ -1409,6 +1411,7 @@ contains
           if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1)
        end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine lmultifab_setval_ba
   subroutine imultifab_setval_ba(mf, val, ba, all)
     type(imultifab), intent(inout) :: mf
@@ -1419,6 +1422,7 @@ contains
     type(box) :: bx, bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,n,bx,bx1)
     do n = 1, nboxes(ba)
        bx = get_box(ba,n)
        do i = 1, nlocal(mf%la)
@@ -1430,6 +1434,7 @@ contains
           if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1)
        end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine imultifab_setval_ba
   subroutine zmultifab_setval_ba(mf, val, ba, all)
     type(zmultifab), intent(inout) :: mf
@@ -1464,6 +1469,7 @@ contains
     type(box) :: bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,bx1)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           bx1 = intersection(bx, get_pbox(mf, i))
@@ -1472,6 +1478,7 @@ contains
        end if
        if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1, c, nc)
     end do
+    !$OMP END PARALLEL DO
   end subroutine multifab_setval_bx_c
   subroutine imultifab_setval_bx_c(mf, val, bx, c, nc, all)
     type(imultifab), intent(inout) :: mf
@@ -1484,6 +1491,7 @@ contains
     type(box) :: bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,bx1)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           bx1 = intersection(bx, get_pbox(mf, i))
@@ -1492,6 +1500,7 @@ contains
        end if
        if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1, c, nc)
     end do
+    !$OMP END PARALLEL DO
   end subroutine imultifab_setval_bx_c
   subroutine lmultifab_setval_bx_c(mf, val, bx, c, nc, all)
     type(lmultifab), intent(inout) :: mf
@@ -1504,6 +1513,7 @@ contains
     type(box) :: bx1
     logical lall
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i,bx1)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           bx1 = intersection(bx, get_pbox(mf, i))
@@ -1512,6 +1522,7 @@ contains
        end if
        if ( .not. empty(bx1) ) call setval(mf%fbs(i), val, bx1, c, nc)
     end do
+    !$OMP END PARALLEL DO
   end subroutine lmultifab_setval_bx_c
   subroutine zmultifab_setval_bx_c(mf, val, bx, c, nc, all)
     type(zmultifab), intent(inout) :: mf
@@ -1543,10 +1554,9 @@ contains
     integer :: i
     logical lall
     type(bl_prof_timer), save :: bpt
-
     call build(bpt, "mf_setval_c")
-
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           call setval(mf%fbs(i), val, c, nc)
@@ -1554,6 +1564,7 @@ contains
           call setval(mf%fbs(i), val, get_ibox(mf, i), c, nc)
        end if
     end do
+    !$OMP END PARALLEL DO
     call destroy(bpt)
   end subroutine multifab_setval_c
   subroutine imultifab_setval_c(mf, val, c, nc, all)
@@ -1569,6 +1580,7 @@ contains
     call build(bpt, "imf_setval_c")
 
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           call setval(mf%fbs(i), val, c, nc)
@@ -1576,6 +1588,7 @@ contains
           call setval(mf%fbs(i), val, get_ibox(mf, i), c, nc)
        end if
     end do
+    !$OMP END PARALLEL DO
     call destroy(bpt)
   end subroutine imultifab_setval_c
   subroutine lmultifab_setval_c(mf, val, c, nc, all)
@@ -1590,6 +1603,7 @@ contains
 
     call build(bpt, "lmf_setval_c")
     lall = .FALSE.; if ( present(all) ) lall = all
+    !$OMP PARALLEL DO PRIVATE(i)
     do i = 1, nlocal(mf%la)
        if ( lall ) then
           call setval(mf%fbs(i), val, c, nc)
@@ -1597,6 +1611,7 @@ contains
           call setval(mf%fbs(i), val, get_ibox(mf, i), c, nc)
        end if
     end do
+    !$OMP END PARALLEL DO
     call destroy(bpt)
   end subroutine lmultifab_setval_c
   subroutine zmultifab_setval_c(mf, val, c, nc, all)
@@ -2025,6 +2040,7 @@ contains
 
     bxasc = layout_boxassoc(mf%la, ng, mf%nodal, lcross, idim)
 
+    !$OMP PARALLEL DO PRIVATE(i,ii,jj,p1,p2)
     do i = 1, bxasc%l_con%ncpy
        ii  =  local_index(mf,bxasc%l_con%cpy(i)%nd)
        jj  =  local_index(mf,bxasc%l_con%cpy(i)%ns)
@@ -2032,6 +2048,7 @@ contains
        p2  => dataptr(mf%fbs(jj), bxasc%l_con%cpy(i)%sbx, c, nc)
        call cpy_d(p1,p2)
     end do
+    !$OMP END PARALLEL DO
 
     np = parallel_nprocs()
 
@@ -2040,10 +2057,12 @@ contains
     allocate(g_snd_d(nc*bxasc%r_con%svol))
     allocate(g_rcv_d(nc*bxasc%r_con%rvol))
 
+    !$OMP PARALLEL DO PRIVATE(i,p)
     do i = 1, bxasc%r_con%nsnd
        p => dataptr(mf, local_index(mf,bxasc%r_con%snd(i)%ns), bxasc%r_con%snd(i)%sbx, c, nc)
        call reshape_d_4_1(g_snd_d, 1 + nc*bxasc%r_con%snd(i)%pv, p)
     end do
+    !$OMP END PARALLEL DO
 
     allocate(rst(bxasc%r_con%nrp))
     do i = 1, bxasc%r_con%nrp
@@ -2056,12 +2075,14 @@ contains
     end do
     call parallel_wait(rst)
 
+    !$OMP PARALLEL DO PRIVATE(i,sh,p)
     do i = 1, bxasc%r_con%nrcv
        sh = bxasc%r_con%rcv(i)%sh
        sh(4) = nc
        p => dataptr(mf, local_index(mf,bxasc%r_con%rcv(i)%nd), bxasc%r_con%rcv(i)%dbx, c, nc)
        call reshape_d_1_4(p, g_rcv_d, 1 + nc*bxasc%r_con%rcv(i)%pv, sh)
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine mf_fb_fancy_double
 
@@ -2087,7 +2108,7 @@ contains
 
     bxasc = layout_boxassoc(mf%la, ng, mf%nodal, lcross, idim)
 
-    !$omp parallel do private (i,ii,jj,p1,p2)
+    !$OMP PARALLEL DO PRIVATE(i,ii,jj,p1,p2)
     do i = 1, bxasc%l_con%ncpy
        ii  =  local_index(mf,bxasc%l_con%cpy(i)%nd)
        jj  =  local_index(mf,bxasc%l_con%cpy(i)%ns)
@@ -2095,7 +2116,7 @@ contains
        p2  => dataptr(mf%fbs(jj), bxasc%l_con%cpy(i)%sbx, c, nc)
        call cpy_d(p1,p2)
     end do
-    !$omp end parallel do
+    !$OMP END PARALLEL DO
 
     np = parallel_nprocs()
 
@@ -2108,12 +2129,12 @@ contains
     allocate(fb_data%send_buffer(nc*bxasc%r_con%svol))
     allocate(fb_data%recv_buffer(nc*bxasc%r_con%rvol))
 
-    !$omp parallel do private(i,p)
+    !$OMP PARALLEL DO PRIVATE(i,p)
     do i = 1, bxasc%r_con%nsnd
        p => dataptr(mf, local_index(mf,bxasc%r_con%snd(i)%ns), bxasc%r_con%snd(i)%sbx, c, nc)
        call reshape_d_4_1(fb_data%send_buffer, 1 + nc*bxasc%r_con%snd(i)%pv, p)
     end do
-    !$omp end parallel do
+    !$OMP END PARALLEL DO
 
     allocate(fb_data%send_request(bxasc%r_con%nsp))
     allocate(fb_data%recv_request(bxasc%r_con%nrp))
@@ -2280,6 +2301,7 @@ contains
 
     bxasc = layout_boxassoc(mf%la, ng, mf%nodal, lcross)
 
+    !$OMP PARALLEL DO PRIVATE(i,ii,jj,p1,p2)
     do i = 1, bxasc%l_con%ncpy
        ii  =  local_index(mf,bxasc%l_con%cpy(i)%nd)
        jj  =  local_index(mf,bxasc%l_con%cpy(i)%ns)
@@ -2287,6 +2309,7 @@ contains
        p2  => dataptr(mf%fbs(jj), bxasc%l_con%cpy(i)%sbx, c, nc)
        call cpy_i(p1,p2)
     end do
+    !$OMP END PARALLEL DO
 
     np = parallel_nprocs()
 
@@ -2295,10 +2318,12 @@ contains
     allocate(g_snd_i(nc*bxasc%r_con%svol))
     allocate(g_rcv_i(nc*bxasc%r_con%rvol))
 
+    !$OMP PARALLEL DO PRIVATE(i,p)
     do i = 1, bxasc%r_con%nsnd
        p => dataptr(mf, local_index(mf,bxasc%r_con%snd(i)%ns), bxasc%r_con%snd(i)%sbx, c, nc)
        call reshape_i_4_1(g_snd_i, 1 + nc*bxasc%r_con%snd(i)%pv, p)
     end do
+    !$OMP END PARALLEL DO
 
     allocate(rst(bxasc%r_con%nrp))
     do i = 1, bxasc%r_con%nrp
@@ -2311,12 +2336,14 @@ contains
     end do
     call parallel_wait(rst)
 
+    !$OMP PARALLEL DO PRIVATE(i,sh,p)
     do i = 1, bxasc%r_con%nrcv
        sh = bxasc%r_con%rcv(i)%sh
        sh(4) = nc
        p => dataptr(mf, local_index(mf,bxasc%r_con%rcv(i)%nd), bxasc%r_con%rcv(i)%dbx, c, nc)
        call reshape_i_1_4(p, g_rcv_i, 1 + nc*bxasc%r_con%rcv(i)%pv, sh)
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine mf_fb_fancy_integer
 
@@ -2334,6 +2361,7 @@ contains
 
     bxasc = layout_boxassoc(mf%la, ng, mf%nodal, lcross)
 
+    !$OMP PARALLEL DO PRIVATE(i,ii,jj,p1,p2)
     do i = 1, bxasc%l_con%ncpy
        ii  =  local_index(mf,bxasc%l_con%cpy(i)%nd)
        jj  =  local_index(mf,bxasc%l_con%cpy(i)%ns)
@@ -2341,6 +2369,7 @@ contains
        p2  => dataptr(mf%fbs(jj), bxasc%l_con%cpy(i)%sbx, c, nc)
        call cpy_l(p1,p2)
     end do
+    !$OMP END PARALLEL DO
 
     np = parallel_nprocs()
 
@@ -2349,10 +2378,12 @@ contains
     allocate(g_snd_l(nc*bxasc%r_con%svol))
     allocate(g_rcv_l(nc*bxasc%r_con%rvol))
 
+    !$OMP PARALLEL DO PRIVATE(i,p)
     do i = 1, bxasc%r_con%nsnd
        p => dataptr(mf, local_index(mf,bxasc%r_con%snd(i)%ns), bxasc%r_con%snd(i)%sbx, c, nc)
        call reshape_l_4_1(g_snd_l, 1 + nc*bxasc%r_con%snd(i)%pv, p)
     end do
+    !$OMP END PARALLEL DO
 
     allocate(rst(bxasc%r_con%nrp))
     do i = 1, bxasc%r_con%nrp
@@ -2365,12 +2396,14 @@ contains
     end do
     call parallel_wait(rst)
 
+    !$OMP PARALLEL DO PRIVATE(i,sh,p)
     do i = 1, bxasc%r_con%nrcv
        sh = bxasc%r_con%rcv(i)%sh
        sh(4) = nc
        p => dataptr(mf, local_index(mf,bxasc%r_con%rcv(i)%nd), bxasc%r_con%rcv(i)%dbx, c, nc)
        call reshape_l_1_4(p, g_rcv_l, 1 + nc*bxasc%r_con%rcv(i)%pv, sh)
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine mf_fb_fancy_logical
 
@@ -3774,6 +3807,8 @@ contains
     call build(bpt, "build_nodal_dot_mask")
 
     call build(mask, mf%la, 1, 0, mf%nodal)
+
+    !$OMP PARALLEL DO PRIVATE(i,d,full_box,shrunk_box,inner_box)
     do i = 1, nlocal(mf%la)
 
        full_box = get_ibox(mf,i)
@@ -3813,123 +3848,87 @@ contains
           shrunk_box = grow(grow(shrunk_box,-1,d,-1),-1,d,+1)
           call setval(mask%fbs(i), 0.5_dp_t, shrunk_box)
        end select
+
        inner_box = grow(full_box,-1)
        call setval(mask%fbs(i),1.0_dp_t,inner_box)
     end do
+    !$OMP END PARALLEL DO
 
     call destroy(bpt)
 
   end subroutine mf_build_nodal_dot_mask
 
-  function multifab_dot_cc(mf, comp, mf1, comp1, mask) result(r)
-    real(dp_t) :: r
-    type(multifab) , intent(in) :: mf
-    type(multifab) , intent(in) :: mf1
-    integer        , intent(in) :: comp, comp1
-    type(lmultifab), optional, intent(in) :: mask
+  function multifab_dot_cc(mf, comp, mf1, comp1, mask, nodal_mask, local) result(r)
+    real(dp_t)                 :: r
+    type(multifab), intent(in) :: mf
+    type(multifab), intent(in) :: mf1
+    integer,        intent(in) :: comp, comp1
 
-    type(multifab) :: tmask
-    real(dp_t), pointer :: mp(:,:,:,:)
-    real(dp_t), pointer :: mp1(:,:,:,:)
-    real(dp_t), pointer :: ma(:,:,:,:)
-    logical, pointer :: lmp(:,:,:,:)
-    real(dp_t) :: r1
-    integer :: n, i, j, k
+    type(lmultifab), intent(in), optional :: mask
+    type(multifab),  intent(in), optional :: nodal_mask
+    logical,         intent(in), optional :: local
 
-    r1 = 0.0_dp_t
+    type(multifab)      :: tmask
+    real(dp_t), pointer :: mp(:,:,:,:), mp1(:,:,:,:), ma(:,:,:,:)
+    logical,    pointer :: lmp(:,:,:,:)
+    real(dp_t)          :: r1
+    integer             :: n
+    logical             :: llocal
+
     if ( present(mask) ) then
        if ( ncomp(mask) /= 1 ) call bl_error('Mask array is multicomponent')
-       if ( cell_centered_q(mf) ) then
-          do n = 1, nlocal(mf%la)
-             mp  => dataptr(mf,   n, get_ibox(mf,   n), comp)
-             mp1 => dataptr(mf1,  n, get_ibox(mf1,  n), comp1)
+    end if
+
+    llocal = .false.; if ( present(local) ) llocal = local
+
+    r1 = 0.0_dp_t
+
+    if ( cell_centered_q(mf) ) then
+
+       do n = 1, nlocal(mf%la)
+          mp  => dataptr(mf,  n, get_ibox(mf,  n), comp)
+          mp1 => dataptr(mf1, n, get_ibox(mf1, n), comp1)
+          if ( present(mask) )then
              lmp => dataptr(mask, n, get_ibox(mask, n), 1)
              r1 = r1 + sum(mp*mp1, mask = lmp)
-          end do
-       else if ( nodal_q(mf) ) then
-          call build_nodal_dot_mask(tmask, mf)
-          do n = 1, nlocal(mf%la)
-             mp  => dataptr(mf,    n, get_ibox(mf,    n), comp)
-             mp1 => dataptr(mf1,   n, get_ibox(mf1,   n), comp1)
-             ma  => dataptr(tmask, n, get_ibox(tmask, n))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-          call destroy(tmask)
-       else
-          call bl_error("MULTIFAB_DOT_CC, fails when not nodal or cell-centered, can be fixed")
-       end if
+          else
+             r1 = r1 + sum(mp*mp1)
+          endif
+       end do
+
+    else if ( nodal_q(mf) ) then
+
+       if ( .not. present(nodal_mask) ) call build_nodal_dot_mask(tmask, mf)
+
+       do n = 1, nlocal(mf%la) 
+          mp  => dataptr(mf,  n, get_ibox(mf,  n), comp)
+          mp1 => dataptr(mf1, n, get_ibox(mf1, n), comp1)
+          if ( present(nodal_mask) ) then
+             ma => dataptr(nodal_mask, n, get_ibox(nodal_mask, n))
+          else
+             ma => dataptr(tmask,      n, get_ibox(tmask,      n))
+          endif
+          r1 = r1 + sum(ma*mp*mp1)
+       end do
+
+       if ( .not. present(nodal_mask) ) call destroy(tmask)
     else
-       if ( cell_centered_q(mf) ) then
-          do n = 1, nlocal(mf%la)
-             mp  => dataptr(mf , n, get_box(mf ,n), comp)
-             mp1 => dataptr(mf1, n, get_box(mf1,n), comp1)
-             do k = 1, ubound(mp,3)
-                do j = 1, ubound(mp,2)
-                   do i = 1, ubound(mp,1)
-                      r1 = r1 + mp(i,j,k,1)*mp1(i,j,k,1)
-                   end do
-                end do
-             end do
-          end do
-       else if ( nodal_q(mf) ) then
-          call build_nodal_dot_mask(tmask, mf)
-          do n = 1, nlocal(mf%la) 
-             mp  => dataptr(mf,    n, get_ibox(mf,    n), comp)
-             mp1 => dataptr(mf1,   n, get_ibox(mf1,   n), comp1)
-             ma  => dataptr(tmask, n, get_ibox(tmask, n))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-          call destroy(tmask)
-       else
-          call bl_error("MULTIFAB_DOT_CC, fails when not nodal or cell-centered, can be fixed")
-       end if
+       call bl_error("MULTIFAB_DOT_CC, fails when not nodal or cell-centered, can be fixed")
     end if
-    call parallel_reduce(r,r1,MPI_SUM)
+
+    r = r1
+
+    if ( .not. llocal ) call parallel_reduce(r, r1, MPI_SUM)
+
   end function multifab_dot_cc
 
   function multifab_dot_c(mf, mf1, comp, nodal_mask) result(r)
-    real(dp_t) :: r
+    real(dp_t)                 :: r
     type(multifab), intent(in) :: mf
     type(multifab), intent(in) :: mf1
     integer       , intent(in) :: comp
     type(multifab), intent(in), optional :: nodal_mask
-
-    type(multifab) :: mask
-    real(dp_t), pointer :: mp(:,:,:,:)
-    real(dp_t), pointer :: mp1(:,:,:,:)
-    real(dp_t), pointer :: ma(:,:,:,:)
-    real(dp_t) :: r1
-    integer :: i
-
-    r1 = 0.0_dp_t
-    if ( cell_centered_q(mf) ) then
-       do i = 1, nlocal(mf%la)
-          mp  => dataptr(mf,  i, get_box(mf,  i), comp)
-          mp1 => dataptr(mf1, i, get_box(mf1, i), comp)
-          r1 = r1 + sum(mp*mp1)
-       end do
-    else if (nodal_q(mf) ) then
-       if ( present(nodal_mask) ) then
-          do i = 1, nlocal(mf%la)
-             mp  => dataptr(mf,         i, get_ibox(mf,         i), comp)
-             mp1 => dataptr(mf1,        i, get_ibox(mf1,        i), comp)
-             ma  => dataptr(nodal_mask, i, get_ibox(nodal_mask, i))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-       else
-          call build_nodal_dot_mask(mask, mf)
-          do i = 1, nlocal(mf%la)
-             mp  => dataptr(mf,   i, get_ibox(mf  , i), comp)
-             mp1 => dataptr(mf1,  i, get_ibox(mf1 , i), comp)
-             ma  => dataptr(mask, i, get_ibox(mask, i))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-          call destroy(mask)
-       end if
-    else
-       call bl_error("MULTIFAB_DOT_C fails when not nodal or cell centered, can be fixed")
-    end if
-    call parallel_reduce(r,r1,MPI_SUM)
+    r = multifab_dot_cc(mf, comp, mf1, comp, nodal_mask = nodal_mask, local = .false.);
   end function multifab_dot_c
 
   function multifab_dot(mf, mf1, nodal_mask, local) result(r)
@@ -3938,51 +3937,7 @@ contains
     type(multifab), intent(in) :: mf1
     type(multifab), intent(in), optional :: nodal_mask
     logical, intent(in), optional :: local
-
-    type(multifab)      :: mask
-    real(dp_t), pointer :: mp(:,:,:,:)
-    real(dp_t), pointer :: mp1(:,:,:,:)
-    real(dp_t), pointer :: ma(:,:,:,:)
-    real(dp_t)          :: r1
-    integer             :: i
-    logical             :: lall, llocal
-
-    llocal = .false.; if ( present(local) ) llocal = local
-
-    r1 = 0.0_dp_t
-    if ( cell_centered_q(mf) ) then
-
-       do i = 1, nlocal(mf%la)
-          mp  => dataptr(mf,  i, get_box(mf, i))
-          mp1 => dataptr(mf1, i, get_box(mf1,i))
-          r1 = r1 + sum(mp*mp1)
-       end do
-    else if ( nodal_q(mf) ) then
-       if ( present(nodal_mask) ) then
-          do i = 1, nlocal(mf%la)
-             mp  => dataptr(mf,         i, get_ibox(mf,         i))
-             mp1 => dataptr(mf1,        i, get_ibox(mf1,        i))
-             ma  => dataptr(nodal_mask, i, get_ibox(nodal_mask, i))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-       else
-          call build_nodal_dot_mask(mask, mf)
-          do i = 1, nlocal(mf%la)
-             mp  => dataptr(mf,   i, get_ibox(mf,   i))
-             mp1 => dataptr(mf1,  i, get_ibox(mf1,  i))
-             ma  => dataptr(mask, i, get_ibox(mask, i))
-             r1 = r1 + sum(ma*mp*mp1)
-          end do
-          call destroy(mask)
-       end if
-    else
-       call bl_error("MULTIFAB_DOT fails when not nodal or cell centered, can be fixed")
-    end if
-
-    r = r1
-    
-    if ( .not. llocal ) call parallel_reduce(r, r1, MPI_SUM)
-
+    r = multifab_dot_cc(mf, 1, mf1, 1, nodal_mask = nodal_mask, local = local);
   end function multifab_dot
 
   subroutine multifab_rescale_2(mf, c, min, max, xmin, xmax, clip)
@@ -4086,7 +4041,6 @@ contains
     integer :: ii, i, j, k, n, lo(4), hi(4)
 
     do ii = 1, nlocal(a%la)
-
        ap => dataptr(a, ii, get_ibox(a,ii))
        bp => dataptr(b, ii, get_ibox(b,ii))
        cp => dataptr(c, ii, get_ibox(c,ii))
@@ -4096,9 +4050,7 @@ contains
        
        ! ap = bp + c1*cp
 
-       !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
        do n = lo(4), hi(4)
-          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4106,39 +4058,9 @@ contains
                 end do
              end do
           end do
-          !$OMP END DO NOWAIT
        end do
-       !$OMP END PARALLEL
-
     end do
   end subroutine multifab_saxpy_4
-
-  subroutine multifab_saxpy_3_doit(ap, b1, bp)
-    real(dp_t),     intent(in   ) :: b1
-    real(dp_t), pointer           :: ap(:,:,:,:)
-    real(dp_t), pointer           :: bp(:,:,:,:)
-    integer                       :: i, j, k, n, lo(4), hi(4)
-
-    lo = lbound(ap)
-    hi = ubound(ap)
-
-    ! ap = ap + b1*bp
-
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
-    do n = lo(4), hi(4)
-       !$OMP DO
-       do k = lo(3), hi(3)
-          do j = lo(2), hi(2)
-             do i = lo(1), hi(1)
-                ap(i,j,k,n) = ap(i,j,k,n) + b1 * bp(i,j,k,n)
-             end do
-          end do
-       end do
-       !$OMP END DO NOWAIT
-    end do
-    !$OMP END PARALLEL
-
-  end subroutine multifab_saxpy_3_doit
 
   subroutine multifab_saxpy_3(a, b1, b, all)
     real(dp_t),     intent(in   ) :: b1
@@ -4147,15 +4069,13 @@ contains
     real(dp_t), pointer           :: ap(:,:,:,:)
     real(dp_t), pointer           :: bp(:,:,:,:)
     logical, intent(in), optional :: all
-    integer :: ii
+    integer :: ii,i,j,k,n,lo(4),hi(4)
     logical :: lall
-    type(bl_prof_timer), save :: bpt
 
     lall = .false.; if ( present(all) ) lall = all
 
-    call build(bpt, 'mf_saxpy_3')
-
     do ii = 1, nlocal(a%la)
+
        if ( lall ) then
           ap => dataptr(a,ii)
           bp => dataptr(b,ii)
@@ -4163,10 +4083,22 @@ contains
           ap => dataptr(a, ii, get_ibox(a,ii))
           bp => dataptr(b, ii, get_ibox(b,ii))
        end if
-       call multifab_saxpy_3_doit(ap,b1,bp)
-    end do
 
-    call destroy(bpt)
+       lo = lbound(ap)
+       hi = ubound(ap)
+
+       ! ap = ap + b1*bp
+
+       do n = lo(4), hi(4)
+          do k = lo(3), hi(3)
+             do j = lo(2), hi(2)
+                do i = lo(1), hi(1)
+                   ap(i,j,k,n) = ap(i,j,k,n) + b1 * bp(i,j,k,n)
+                end do
+             end do
+          end do
+       end do
+    end do
 
   end subroutine multifab_saxpy_3
 
@@ -4178,21 +4110,37 @@ contains
     real(dp_t), pointer :: ap(:,:,:,:)
     real(dp_t), pointer :: bp(:,:,:,:)
     logical, intent(in), optional :: all
-    integer :: i
+    integer :: ii,i,j,k,n,lo(4),hi(4)
     logical :: lall
 
     lall = .false.; if ( present(all) ) lall = all
 
-    do i = 1, nlocal(a%la)
+    do ii = 1, nlocal(a%la)
        if ( lall ) then
-          ap => dataptr(a,i,ia)
-          bp => dataptr(b,i)
+          ap => dataptr(a,ii,ia)
+          bp => dataptr(b,ii)
        else
-          ap => dataptr(a, i, get_ibox(a, i), ia)
-          bp => dataptr(b, i, get_ibox(b, i))
+          ap => dataptr(a, ii, get_ibox(a,ii), ia)
+          bp => dataptr(b, ii, get_ibox(b,ii))
        end if
-       call multifab_saxpy_3_doit(ap,b1,bp)
+
+       lo = lbound(ap)
+       hi = ubound(ap)
+
+       ! ap = ap + b1*bp
+
+       do n = lo(4), hi(4)
+          do k = lo(3), hi(3)
+             do j = lo(2), hi(2)
+                do i = lo(1), hi(1)
+                   ap(i,j,k,n) = ap(i,j,k,n) + b1 * bp(i,j,k,n)
+                end do
+             end do
+          end do
+       end do
+
     end do
+
   end subroutine multifab_saxpy_3_c
 
   subroutine multifab_saxpy_3_cc(a, ia, b1, b, ib, nc, all)
@@ -4204,21 +4152,37 @@ contains
     real(dp_t), pointer :: ap(:,:,:,:)
     real(dp_t), pointer :: bp(:,:,:,:)
     logical, intent(in), optional :: all
-    integer :: i
+    integer :: ii,i,j,k,n,lo(4),hi(4)
     logical :: lall
 
     lall = .false.; if ( present(all) ) lall = all
 
-    do i = 1, nlocal(a%la)
+    do ii = 1, nlocal(a%la)
        if ( lall ) then
-          ap => dataptr(a, i, ia, nc)
-          bp => dataptr(b, i, ib, nc)
+          ap => dataptr(a, ii, ia, nc)
+          bp => dataptr(b, ii, ib, nc)
        else
-          ap => dataptr(a, i, get_ibox(a, i), ia, nc)
-          bp => dataptr(b, i, get_ibox(b, i), ib, nc)
+          ap => dataptr(a, ii, get_ibox(a,ii), ia, nc)
+          bp => dataptr(b, ii, get_ibox(b,ii), ib, nc)
        end if
-       call multifab_saxpy_3_doit(ap,b1,bp)
+
+       lo = lbound(ap)
+       hi = ubound(ap)
+
+       ! ap = ap + b1*bp
+
+       do n = lo(4), hi(4)
+          do k = lo(3), hi(3)
+             do j = lo(2), hi(2)
+                do i = lo(1), hi(1)
+                   ap(i,j,k,n) = ap(i,j,k,n) + b1 * bp(i,j,k,n)
+                end do
+             end do
+          end do
+       end do
+
     end do
+
   end subroutine multifab_saxpy_3_cc
 
   function multifab_norm_l1_c(mf, comp, nc, mask, all) result(r)
@@ -4338,6 +4302,7 @@ contains
     lall = .false.; if ( present(all) ) lall = all
     r1 = 0.0_dp_t
     if ( present(mask) ) then
+       !$OMP PARALLEL DO PRIVATE(i,n,lp,mp) REDUCTION(+:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              lp => dataptr(mask, i, get_pbox(mask, i))
@@ -4353,7 +4318,9 @@ contains
              r1 = r1 + sum(mp**2, mask=lp)
           end do
        end do
+       !$OMP END PARALLEL DO
     else
+       !$OMP PARALLEL DO PRIVATE(i,mp) REDUCTION(+:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              mp => dataptr(mf, i, get_pbox(mf, i), comp, nc)
@@ -4362,6 +4329,7 @@ contains
           end if
           r1 = r1 + sum(mp**2)
        end do
+       !$OMP END PARALLEL DO
     end if
     call parallel_reduce(r, r1, MPI_SUM)
     r = sqrt(r)
@@ -4375,24 +4343,17 @@ contains
   end function multifab_norm_l2
 
   function multifab_norm_inf_doit(ap, lp) result(r)
-
     real(dp_t), pointer        :: ap(:,:,:,:)
     logical, pointer, optional :: lp(:,:,:,:)
     real(dp_t)                 :: r,r1
-
-    integer :: i, j, k, n, lo(4), hi(4)
+    integer                    :: i, j, k, n, lo(4), hi(4)
 
     lo = lbound(ap)
     hi = ubound(ap)
-
-    ! maxval(abs(mp))
-
     r1 = 0.0_dp_t
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n) REDUCTION(MAX : r1) IF((hi(3)-lo(3)).ge.7)
     if ( present(lp) ) then
        do n = lo(4), hi(4)
-          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4400,11 +4361,9 @@ contains
                 end do
              end do
           end do
-          !$OMP END DO NOWAIT
        end do
     else
        do n = lo(4), hi(4)
-          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4412,13 +4371,9 @@ contains
                 end do
              end do
           end do
-          !$OMP END DO NOWAIT
        end do
     end if
-    !$OMP END PARALLEL
-
     r = r1
-
   end function multifab_norm_inf_doit
 
   function multifab_norm_inf_c(mf, comp, nc, mask, all, local) result(r)
@@ -4440,6 +4395,7 @@ contains
     r1 = 0.0_dp_t
 
     if ( present(mask) ) then
+       !$OMP PARALLEL DO PRIVATE(i,n,lp,mp) REDUCTION(max:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              lp => dataptr(mask, i, get_pbox(mask, i))
@@ -4455,7 +4411,9 @@ contains
              r1 = max(r1, multifab_norm_inf_doit(mp,lp))
           end do
        end do
+       !$OMP END PARALLEL DO
     else
+       !$OMP PARALLEL DO PRIVATE(i,mp) REDUCTION(max:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              mp => dataptr(mf, i, get_pbox(mf, i), comp, nc)
@@ -4464,6 +4422,7 @@ contains
           end if
           r1 = max(r1, multifab_norm_inf_doit(mp))
        end do
+       !$OMP END PARALLEL DO
     end if
 
     r = r1
@@ -4742,11 +4701,9 @@ contains
   end subroutine multifab_div_s_c
 
   subroutine multifab_mult_mult_c_doit(ap, bp)
-
     real(dp_t), pointer :: ap(:,:,:,:)
     real(dp_t), pointer :: bp(:,:,:,:)
-
-    integer :: i, j, k, n, lo(4), hi(4)
+    integer             :: i, j, k, n, lo(4), hi(4)
 
     lo = lbound(ap)
     hi = ubound(ap)
@@ -4770,11 +4727,9 @@ contains
   end subroutine multifab_mult_mult_c_doit
 
   subroutine multifab_mult_mult_s_doit(ap, b)
-
     real(dp_t), pointer :: ap(:,:,:,:)
     real(dp_t)          :: b
-
-    integer :: i, j, k, n, lo(4), hi(4)
+    integer             :: i, j, k, n, lo(4), hi(4)
 
     lo = lbound(ap)
     hi = ubound(ap)
@@ -4889,6 +4844,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_s_c")
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i), lng), ia, nc)
@@ -4899,6 +4855,7 @@ contains
        end if
        ap = bp * val
     end do
+    !$OMP END PARALLEL DO
   end subroutine multifab_mult_s_c
 
   subroutine multifab_sub_sub_c_doit(ap, bp)
@@ -5039,62 +4996,6 @@ contains
     end do
   end subroutine multifab_sub_sub_s_c
 
-  subroutine multifab_plus_plus_c_doit(ap, bp)
-
-    real(dp_t), pointer :: ap(:,:,:,:)
-    real(dp_t), pointer :: bp(:,:,:,:)
-
-    integer :: i, j, k, n, lo(4), hi(4)
-
-    lo = lbound(ap)
-    hi = ubound(ap)
-
-    ! ap = ap + bp
-
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
-    do n = lo(4), hi(4)
-       !$OMP DO
-       do k = lo(3), hi(3)
-          do j = lo(2), hi(2)
-             do i = lo(1), hi(1)
-                ap(i,j,k,n) = ap(i,j,k,n) + bp(i,j,k,n)
-             end do
-          end do
-       end do
-       !$OMP END DO NOWAIT
-    end do
-    !$OMP END PARALLEL
-
-  end subroutine multifab_plus_plus_c_doit
-
-  subroutine multifab_plus_plus_s_doit(ap, b)
-
-    real(dp_t), pointer :: ap(:,:,:,:)
-    real(dp_t)          :: b
-
-    integer :: i, j, k, n, lo(4), hi(4)
-
-    lo = lbound(ap)
-    hi = ubound(ap)
-
-    ! ap = ap + b
-
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
-    do n = lo(4), hi(4)
-       !$OMP DO
-       do k = lo(3), hi(3)
-          do j = lo(2), hi(2)
-             do i = lo(1), hi(1)
-                ap(i,j,k,n) = ap(i,j,k,n) + b
-             end do
-          end do
-       end do
-       !$OMP END DO NOWAIT
-    end do
-    !$OMP END PARALLEL
-
-  end subroutine multifab_plus_plus_s_doit
-
   subroutine multifab_plus_plus_c(a, dst, b, src, nc, ng)
     integer, intent(in) :: dst, src
     integer, intent(in)           :: nc
@@ -5104,8 +5005,12 @@ contains
     real(dp_t), pointer :: ap(:,:,:,:)
     real(dp_t), pointer :: bp(:,:,:,:)
     integer :: i,lng
+
     lng = 0; if ( present(ng) ) lng = ng
+
     if ( lng > 0 ) call bl_assert(a%ng >= ng, b%ng >= ng,"not enough ghost cells in multifab_plus_plus_c")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), dst, nc)
@@ -5116,6 +5021,31 @@ contains
        end if
        call multifab_plus_plus_c_doit(ap, bp)
     end do
+    !$OMP END PARALLEL DO
+
+    contains
+
+      subroutine multifab_plus_plus_c_doit(ap, bp)
+        real(dp_t), pointer :: ap(:,:,:,:)
+        real(dp_t), pointer :: bp(:,:,:,:)
+        integer             :: i, j, k, n, lo(4), hi(4)
+
+        lo = lbound(ap)
+        hi = ubound(ap)
+
+        ! ap = ap + bp
+
+        do n = lo(4), hi(4)
+           do k = lo(3), hi(3)
+              do j = lo(2), hi(2)
+                 do i = lo(1), hi(1)
+                    ap(i,j,k,n) = ap(i,j,k,n) + bp(i,j,k,n)
+                 end do
+              end do
+           end do
+        end do
+      end subroutine multifab_plus_plus_c_doit
+
   end subroutine multifab_plus_plus_c
 
   subroutine multifab_plus_plus(a, b, ng)
@@ -5137,7 +5067,10 @@ contains
     real(dp_t), intent(in)  :: b
     real(dp_t), pointer :: ap(:,:,:,:)
     integer :: i,lng
+
     lng = 0; if ( present(ng) ) lng = ng
+
+    !$OMP PARALLEL DO PRIVATE(i,ap)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), dst, nc)
@@ -5146,6 +5079,31 @@ contains
        end if
        call multifab_plus_plus_s_doit(ap, b)
     end do
+    !$OMP END PARALLEL DO
+
+    contains
+
+      subroutine multifab_plus_plus_s_doit(ap, b)
+        real(dp_t), pointer :: ap(:,:,:,:)
+        real(dp_t)          :: b
+        integer             :: i, j, k, n, lo(4), hi(4)
+
+        lo = lbound(ap)
+        hi = ubound(ap)
+
+        ! ap = ap + b
+
+        do n = lo(4), hi(4)
+           do k = lo(3), hi(3)
+              do j = lo(2), hi(2)
+                 do i = lo(1), hi(1)
+                    ap(i,j,k,n) = ap(i,j,k,n) + b
+                 end do
+              end do
+           end do
+        end do
+      end subroutine multifab_plus_plus_s_doit
+
   end subroutine multifab_plus_plus_s_c
 
   subroutine multifab_plus_plus_s(a, b, ng)

@@ -35,7 +35,7 @@ contains
     type(multifab), intent(in) :: ss
     type(lmultifab), intent(in), optional :: mask
     logical, intent(in), optional :: local
-    integer :: i,j,k,n,b,lo(4),hi(4),cnt
+    integer :: i,j,k,n,b,lo(4),hi(4)
     real(kind=dp_t) :: r1, sum_comps
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     logical, pointer :: lp(:,:,:,:)
@@ -48,11 +48,9 @@ contains
 
     r1 = -Huge(r1)
 
-    cnt = nfabs(ss)
-
     if ( present(mask) ) then
-       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
-       do b = 1, cnt
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1)
+       do b = 1, nfabs(ss)
           sp => dataptr(ss, b)
           lp => dataptr(mask, b)
           lo =  lbound(sp)
@@ -73,8 +71,8 @@ contains
        end do
        !OMP END PARALLEL DO
     else
-       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
-       do b = 1, cnt
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1)
+       do b = 1, nfabs(ss)
           sp => dataptr(ss, b)
           lo =  lbound(sp)
           hi =  ubound(sp)
@@ -106,7 +104,7 @@ contains
     type(multifab), intent(in) :: ss
     type(lmultifab), intent(in), optional :: mask
     logical, intent(in), optional :: local
-    integer :: i,j,k,n,b,lo(4),hi(4),cnt
+    integer :: i,j,k,n,b,lo(4),hi(4)
     real(kind=dp_t) :: r1, sum_comps
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     logical, pointer :: lp(:,:,:,:)
@@ -122,11 +120,9 @@ contains
 
     r1 = -Huge(r1)
 
-    cnt = nfabs(ss)
-
     if ( present(mask) ) then
-       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
-       do b = 1, cnt
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1)
+       do b = 1, nfabs(ss)
           sp => dataptr(ss, b)
           lp => dataptr(mask, b)
           lo =  lbound(sp)
@@ -147,8 +143,8 @@ contains
        end do
        !OMP END PARALLEL DO
     else
-       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1) if (cnt>1)
-       do b = 1, cnt
+       !$OMP PARALLEL DO PRIVATE(i,j,k,n,sum_comps,sp,lp,lo,hi) REDUCTION(max : r1)
+       do b = 1, nfabs(ss)
           sp => dataptr(ss, b)
           lo =  lbound(sp)
           hi =  ubound(sp)
@@ -233,6 +229,7 @@ contains
 
     type(box)        :: bx1, src, pd
     type(boxarray)   :: ba, sba
+    type(layout)     :: la
     integer          :: i, j, ii, jj, k, ldom
     integer, pointer :: mp(:,:,:,:)
     integer          :: lcf_face(size(bc_face, 1), size(bc_face, 2))
@@ -248,8 +245,9 @@ contains
 
     mp = BC_INT
 
-    pd    = get_pd(get_layout(st))
-    pmask = get_pmask(get_layout(st))
+    la    = get_layout(st)
+    pd    = get_pd(la)
+    pmask = get_pmask(la)
 
     do i = 1, get_dim(st)
        if ( bc_face(i,1) == BC_PER .and. ( bc_face(i,1) /= bc_face(i,2) )) then
@@ -262,7 +260,7 @@ contains
              !
              ! We're not touching a physical boundary -- set any/all C-F bndrys.
              !
-             call boxarray_boxarray_diff(ba, bx1, get_boxarray(st))
+             call layout_boxarray_diff(ba, bx1, la)
              do ii = 1, nboxes(ba)
                 bx1 = shift(get_box(ba,ii), -j, i)
                 mp => dataptr(mask, idx, bx1)
@@ -1277,7 +1275,6 @@ contains
     nz = hi(3)-lo(3)+1
     f1 = ONE/dh**2
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1294,7 +1291,6 @@ contains
           end do
        end do
     end do
-    !OMP END PARALLEL DO
 
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,-1))
     mask = ibclr(mask, BC_BIT(BC_GEOM,1,+1))
@@ -1307,7 +1303,6 @@ contains
 
     ! x derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1)+1,hi(1)-1
@@ -1315,9 +1310,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lnx)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           bclo = stencil_bc_type(mask(lo(1),j,k),1,-1)
@@ -1344,11 +1337,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! y derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2)+1,hi(2)-1
           do i = lo(1),hi(1)
@@ -1356,9 +1347,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lny)
     do k = lo(3),hi(3)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,lo(2),k),2,-1)
@@ -1384,11 +1373,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! z derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3)+1,hi(3)-1
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1396,9 +1383,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lnz)
     do j = lo(2),hi(2)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,j,lo(3)),3,-1)
@@ -1424,9 +1409,7 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1434,7 +1417,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine s_simple_3d_cc
 
@@ -1458,7 +1440,6 @@ contains
     nz = hi(3)-lo(3)+1
     f1 = ONE/dh**2
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1486,7 +1467,6 @@ contains
 
     ! x derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1)+1,hi(1)-1
@@ -1494,9 +1474,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) 
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           bclo = stencil_bc_type(mask(lo(1),j,k),1,-1)
@@ -1531,11 +1509,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! y derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2)+1,hi(2)-1
           do i = lo(1),hi(1)
@@ -1543,9 +1519,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) 
     do k = lo(3),hi(3)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,lo(2),k),2,-1)
@@ -1580,11 +1554,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! z derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3)+1,hi(3)-1
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1592,9 +1564,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) 
     do j = lo(2),hi(2)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,j,lo(3)),3,-1)
@@ -1629,9 +1599,7 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -1639,7 +1607,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine s_simpleg_3d_cc
 
@@ -2207,7 +2174,6 @@ contains
     ! We only include the beta's here to get the viscous coefficients in here for now.
     ! The projection has beta == 1.
     !
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -2229,13 +2195,11 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ss = ss * (ONE / (12.d0 * dh(1)**2))
     !
     ! This adds the "alpha" term in (alpha - del dot beta grad) phi = RHS.
     !
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -2296,8 +2260,6 @@ contains
 
     !  Initialize to zero.
     ss = 0.d0
-
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
 
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
@@ -2773,12 +2735,10 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
     !
     ! Define the center stencil and add the "alpha" term in 
     !     (alpha - del dot beta grad) phi = RHS.
-    !$OMP PARALLEL DO PRIVATE(i,j,k,sum)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -2790,7 +2750,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine s_minion_full_fill_3d
 
@@ -2833,15 +2792,12 @@ contains
 
     ! x derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j)
     do j = lo(2),hi(2)
        do i = lo(1)+1,hi(1)-1
           ss(0,i,j) = ss(0,i,j) + 2.d0*beta_const*f1(1)
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,bclo,bchi) FIRSTPRIVATE(lorder,lnx)
     do j = lo(2),hi(2)
        bclo = stencil_bc_type(mask(lo(1),j),1,-1)
        bchi = stencil_bc_type(mask(hi(1),j),1,+1)
@@ -2866,19 +2822,15 @@ contains
           end if
        end if
     end do
-    !$OMP END PARALLEL DO
 
     ! y derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j)
     do j = lo(2)+1,hi(2)-1
        do i = lo(1),hi(1)
           ss(0,i,j) = ss(0,i,j) + 2.d0*beta_const*f1(2)
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,bclo,bchi) FIRSTPRIVATE(lorder,lny)
     do i = lo(1),hi(1)
        bclo = stencil_bc_type(mask(i,lo(2)),2,-1)
        bchi = stencil_bc_type(mask(i,hi(2)),2,+1)
@@ -2902,15 +2854,12 @@ contains
           end if
        end if
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j)
     do j = lo(2),hi(2)
        do i = lo(1),hi(1)
           ss(0,i,j) = ss(0,i,j) + alpha_const
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine simple_2d_const
 
@@ -2961,7 +2910,6 @@ contains
 
     ! x derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1)+1,hi(1)-1
@@ -2969,9 +2917,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lnx)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           bclo = stencil_bc_type(mask(lo(1),j,k),1,-1)
@@ -2998,11 +2944,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! y derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2)+1,hi(2)-1
           do i = lo(1),hi(1)
@@ -3010,9 +2954,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lny)
     do k = lo(3),hi(3)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,lo(2),k),2,-1)
@@ -3038,11 +2980,9 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
     ! z derivatives
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3)+1,hi(3)-1
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -3050,9 +2990,7 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,bclo,bchi) FIRSTPRIVATE(lorder,lnz)
     do j = lo(2),hi(2)
        do i = lo(1),hi(1)
           bclo = stencil_bc_type(mask(i,j,lo(3)),3,-1)
@@ -3078,9 +3016,7 @@ contains
           end if
        end do
     end do
-    !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1),hi(1)
@@ -3088,7 +3024,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine simple_3d_const
 

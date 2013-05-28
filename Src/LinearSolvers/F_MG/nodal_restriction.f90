@@ -58,7 +58,6 @@ contains
 
     integer :: i, j, k, ifine, jfine, kfine
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,ifine,jfine,kfine)
     do k = lo(3),hi(3)
        kfine = ir(3)*k
        do j = lo(2),hi(2)
@@ -69,7 +68,6 @@ contains
           end do
        end do
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine nodal_zero_3d
 
@@ -210,11 +208,11 @@ contains
                do i = lo(1),hi(1)
                   ifine = i*ir(1)
                   if (.not. bc_dirichlet(mm_fine(ifine,jfine),1,0)) then
-                    cc(i,j) = cc(i,j) &
-                       + fac*ff(ifine-m,jfine-n) &
-                       + fac*ff(ifine+m,jfine-n) &
-                       + fac*ff(ifine-m,jfine+n) &
-                       + fac*ff(ifine+m,jfine+n)
+                    cc(i,j) = cc(i,j) + fac * &
+                         ( ff(ifine-m,jfine-n) + &
+                           ff(ifine+m,jfine-n) + &
+                           ff(ifine-m,jfine+n) + &
+                           ff(ifine+m,jfine+n) )
                   end if
                end do
             end do
@@ -356,7 +354,6 @@ contains
              do m = 0, ir(1)-1
                 fac = (ir(1)-m) * fac1
                 if (m == 0) fac = HALF * fac
-                !$OMP PARALLEL DO PRIVATE(i,j,k,ifine,jfine,kfine,jface,kface,doit)
                 do k = lo(3),hi(3)
                    kfine = k*ir(3)
 
@@ -377,20 +374,19 @@ contains
                          end if
 
                          if (doit) then
-                            cc(i,j,k) = cc(i,j,k) &
-                                 + fac*ff(ifine-m,jfine-n,kfine-l) &
-                                 + fac*ff(ifine+m,jfine-n,kfine-l) &
-                                 + fac*ff(ifine-m,jfine+n,kfine-l) &
-                                 + fac*ff(ifine+m,jfine+n,kfine-l) &
-                                 + fac*ff(ifine-m,jfine-n,kfine+l) &
-                                 + fac*ff(ifine+m,jfine-n,kfine+l) &
-                                 + fac*ff(ifine-m,jfine+n,kfine+l) &
-                                 + fac*ff(ifine+m,jfine+n,kfine+l)
+                            cc(i,j,k) = cc(i,j,k) + fac * &
+                                 ( ff(ifine-m,jfine-n,kfine-l) + &
+                                   ff(ifine+m,jfine-n,kfine-l) + &
+                                   ff(ifine-m,jfine+n,kfine-l) + &
+                                   ff(ifine+m,jfine+n,kfine-l) + &
+                                   ff(ifine-m,jfine-n,kfine+l) + &
+                                   ff(ifine+m,jfine-n,kfine+l) + &
+                                   ff(ifine-m,jfine+n,kfine+l) + &
+                                   ff(ifine+m,jfine+n,kfine+l) )
                          end if
                       end do
                    end do
                 end do
-                !$OMP END PARALLEL DO
              end do
           end do
        end do
@@ -410,9 +406,6 @@ contains
              do m = 0, ir(1)-1
                 fac = (ir(1)-m) * fac1
                 if (m == 0) fac = HALF * fac
-                !$OMP PARALLEL DO PRIVATE(i,j,k,ifine,jfine,kfine) &
-                !$OMP PRIVATE(add_lo_x,add_lo_y,add_lo_z,add_hi_x,add_hi_y,add_hi_z) &
-                !$OMP PRIVATE(ileft,irght,jbot,jtop,kdwn,kup,jface,kface,doit)
                 do k = lo(3),hi(3)
                    kfine = k*ir(3)
 
@@ -517,7 +510,6 @@ contains
                       end do
                    end do
                 end do
-                !$OMP END PARALLEL DO
              end do
           end do
        end do

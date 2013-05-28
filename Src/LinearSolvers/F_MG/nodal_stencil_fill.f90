@@ -130,6 +130,7 @@ contains
     real(kind=dp_t), pointer :: cp(:,:,:,:)
     integer        , pointer :: mp(:,:,:,:)
 
+    type(layout)             :: la
     type(box)                :: pd_periodic, bx, nbx, bx1, pd
     type(boxarray)           :: bxa_periodic, bxa_temp
     integer                  :: i, ib, jb, kb, ib_lo, jb_lo, kb_lo, dm
@@ -235,9 +236,14 @@ contains
        call destroy(nbxs)
 
     end if
+    !
+    ! Build layout on bxa_periodic.  We use a layout to make the stencil_set_bc_nodal() more efficient.
+    !
+    call build(la,bxa_periodic,get_pd(get_layout(ss)))
 
     ng_sg = nghost(sg)
 
+    !$OMP PARALLEL DO PRIVATE(i,sp,cp,mp,bx,nbx,lo,hi)
     do i = 1, nfabs(ss)
 
        sp  => dataptr(ss,   i)
@@ -247,7 +253,7 @@ contains
        bx  = get_box(ss,i)
        nbx = get_ibox(ss, i)
 
-       call stencil_set_bc_nodal(dm, bx, nbx, i, mask, face_type, pd_periodic, bxa_periodic)
+       call stencil_set_bc_nodal(dm, bx, nbx, i, mask, face_type, pd_periodic, la)
 
        lo = lwb(get_box(sg,i))
        hi = upb(get_box(sg,i))
@@ -277,8 +283,10 @@ contains
           end if
        end select
     end do
+    !$OMP END PARALLEL DO
 
     call destroy(bxa_periodic)
+    call destroy(la)
     call destroy(bpt)
 
   end subroutine stencil_fill_nodal
@@ -298,6 +306,7 @@ contains
 
     dm = get_dim(ss)
 
+    !$OMP PARALLEL DO PRIVATE(i,sp,cp,mp)
     do i = 1, nfabs(ss)
 
        sp  => dataptr(ss,   i)
@@ -314,6 +323,7 @@ contains
           call s_simple_3d_one_sided(sp(:,:,:,:), cp(:,:,:,1), mp(:,:,:,1), dh)
        end select
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine stencil_fill_one_sided
 
