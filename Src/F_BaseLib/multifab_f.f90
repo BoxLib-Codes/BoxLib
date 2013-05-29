@@ -409,6 +409,7 @@ module multifab_module
   private :: multifab_div_div_c_doit, multifab_div_div_s_doit
   private :: multifab_mult_mult_c_doit, multifab_mult_mult_s_doit
   private :: multifab_sub_sub_c_doit, multifab_sub_sub_s_doit
+  private :: multifab_plus_plus_c_doit, multifab_plus_plus_s_doit
 
   public  :: cpy_d, cpy_i, cpy_l, cpy_z
   public  :: reshape_d_4_1, reshape_d_1_4, reshape_i_4_1, reshape_i_1_4
@@ -4058,7 +4059,6 @@ contains
 
     integer :: ii, i, j, k, n, lo(4), hi(4)
 
-    !$OMP PARALLEL DO PRIVATE(ii,ap,bp,cp,lo,hi,i,j,k,n)
     do ii = 1, nlocal(a%la)
        ap => dataptr(a, ii, get_ibox(a,ii))
        bp => dataptr(b, ii, get_ibox(b,ii))
@@ -4069,7 +4069,9 @@ contains
        
        ! ap = bp + c1*cp
 
+       !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
        do n = lo(4), hi(4)
+          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4077,9 +4079,11 @@ contains
                 end do
              end do
           end do
+          !$OMP END DO
        end do
+       !$OMP END PARALLEL
+
     end do
-    !$OMP END PARALLEL DO
   end subroutine multifab_saxpy_4
 
   subroutine multifab_saxpy_3_doit(ap, b1, bp)
@@ -4094,7 +4098,7 @@ contains
 
     ! ap = ap + b1*bp
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n)
+    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
     do n = lo(4), hi(4)
        !$OMP DO
        do k = lo(3), hi(3)
@@ -4111,7 +4115,6 @@ contains
   end subroutine multifab_saxpy_3_doit
 
   subroutine multifab_saxpy_3(a, b1, b, all)
-    use omp_module
 
     real(dp_t),     intent(in   ) :: b1
     type(multifab), intent(inout) :: a
@@ -4124,7 +4127,6 @@ contains
 
     lall = .false.; if ( present(all) ) lall = all
 
-    !$OMP PARALLEL DO PRIVATE(ii,ap,bp) IF(only_small_boxes(a))
     do ii = 1, nlocal(a%la)
        if ( lall ) then
           ap => dataptr(a,ii)
@@ -4135,7 +4137,6 @@ contains
        end if
        call multifab_saxpy_3_doit(ap,b1,bp)
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine multifab_saxpy_3
 
@@ -4152,7 +4153,6 @@ contains
 
     lall = .false.; if ( present(all) ) lall = all
 
-    !$OMP PARALLEL DO PRIVATE(ii,ap,bp) IF(only_small_boxes(a))
     do ii = 1, nlocal(a%la)
        if ( lall ) then
           ap => dataptr(a,ii,ia)
@@ -4163,7 +4163,6 @@ contains
        end if
        call multifab_saxpy_3_doit(ap,b1,bp)
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine multifab_saxpy_3_c
 
@@ -4181,7 +4180,6 @@ contains
 
     lall = .false.; if ( present(all) ) lall = all
 
-    !$OMP PARALLEL DO PRIVATE(ii,ap,bp) IF(only_small_boxes(a))
     do ii = 1, nlocal(a%la)
        if ( lall ) then
           ap => dataptr(a, ii, ia, nc)
@@ -4192,7 +4190,6 @@ contains
        end if
        call multifab_saxpy_3_doit(ap,b1,bp)
     end do
-    !$OMP END PARALLEL DO
 
   end subroutine multifab_saxpy_3_cc
 
@@ -4354,6 +4351,7 @@ contains
   end function multifab_norm_l2
 
   function multifab_norm_inf_doit(ap, lp) result(r)
+
     real(dp_t), pointer        :: ap(:,:,:,:)
     logical, pointer, optional :: lp(:,:,:,:)
     real(dp_t)                 :: r,r1
@@ -4361,10 +4359,15 @@ contains
 
     lo = lbound(ap)
     hi = ubound(ap)
+
+    ! maxval(abs(mp))
+
     r1 = 0.0_dp_t
 
+    !$OMP PARALLEL PRIVATE(i,j,k,n) REDUCTION(MAX : r1) IF((hi(3)-lo(3)).ge.7)
     if ( present(lp) ) then
        do n = lo(4), hi(4)
+          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4372,9 +4375,11 @@ contains
                 end do
              end do
           end do
+          !$OMP END DO NOWAIT
        end do
     else
        do n = lo(4), hi(4)
+          !$OMP DO
           do k = lo(3), hi(3)
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
@@ -4382,9 +4387,13 @@ contains
                 end do
              end do
           end do
+          !$OMP END DO NOWAIT
        end do
     end if
+    !$OMP END PARALLEL
+
     r = r1
+
   end function multifab_norm_inf_doit
 
   function multifab_norm_inf_c(mf, comp, nc, mask, all, local) result(r)
@@ -4406,7 +4415,6 @@ contains
     r1 = 0.0_dp_t
 
     if ( present(mask) ) then
-       !$OMP PARALLEL DO PRIVATE(i,n,lp,mp) REDUCTION(max:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              lp => dataptr(mask, i, get_pbox(mask, i))
@@ -4422,9 +4430,7 @@ contains
              r1 = max(r1, multifab_norm_inf_doit(mp,lp))
           end do
        end do
-       !$OMP END PARALLEL DO
     else
-       !$OMP PARALLEL DO PRIVATE(i,mp) REDUCTION(max:r1)
        do i = 1, nlocal(mf%la)
           if ( lall ) then
              mp => dataptr(mf, i, get_pbox(mf, i), comp, nc)
@@ -4433,7 +4439,6 @@ contains
           end if
           r1 = max(r1, multifab_norm_inf_doit(mp))
        end do
-       !$OMP END PARALLEL DO
     end if
 
     r = r1
@@ -4542,7 +4547,7 @@ contains
 
     ! ap = ap/bp
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    !$OMP PARALLEL PRIVATE(i,j,k,n)
     do n = lo(4), hi(4)
        !$OMP DO
        do k = lo(3), hi(3)
@@ -4570,7 +4575,7 @@ contains
 
     ! ap = ap/b
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    !$OMP PARALLEL PRIVATE(i,j,k,n)
     do n = lo(4), hi(4)
        !$OMP DO
        do k = lo(3), hi(3)
@@ -4596,6 +4601,8 @@ contains
 
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng, b%ng >= ng,"not enough ghost cells in multifab_div_div")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng) )
@@ -4609,6 +4616,8 @@ contains
        end if
        call multifab_div_div_c_doit(ap, bp)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_div_div
 
   subroutine multifab_div_div_s(a, b, ng)
@@ -4623,6 +4632,8 @@ contains
     if ( b == 0.0_dp_t ) then
        call bl_error("MULTIFAB_DIV_DIV_S: divide by zero")
     end if
+
+    !$OMP PARALLEL DO PRIVATE(i,ap) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),lng))
@@ -4631,6 +4642,8 @@ contains
        end if
        call multifab_div_div_s_doit(ap, b)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_div_div_s
 
   subroutine multifab_div_div_c(a, targ, b, src, nc, ng)
@@ -4645,6 +4658,8 @@ contains
 
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_div_div_c")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), targ, nc)
@@ -4658,6 +4673,8 @@ contains
        end if
        call multifab_div_div_c_doit(ap, bp)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_div_div_c
 
   subroutine multifab_div_div_s_c(a, targ, b, nc, ng)
@@ -4674,6 +4691,8 @@ contains
     if ( b == 0.0_dp_t ) then
        call bl_error("MULTIFAB_DIV_DIV_S_C: divide by zero")
     end if
+
+    !$OMP PARALLEL DO PRIVATE(i,ap) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), targ, nc)
@@ -4682,6 +4701,8 @@ contains
        end if
        call multifab_div_div_s_doit(ap, b)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_div_div_s_c
 
   subroutine multifab_div_s_c(a, ia, b, ib, val, nc, ng)
@@ -4772,6 +4793,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_mult")
+
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),lng))
@@ -4782,6 +4804,7 @@ contains
        end if
        call multifab_mult_mult_c_doit(ap, bp)
     end do
+
   end subroutine multifab_mult_mult
   subroutine multifab_mult_mult_s(a, b, ng)
     type(multifab), intent(inout) :: a
@@ -4791,6 +4814,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_mult_s")
+
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),lng))
@@ -4799,6 +4823,7 @@ contains
        end if
        call multifab_mult_mult_s_doit(ap, b)
     end do
+
   end subroutine multifab_mult_mult_s
 
   subroutine multifab_mult_mult_c(a, targ, b, src, nc, ng)
@@ -4812,6 +4837,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_mult_c")
+
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),lng), targ, nc)
@@ -4822,6 +4848,7 @@ contains
        end if
        call multifab_mult_mult_c_doit(ap, bp)
     end do
+
   end subroutine multifab_mult_mult_c
 
   subroutine multifab_mult_mult_s_c(a, targ, b, nc, ng)
@@ -4834,6 +4861,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_mult_s_c")
+
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),lng), targ, nc)
@@ -4842,6 +4870,7 @@ contains
        end if
        call multifab_mult_mult_s_doit(ap, b)
     end do
+
   end subroutine multifab_mult_mult_s_c
 
   subroutine multifab_mult_s_c(a, ia, b, ib, val, nc, ng)
@@ -4855,6 +4884,7 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng,"not enough ghost cells in multifab_mult_s_c")
+
     !$OMP PARALLEL DO PRIVATE(i,ap,bp)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
@@ -4867,6 +4897,7 @@ contains
        ap = bp * val
     end do
     !$OMP END PARALLEL DO
+
   end subroutine multifab_mult_s_c
 
   subroutine multifab_sub_sub_c_doit(ap, bp)
@@ -4881,7 +4912,7 @@ contains
 
     ! ap = ap - bp
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    !$OMP PARALLEL PRIVATE(i,j,k,n)
     do n = lo(4), hi(4)
        !$OMP DO
        do k = lo(3), hi(3)
@@ -4909,7 +4940,7 @@ contains
 
     ! ap = ap - b
 
-    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    !$OMP PARALLEL PRIVATE(i,j,k,n)
     do n = lo(4), hi(4)
        !$OMP DO
        do k = lo(3), hi(3)
@@ -4934,6 +4965,8 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng, b%ng >= ng, "not enough ghost cells in multifab_sub_sub")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),ng))
@@ -4944,6 +4977,8 @@ contains
        end if
        call multifab_sub_sub_c_doit(ap, bp)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_sub_sub
 
   subroutine multifab_sub_sub_s(a, b, ng)
@@ -4954,6 +4989,8 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng, "not enough ghost cells in multifab_sub_sub_s")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),ng))
@@ -4962,6 +4999,8 @@ contains
        end if
        call multifab_sub_sub_s_doit(ap, b)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_sub_sub_s
 
   subroutine multifab_sub_sub_c(a, targ, b, src, nc, ng)
@@ -4975,6 +5014,8 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng, b%ng >= ng, "not enough ghost cells in multifab_sub_sub_c")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap,bp) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),ng), targ, nc)
@@ -4985,6 +5026,8 @@ contains
        end if
        call multifab_sub_sub_c_doit(ap, bp)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_sub_sub_c
 
   subroutine multifab_sub_sub_s_c(a, targ, b, nc, ng)
@@ -4997,6 +5040,8 @@ contains
     integer :: i,lng
     lng = 0; if ( present(ng) ) lng = ng
     if ( lng > 0 ) call bl_assert(a%ng >= ng, "not enough ghost cells in multifab_sub_sub_s_c")
+
+    !$OMP PARALLEL DO PRIVATE(i,ap) IF(only_small_boxes(a))
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a, i),ng), targ, nc)
@@ -5005,7 +5050,37 @@ contains
        end if
        call multifab_sub_sub_s_doit(ap, b)
     end do
+    !$OMP END PARALLEL DO
+
   end subroutine multifab_sub_sub_s_c
+
+  subroutine multifab_plus_plus_c_doit(ap, bp)
+
+    real(dp_t), pointer :: ap(:,:,:,:)
+    real(dp_t), pointer :: bp(:,:,:,:)
+
+    integer :: i, j, k, n, lo(4), hi(4)
+
+    lo = lbound(ap)
+    hi = ubound(ap)
+
+    ! ap = ap + bp
+
+    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    do n = lo(4), hi(4)
+       !$OMP DO
+       do k = lo(3), hi(3)
+          do j = lo(2), hi(2)
+             do i = lo(1), hi(1)
+                ap(i,j,k,n) = ap(i,j,k,n) + bp(i,j,k,n)
+             end do
+          end do
+       end do
+       !$OMP END DO NOWAIT
+    end do
+    !$OMP END PARALLEL
+
+  end subroutine multifab_plus_plus_c_doit
 
   subroutine multifab_plus_plus_c(a, dst, b, src, nc, ng)
     integer, intent(in) :: dst, src
@@ -5021,7 +5096,6 @@ contains
 
     if ( lng > 0 ) call bl_assert(a%ng >= ng, b%ng >= ng,"not enough ghost cells in multifab_plus_plus_c")
 
-    !$OMP PARALLEL DO PRIVATE(i,ap,bp)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), dst, nc)
@@ -5032,30 +5106,6 @@ contains
        end if
        call multifab_plus_plus_c_doit(ap, bp)
     end do
-    !$OMP END PARALLEL DO
-
-    contains
-
-      subroutine multifab_plus_plus_c_doit(ap, bp)
-        real(dp_t), pointer :: ap(:,:,:,:)
-        real(dp_t), pointer :: bp(:,:,:,:)
-        integer             :: i, j, k, n, lo(4), hi(4)
-
-        lo = lbound(ap)
-        hi = ubound(ap)
-
-        ! ap = ap + bp
-
-        do n = lo(4), hi(4)
-           do k = lo(3), hi(3)
-              do j = lo(2), hi(2)
-                 do i = lo(1), hi(1)
-                    ap(i,j,k,n) = ap(i,j,k,n) + bp(i,j,k,n)
-                 end do
-              end do
-           end do
-        end do
-      end subroutine multifab_plus_plus_c_doit
 
   end subroutine multifab_plus_plus_c
 
@@ -5070,6 +5120,34 @@ contains
     end if
   end subroutine multifab_plus_plus
 
+  subroutine multifab_plus_plus_s_doit(ap, b)
+
+    real(dp_t), pointer :: ap(:,:,:,:)
+    real(dp_t)          :: b
+
+    integer :: i, j, k, n, lo(4), hi(4)
+
+    lo = lbound(ap)
+    hi = ubound(ap)
+
+    ! ap = ap + b
+
+    !$OMP PARALLEL PRIVATE(i,j,k,n) IF((hi(3)-lo(3)).ge.7)
+    do n = lo(4), hi(4)
+       !$OMP DO
+       do k = lo(3), hi(3)
+          do j = lo(2), hi(2)
+             do i = lo(1), hi(1)
+                ap(i,j,k,n) = ap(i,j,k,n) + b
+             end do
+          end do
+       end do
+       !$OMP END DO NOWAIT
+    end do
+    !$OMP END PARALLEL
+
+  end subroutine multifab_plus_plus_s_doit
+
   subroutine multifab_plus_plus_s_c(a, dst, b, nc, ng)
     integer, intent(in) :: dst
     integer, intent(in)           :: nc
@@ -5081,7 +5159,6 @@ contains
 
     lng = 0; if ( present(ng) ) lng = ng
 
-    !$OMP PARALLEL DO PRIVATE(i,ap)
     do i = 1, nlocal(a%la)
        if ( lng > 0 ) then
           ap => dataptr(a, i, grow(get_ibox(a,i),lng), dst, nc)
@@ -5090,30 +5167,6 @@ contains
        end if
        call multifab_plus_plus_s_doit(ap, b)
     end do
-    !$OMP END PARALLEL DO
-
-    contains
-
-      subroutine multifab_plus_plus_s_doit(ap, b)
-        real(dp_t), pointer :: ap(:,:,:,:)
-        real(dp_t)          :: b
-        integer             :: i, j, k, n, lo(4), hi(4)
-
-        lo = lbound(ap)
-        hi = ubound(ap)
-
-        ! ap = ap + b
-
-        do n = lo(4), hi(4)
-           do k = lo(3), hi(3)
-              do j = lo(2), hi(2)
-                 do i = lo(1), hi(1)
-                    ap(i,j,k,n) = ap(i,j,k,n) + b
-                 end do
-              end do
-           end do
-        end do
-      end subroutine multifab_plus_plus_s_doit
 
   end subroutine multifab_plus_plus_s_c
 
