@@ -98,10 +98,10 @@ contains
     if ( all(lo == hi) ) then
        i = lo(1)
        if ( mod(i,2) == n ) then
-          if ( abs(ss(0,i)) .gt. 0.0_dp_t ) then
+          if ( abs(ss(0,i)) .gt. zero ) then
              dd = ss(0,i)*uu(i) &
                 + ss(1,i)*uu(i+1) + ss(2,i)*uu(i-1) 
-             uu(i) = uu(i) + omega/ss(0,i)*(ff(i) - dd)
+             uu(i) = uu(i) + (omega/ss(0,i))*(ff(i) - dd)
           end if
        end if
        call destroy(bpt)
@@ -127,16 +127,16 @@ contains
                    dd = dd + ss(XBC,i)*lr(2)
                 end if
              end if
-             uu(i) = uu(i) + omega/ss(0,i)*(ff(i) - dd)
+             uu(i) = uu(i) + (omega/ss(0,i))*(ff(i) - dd)
           end do
 
     else
 
        do i = lo(1), hi(1)
-          if (abs(ss(0,i)) .gt. 0.0_dp_t) then
+          if (abs(ss(0,i)) .gt. zero) then
             dd = ss(0,i)*uu(i) &
                + ss(1,i)*uu(i+1) + ss(2,i)*uu(i-1) 
-            uu(i) = uu(i) + omega/ss(0,i)*(ff(i) - dd)
+            uu(i) = uu(i) + (omega/ss(0,i))*(ff(i) - dd)
           end if
        end do
 
@@ -188,11 +188,11 @@ contains
     if ( all(lo == hi) ) then
        i = lo(1); j = lo(2)
        if ( mod(i + j,2) == n ) then
-          if ( abs(ss(0,i,j)) .gt. 0.0_dp_t ) then
+          if ( abs(ss(0,i,j)) .gt. zero ) then
              dd = ss(0,i,j)*uu(i,j) &
                   + ss(1,i,j)*uu(i+1,j) + ss(2,i,j)*uu(i-1,j) &
                   + ss(3,i,j)*uu(i,j+1) + ss(4,i,j)*uu(i,j-1)
-             uu(i,j) = uu(i,j) + omega/ss(0,i,j)*(ff(i,j) - dd)
+             uu(i,j) = uu(i,j) + (omega/ss(0,i,j))*(ff(i,j) - dd)
           end if
        end if
        call destroy(bpt)
@@ -233,7 +233,7 @@ contains
                    dd = dd + ss(YBC,i,j)*tb(i,2)
                 end if
              end if
-             uu(i,j) = uu(i,j) + omega/ss(0,i,j)*(ff(i,j) - dd)
+             uu(i,j) = uu(i,j) + (omega/ss(0,i,j))*(ff(i,j) - dd)
           end do
        end do
     else
@@ -243,11 +243,11 @@ contains
        do j = lo(2),hi(2)
           ioff = 0; if ( mod(lo(1) + j, 2) /= n ) ioff = 1
           do i = lo(1) + ioff, hi(1), 2
-             if (abs(ss(0,i,j)) .gt. 0.0_dp_t) then
+             if (abs(ss(0,i,j)) .gt. zero) then
                dd = ss(0,i,j)*uu(i,j) &
                     + ss(1,i,j) * uu(i+1,j) + ss(2,i,j) * uu(i-1,j) &
                     + ss(3,i,j) * uu(i,j+1) + ss(4,i,j) * uu(i,j-1)
-               uu(i,j) = uu(i,j) + omega/ss(0,i,j)*(ff(i,j) - dd)
+               uu(i,j) = uu(i,j) + (omega/ss(0,i,j))*(ff(i,j) - dd)
              end if
           end do
        end do
@@ -272,11 +272,11 @@ contains
     logical    :: lskwd
     real(dp_t) :: dd
     !
-    ! These are small(ish) so we'll put'm on the stack instead of the heap.
+    ! These are small so we'll put'm on the stack instead of the heap.
     !
-    real(dp_t) :: lr(lbound(ff,2):ubound(ff,2), lbound(ff,3):ubound(ff,3), 2)
-    real(dp_t) :: tb(lbound(ff,1):ubound(ff,1), lbound(ff,3):ubound(ff,3), 2)
-    real(dp_t) :: fb(lbound(ff,1):ubound(ff,1), lbound(ff,2):ubound(ff,2), 2)
+    real(dp_t) lr(lbound(ff,2):ubound(ff,2), lbound(ff,3):ubound(ff,3), 2)
+    real(dp_t) tb(lbound(ff,1):ubound(ff,1), lbound(ff,3):ubound(ff,3), 2)
+    real(dp_t) fb(lbound(ff,1):ubound(ff,1), lbound(ff,2):ubound(ff,2), 2)
 
     integer, parameter ::  XBC = 7, YBC = 8, ZBC = 9
 
@@ -289,12 +289,12 @@ contains
     if ( all(lo == hi) ) then
        k = lo(3); j = lo(2); i = lo(1)
        if ( mod(i + j + k, 2) == n ) then
-          if ( abs(ss(0,i,j,k)) .gt. 0.0_dp_t ) then
+          if (abs(ss(0,i,j,k)) .gt. zero) then
              dd = ss(0,i,j,k)*uu(i,j,k)   + &
                   ss(1,i,j,k)*uu(i+1,j,k) + ss(2,i,j,k)*uu(i-1,j,k) + &
                   ss(3,i,j,k)*uu(i,j+1,k) + ss(4,i,j,k)*uu(i,j-1,k) + &
                   ss(5,i,j,k)*uu(i,j,k+1) + ss(6,i,j,k)*uu(i,j,k-1)
-             uu(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
+             uu(i,j,k) = uu(i,j,k) + (omega/ss(0,i,j,k))*(ff(i,j,k) - dd)
           end if
        end if
        call destroy(bpt)
@@ -354,6 +354,7 @@ contains
           end do
        end do
 
+       !$OMP PARALLEL DO PRIVATE(k,j,i,ioff,dd) IF((hi(3)-lo(3)).ge.3)
        do k = lo(3), hi(3)
           do j = lo(2), hi(2)
              ioff = 0; if ( mod(lo(1) + j + k, 2) /= n ) ioff = 1
@@ -382,15 +383,17 @@ contains
                    if ( bc_skewed(mm(i,j,k),3,-1) ) dd = dd + ss(ZBC,i,j,k)*fb(i,j,2)
                 end if
 
-                uu(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
+                uu(i,j,k) = uu(i,j,k) + (omega/ss(0,i,j,k))*(ff(i,j,k) - dd)
              end do
           end do
        end do
+       !$OMP END PARALLEL DO
 
     else
        !
        ! USE THIS FOR GAUSS-SEIDEL
        !
+       !$OMP PARALLEL DO PRIVATE(k,j,i,ioff,dd) IF((hi(3)-lo(3)).ge.3)
        do k = lo(3), hi(3)
           do j = lo(2), hi(2)
              ioff = 0; if ( mod (lo(1) + j + k, 2) /= n ) ioff = 1
@@ -401,10 +404,11 @@ contains
                        ss(3,i,j,k)*uu(i,j+1,k) + ss(4,i,j,k)*uu(i,j-1,k) + &
                        ss(5,i,j,k)*uu(i,j,k+1) + ss(6,i,j,k)*uu(i,j,k-1)
 
-                  uu(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
+                  uu(i,j,k) = uu(i,j,k) + (omega/ss(0,i,j,k))*(ff(i,j,k) - dd)
              end do
           end do
        end do
+       !$OMP END PARALLEL DO
 
     end if
 
@@ -436,7 +440,7 @@ contains
        do j = lo(2),hi(2)
           ioff = 0; if ( mod(lo(1) + j, 2) /= n ) ioff = 1
           do i = lo(1) + ioff, hi(1), 2
-             if (abs(ss(0,i,j)) .gt. 0.0_dp_t) then
+             if (abs(ss(0,i,j)) .gt. zero) then
                dd =   ss(0,i,j) * uu(i,j) &
                     + ss(1,i,j) * uu(i-2,j) + ss(2,i,j) * uu(i-1,j) &
                     + ss(3,i,j) * uu(i+1,j) + ss(4,i,j) * uu(i+2,j) &
@@ -451,7 +455,7 @@ contains
 
        do j = lo(2),hi(2)
           do i = lo(1), hi(1)
-             if (abs(ss(0,i,j)) .gt. 0.0_dp_t) then
+             if (abs(ss(0,i,j)) .gt. zero) then
                dd =   ss( 0,i,j) * uu(i,j) &
                     + ss( 1,i,j) * uu(i-2,j-2) + ss( 2,i,j) * uu(i-1,j-2) & ! AT J-2
                     + ss( 3,i,j) * uu(i  ,j-2) + ss( 4,i,j) * uu(i+1,j-2) & ! AT J-2
@@ -480,9 +484,9 @@ contains
 
   end subroutine fourth_order_smoother_2d
 
-  subroutine fourth_order_smoother_3d(omega, ss, uu, ff, lo, ng, stencil_type, n)
+  subroutine fourth_order_smoother_3d(omega, ss, uu, ff, lo, ng, stencil_type)
     use bl_prof_module
-    integer           , intent(in   ) :: ng, n
+    integer           , intent(in   ) :: ng
     integer           , intent(in   ) :: lo(:)
     real (kind = dp_t), intent(in   ) :: omega
     real (kind = dp_t), intent(in   ) :: ff(lo(1):, lo(2):, lo(3):)
@@ -505,7 +509,7 @@ contains
        do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1), hi(1)
-             if (abs(ss(0,i,j,k)) .gt. 0.0_dp_t) then
+             if (abs(ss(0,i,j,k)) .gt. zero) then
                dd =   ss( 0,i,j,k) * uu(i,j,k) &
                     + ss( 1,i,j,k) * uu(i-2,j,k) + ss( 2,i,j,k) * uu(i-1,j,k) &
                     + ss( 3,i,j,k) * uu(i+1,j,k) + ss( 4,i,j,k) * uu(i+2,j,k) &
@@ -525,7 +529,7 @@ contains
        do k = lo(3),hi(3)
        do j = lo(2),hi(2)
           do i = lo(1), hi(1)
-             if (abs(ss(0,i,j,k)) .gt. 0.0_dp_t) then
+             if (abs(ss(0,i,j,k)) .gt. zero) then
 
                 dd = &
                        ss( 0,i,j,k) * uu(i  ,j  ,k  ) &
@@ -598,13 +602,15 @@ contains
     real (kind = dp_t), intent(in)    :: ss(0:,:)
     logical, intent(in), optional :: skwd
     real (kind = dp_t) :: dd
-    integer :: i
+    integer :: i, nx
     logical :: lskwd
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do i = 1, size(ff,dim=1)
+    nx = size(ff,dim=1)
+
+    do i = 1, nx
        dd = ss(0,i)*uu(i) + ss(1,i)*uu(i+1) + ss(2,i)*uu(i-1)
-       uu(i) = uu(i) + omega/ss(0,i)*(ff(i) - dd)
+       uu(i) = uu(i) + (omega/ss(0,i))*(ff(i) - dd)
     end do
 
   end subroutine gs_lex_smoother_1d
@@ -617,7 +623,7 @@ contains
     real (kind = dp_t), intent(inout) :: uu(1-ng:, 1-ng:)
     real (kind = dp_t), intent(in) :: ss(0:, :, :)
     logical, intent(in), optional :: skwd
-    integer :: j, i
+    integer :: j, i, nx, ny
     real (kind = dp_t) :: dd
     logical :: lskwd
 
@@ -627,15 +633,18 @@ contains
 
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do j = 1, size(ff,dim=2)
-       do i = 1, size(ff, dim=1)
+    nx = size(ff,dim=1)
+    ny = size(ff,dim=2)
+
+    do j = 1, ny
+       do i = 1, nx
           dd = &
                + ss(0,i,j)*uu(i  ,j  ) &
                + ss(1,i,j)*uu(i+1,j  ) &
                + ss(2,i,j)*uu(i-1,j  ) &
                + ss(3,i,j)*uu(i  ,j+1) &
                + ss(4,i,j)*uu(i  ,j-1)
-          uu(i,j) = uu(i,j) + omega/ss(0,i,j)*(ff(i,j) - dd)
+          uu(i,j) = uu(i,j) + (omega/ss(0,i,j))*(ff(i,j) - dd)
        end do
     end do
 
@@ -650,7 +659,7 @@ contains
     real (kind = dp_t), intent(inout) :: uu(1-ng:,1-ng:,1-ng:)
     real (kind = dp_t), intent(in) :: ss(0:,:,:,:)
     logical, intent(in), optional :: skwd
-    integer :: i, j, k
+    integer :: i, j, k, nx, ny, nz
     real (kind = dp_t) :: dd
     logical :: lskwd
 
@@ -660,9 +669,13 @@ contains
 
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do k = 1, size(ff,dim=3)
-       do j = 1, size(ff,dim=2)
-          do i = 1, size(ff,dim=1)
+    nx = size(ff,dim=1)
+    ny = size(ff,dim=2)
+    nz = size(ff,dim=3)
+
+    do k = 1, nz
+       do j = 1, ny
+          do i = 1, nx
              dd = &
                   + ss(0,i,j,k)*uu(  i,j  ,k  ) &
                   + ss(1,i,j,k)*uu(i+1,j  ,k  ) &
@@ -671,7 +684,7 @@ contains
                   + ss(4,i,j,k)*uu(i  ,j-1,k  ) &
                   + ss(5,i,j,k)*uu(i  ,j  ,k-1) &
                   + ss(6,i,j,k)*uu(i  ,j  ,k+1) 
-             uu(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
+             uu(i,j,k) = uu(i,j,k) + (omega/ss(0,i,j,k))*(ff(i,j,k) - dd)
           end do
        end do
     end do
@@ -688,15 +701,16 @@ contains
     real (kind = dp_t), intent(in)    :: ss(0:,:)
     logical, intent(in), optional :: skwd
     real (kind = dp_t) :: dd
-    integer :: i
+    integer :: i, nx
     logical :: lskwd
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do i = 1, size(ff,dim=1)
-       dd = ss(0,i)*uu(i) + ss(1,i)*uu(i+1) + ss(2,i)*uu(i-1)
-       uu(i) = uu(i) + omega/ss(0,i)*(ff(i) - dd)
-    end do
+    nx = size(ff,dim=1)
 
+    do i = 1, nx
+       dd = ss(0,i)*uu(i) + ss(1,i)*uu(i+1) + ss(2,i)*uu(i-1)
+       uu(i) = uu(i) + (omega/ss(0,i))*(ff(i) - dd)
+    end do
 
   end subroutine gs_lex_dense_smoother_1d
 
@@ -708,7 +722,7 @@ contains
     real (kind = dp_t), intent(inout) :: uu(1-ng:, 1-ng:)
     real (kind = dp_t), intent(in) :: ss(0:, :, :)
     logical, intent(in), optional :: skwd
-    integer :: j, i
+    integer :: j, i, nx, ny
     real (kind = dp_t) :: dd
     logical :: lskwd
 
@@ -718,8 +732,11 @@ contains
 
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do j = 1, size(ff,dim=2)
-       do i = 1, size(ff, dim=1)
+    nx = size(ff,dim=1)
+    ny = size(ff,dim=2)
+
+    do j = 1, ny
+       do i = 1, nx
           dd = &
                + ss(1,i,j)*uu(i-1,j-1) &
                + ss(2,i,j)*uu(i  ,j-1) &
@@ -732,7 +749,7 @@ contains
                + ss(6,i,j)*uu(i-1,j+1) &
                + ss(7,i,j)*uu(i  ,j+1) &
                + ss(8,i,j)*uu(i+1,j+1)
-          uu(i,j) = uu(i,j) + omega/ss(0,i,j)*(ff(i,j) - dd)
+          uu(i,j) = uu(i,j) + (omega/ss(0,i,j))*(ff(i,j) - dd)
        end do
     end do
 
@@ -748,7 +765,7 @@ contains
     real (kind = dp_t), intent(inout) :: uu(1-ng:,1-ng:,1-ng:)
     real (kind = dp_t), intent(in) :: ss(0:,:,:,:)
     logical, intent(in), optional :: skwd
-    integer :: i, j, k
+    integer :: i, j, k, nx, ny, nz
     real (kind = dp_t) :: dd
     logical :: lskwd
 
@@ -758,9 +775,13 @@ contains
 
     lskwd = .true.; if ( present(skwd) ) lskwd = skwd
 
-    do k = 1, size(ff,dim=3)
-       do j = 1, size(ff,dim=2)
-          do i = 1, size(ff,dim=1)
+    nx = size(ff,dim=1)
+    ny = size(ff,dim=2)
+    nz = size(ff,dim=3)
+
+    do k = 1, nz
+       do j = 1, ny
+          do i = 1, nx
              dd = &
                   + ss( 0,i,j,k)*uu(i  ,j  ,k  ) &
                   + ss( 1,i,j,k)*uu(i-1,j-1,k-1) &
@@ -793,7 +814,7 @@ contains
                   + ss(25,i,j,k)*uu(i  ,j+1,k+1) &
                   + ss(26,i,j,k)*uu(i+1,j+1,k+1) 
 
-             uu(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
+             uu(i,j,k) = uu(i,j,k) + (omega/ss(0,i,j,k))*(ff(i,j,k) - dd)
           end do
        end do
     end do
@@ -974,6 +995,7 @@ contains
 
     allocate(wrk(nx,ny,nz))
 
+    !$OMP PARALLEL DO PRIVATE(j,i,k,dd) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1008,7 +1030,9 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
+    !$OMP PARALLEL DO PRIVATE(j,i,k) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1016,6 +1040,7 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
     call destroy(bpt)
 
@@ -1042,6 +1067,7 @@ contains
 
     allocate(wrk(nx,ny,nz))
 
+    !$OMP PARALLEL DO PRIVATE(j,i,k) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1079,7 +1105,9 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
+    !$OMP PARALLEL DO PRIVATE(j,i,k) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -1087,6 +1115,7 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
     call destroy(bpt)
 
@@ -1249,10 +1278,9 @@ contains
 
     !     internal variables
 
-    integer :: k, n
+    integer            :: k, n
     real (kind = dp_t) :: t
-    real (kind = dp_t), parameter :: ZERO = 0.0_dp_t
-    logical :: lpv
+    logical            :: lpv
 
     lpv = .TRUE.; if ( present(lpivot) ) lpv = lpivot
 

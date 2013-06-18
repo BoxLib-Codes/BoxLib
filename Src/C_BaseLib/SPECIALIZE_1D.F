@@ -194,6 +194,35 @@ c
 
       end
 c
+c     Calculate sum(abs) over section of an array.
+c
+      subroutine FORT_FASTSUM (src,DIMS(src),lo,hi,ncomp,sm)
+
+      implicit none
+
+      integer ncomp
+      integer lo(1), hi(1)
+      integer DIMDEC(src)
+      REAL_T  src(DIMV(src),ncomp), sm
+c
+c     Local variables.
+c
+      integer i,k
+      integer imin,imax
+
+      imin = lo(1)
+      imax = hi(1)
+
+      sm = 0.0d0
+
+      do k = 1, ncomp
+         do i = imin,imax
+            sm = sm + src(i,k)
+         end do
+      end do
+
+      end
+c
 c     This function adds floating point numbers from one array to another.
 c
       subroutine FORT_FASTPLUS (dest,
@@ -413,6 +442,57 @@ c
       do j = 1,ncomp
          do i = imin,imax
             src(i,j) = val / src(i,j)
+         end do
+      end do
+
+      end
+
+c
+c     This function does quadratic interpolation 
+c
+      subroutine FORT_QUADINTERP (dest,
+     &                            DIMS(dest),
+     &                            imin, imax,
+     &                            src1,
+     &                            DIMS(src1),
+     &                            src2,
+     &                            DIMS(src2),
+     &                            src3,
+     &                            DIMS(src3),
+     &                            ncomp,
+     &                            t,
+     &                            t1,
+     &                            t2,
+     &                            t3)
+
+      implicit none
+c
+c     Bounds to do interpolation in dest
+c
+      integer imin, imax
+      integer DIMDEC(dest)
+c
+c     Bounds of src
+c
+      integer DIMDEC(src1)
+      integer DIMDEC(src2)
+      integer DIMDEC(src3)
+      integer ncomp
+      
+      REAL_T  dest(DIMV(dest),ncomp)
+      REAL_T  src1(DIMV(src1),ncomp)
+      REAL_T  src2(DIMV(src2),ncomp)
+      REAL_T  src3(DIMV(src3),ncomp)
+
+      REAL_T  t, t1, t2, t3
+c
+c     Local variables
+c
+      integer i,n
+
+      do n = 1, ncomp
+         do i = imin,imax
+            dest(i,n) = 0.d0
          end do
       end do
 

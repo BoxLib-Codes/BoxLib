@@ -47,6 +47,10 @@ public:
     //
     virtual ~Amr ();
     //
+    // set up t_nodes (for SDC) after construction. Must be called before init if doing SDC.
+    //
+    void set_t_nodes (const Array<Real>& tnodes);
+    //
     // Init data after construction. Must be called before timestepping.
     //
     virtual void init (Real strt_time, Real stop_time);
@@ -97,6 +101,15 @@ public:
     // Timestep at a specific region.
     //
     Real dtRegion(ID id) const { return dt_region.getData(id); }
+    //
+    // Array of inner node times on specified level 
+    //
+    const Array<Real>& tNodes (int level) const {
+	return (multi_level_sdc) ? t_nodes[level] : t_nodes[0]; }
+    //
+    // Multi-level SDC?
+    //
+    bool isMultiLevSDC () const { return multi_level_sdc; }
     //
     // Geometry object.
     //
@@ -512,24 +525,29 @@ protected:
     //
     // The data ...
     //
-    std::string       regrid_grids_file;   // Grids file that will bypass regridding.
-    std::string      initial_grids_file;   // Grids file that will bypass regridding only at initialization.
+    std::string      regrid_grids_file;   // Grids file that will bypass regridding.
+    std::string      initial_grids_file;  // Grids file that will bypass regridding only at initialization.
     int              max_level;    // Maximum allowed level.
     int              finest_level; // Current finest level.
+    int              multi_level_sdc; // multi-level SDC?
     Array<IntVect>   ref_ratio;    // Refinement ratios [0:finest_level-1]
     PTree<AmrRegion> amr_regions;
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Real             start_time;   // Physical time this simulation started.
+<<<<<<< HEAD
 
     Tree<Real>       dt_region;     // Timestep for this region.
-    ///region steps is unreliable right now--I'm not sure what use it is
-    Tree<int>        region_steps;  // Number of time steps at this level.
+    Tree<int>        region_steps;  // Number of time steps taken by this region -- 
+                                    // unreliable right now--I'm not sure what use it is
     Tree<int>        region_count;
     Tree<int>        n_cycle;
     Array<int>       manual_n_cycle;
+
     std::string      subcycling_mode; //Type of subcycling to use.
     Tree<Real>       dt_reg_min; 
+
+//  Array<Array<Real> > t_nodes;   // Time of (SDC) inner nodes in the range of (0,1)
 
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?
     Array<int>       regrid_int;      // Interval between regridding.

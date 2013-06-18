@@ -218,6 +218,39 @@ c
 
       end
 c
+c     Calculate sum() over section of an array.
+c
+      subroutine FORT_FASTSUM (src,DIMS(src),lo,hi,ncomp,sm)
+
+      implicit none
+
+      integer ncomp
+      integer lo(3), hi(3)
+      integer DIMDEC(src)
+      REAL_T  src(DIMV(src),ncomp), sm
+c
+c     Local variables.
+c
+      integer i,j,k
+      integer imin,jmin,imax,jmax
+
+      imin = lo(1)
+      jmin = lo(2)
+      imax = hi(1)
+      jmax = hi(2)
+
+      sm = 0.0d0
+
+      do k = 1, ncomp
+         do j = jmin,jmax
+            do i = imin,imax
+               sm = sm + src(i,j,k)
+            end do
+         end do
+      end do
+
+      end
+c
 c     This function adds floating point numbers from one array to another.
 c
       subroutine FORT_FASTPLUS (dest,
@@ -459,6 +492,60 @@ c
          do j = jmin,jmax
             do i = imin,imax
                src(i,j,k) = val / src(i,j,k)
+            end do
+         end do
+      end do
+
+      end
+
+
+c
+c     This function does quadratic interpolation 
+c
+      subroutine FORT_QUADINTERP (dest,
+     &                            DIMS(dest),
+     &                            imin, jmin, imax, jmax,
+     &                            src1,
+     &                            DIMS(src1),
+     &                            src2,
+     &                            DIMS(src2),
+     &                            src3,
+     &                            DIMS(src3),
+     &                            ncomp,
+     &                            t,
+     &                            t1,
+     &                            t2,
+     &                            t3)
+
+      implicit none
+c
+c     Bounds to do interpolation in dest
+c
+      integer imin, jmin, imax, jmax
+      integer DIMDEC(dest)
+c
+c     Bounds of src
+c
+      integer DIMDEC(src1)
+      integer DIMDEC(src2)
+      integer DIMDEC(src3)
+      integer ncomp
+      
+      REAL_T  dest(DIMV(dest),ncomp)
+      REAL_T  src1(DIMV(src1),ncomp)
+      REAL_T  src2(DIMV(src2),ncomp)
+      REAL_T  src3(DIMV(src3),ncomp)
+
+      REAL_T  t, t1, t2, t3
+c
+c     Local variables
+c
+      integer i,j,n
+
+      do n = 1, ncomp
+         do j = jmin,jmax
+            do i = imin,imax
+               dest(i,j,n) = 0.d0
             end do
          end do
       end do

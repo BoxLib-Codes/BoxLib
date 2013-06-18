@@ -3,20 +3,16 @@ subroutine wrapper()
   use BoxLib
   use f2kcli
   use bl_IO_module
-  use box_util_module
-  use ml_boxarray_module
   use ml_layout_module
-  use cc_stencil_module
   use mg_module
   use box_util_module
   use mt19937_module
   use bl_timer_module
-  use stencil_types_module
 
   implicit none
 
   interface
-     subroutine t_cc_ml_multigrid(mla, mgt, domain_bc, bottom_solver, &
+     subroutine t_cc_ml_multigrid(mla, mgt, domain_bc, &
           do_diagnostics, eps, stencil_order, fabio)
        use mg_module    
        use ml_boxarray_module    
@@ -24,13 +20,12 @@ subroutine wrapper()
        type(ml_layout  ), intent(inout) :: mla
        type(mg_tower) , intent(inout) :: mgt(:)
        integer        , intent(in   ) :: domain_bc(:,:)
-       integer        , intent(in   ) :: bottom_solver
        integer        , intent(in   ) :: do_diagnostics
        real(dp_t)     , intent(in   ) :: eps
        integer        , intent(in   ) :: stencil_order
        logical        , intent(in   ) :: fabio
      end subroutine t_cc_ml_multigrid
-     subroutine t_nodal_ml_multigrid(mla, mgt, domain_bc, bottom_solver, &
+     subroutine t_nodal_ml_multigrid(mla, mgt, domain_bc, &
           do_diagnostics, eps, test, fabio, stencil_type)
        use mg_module    
        use ml_boxarray_module    
@@ -38,7 +33,6 @@ subroutine wrapper()
        type(ml_layout  ), intent(inout) :: mla
        type(mg_tower) , intent(inout) :: mgt(:)
        integer        , intent(in   ) :: domain_bc(:,:)
-       integer        , intent(in   ) :: bottom_solver
        integer        , intent(in   ) :: do_diagnostics
        real(dp_t)     , intent(in   ) :: eps
        integer        , intent(in   ) :: test
@@ -535,6 +529,7 @@ subroutine wrapper()
         call build(ba, pd)
         call boxarray_maxsize(ba, ba_maxsize)
         call build(mba, ba, pd)
+        call destroy(ba)
      end if
   end if
 
@@ -707,9 +702,9 @@ subroutine wrapper()
 
   call wall_second(wcb)
   if ( nodal_in ) then
-     call t_nodal_ml_multigrid(mla, mgt, domain_bc, bottom_solver, do_diagnostics, eps, test, fabio, stencil_type)
+     call t_nodal_ml_multigrid(mla, mgt, domain_bc, do_diagnostics, eps, test, fabio, stencil_type)
   else
-     call t_cc_ml_multigrid(mla, mgt, domain_bc, bottom_solver, do_diagnostics, eps, stencil_order, fabio)
+     call t_cc_ml_multigrid(mla, mgt, domain_bc, do_diagnostics, eps, stencil_order, fabio)
   end if
   call wall_second(wce)
 

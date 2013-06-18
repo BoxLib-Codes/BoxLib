@@ -24,7 +24,7 @@ module nodal_stencil_module
   real (kind = dp_t), private, parameter :: SIXTH = 1.0_dp_t/6.0_dp_t
   real (kind = dp_t), private, parameter :: FOUR_THIRD = 4.0_dp_t/3.0_dp_t
 
-  private :: set_faces_edges_corners_3d
+  private :: set_faces_edges_corners_2d,set_faces_edges_corners_3d
 
 contains
 
@@ -47,36 +47,42 @@ contains
     !
     ! Set the mask to BC_DIR or BC_NEU based on face_type at a physical boundary.
     !
-    do dm = 1, bx%dim
+    do dm = 1, sdim
        !
        ! Lo side
        !
        bx1 = nbx
        bx1%hi(dm) = bx1%lo(dm)
        mp => dataptr(mask, idx, bx1)
-       if (face_type(idx,dm,1) == BC_NEU) mp = ibset(mp, BC_BIT(BC_NEU, dm, -1))
-       if (face_type(idx,dm,1) == BC_DIR) mp = ibset(mp, BC_BIT(BC_DIR,  1,  0))
+       if (face_type(idx,dm,1) == BC_NEU) then
+          mp = ibset(mp, BC_BIT(BC_NEU, dm, -1))
+       else if (face_type(idx,dm,1) == BC_DIR) then
+          mp = ibset(mp, BC_BIT(BC_DIR, 1, 0))
+       end if
        !
        ! Hi side
        !
        bx1 = nbx
        bx1%lo(dm) = bx1%hi(dm)
        mp => dataptr(mask, idx, bx1)
-       if (face_type(idx,dm,2) == BC_NEU) mp = ibset(mp, BC_BIT(BC_NEU, dm, +1))
-       if (face_type(idx,dm,2) == BC_DIR) mp = ibset(mp, BC_BIT(BC_DIR,  1,  0))
+       if (face_type(idx,dm,2) == BC_NEU) then
+          mp = ibset(mp, BC_BIT(BC_NEU, dm, +1))
+       else if (face_type(idx,dm,2) == BC_DIR) then
+          mp = ibset(mp, BC_BIT(BC_DIR, 1, 0))
+       end if
     end do
     !
     ! Set the mask to BC_DIR at coarse-fine boundaries.
     !
-    jb_lo = -1; if (dm .lt. 2) jb_lo = 1
-    kb_lo = -1; if (dm .lt. 3) kb_lo = 1
+    jb_lo = -1; if (sdim .lt. 2) jb_lo = 1
+    kb_lo = -1; if (sdim .lt. 3) kb_lo = 1
 
     do kb = kb_lo, 1
        do jb = jb_lo, 1
           do ib = -1, 1
              bx1 = shift(bx,ib,1)
-             if (dm > 1) bx1 = shift(bx1,jb,2)
-             if (dm > 2) bx1 = shift(bx1,kb,3)
+             if (sdim > 1) bx1 = shift(bx1,jb,2)
+             if (sdim > 2) bx1 = shift(bx1,kb,3)
              bx1 = intersection(bx1, pd_periodic)
              if ( empty(bx1) ) cycle
              call layout_boxarray_diff(ba, bx1, la_periodic)
@@ -99,12 +105,11 @@ contains
     integer           , intent(in   ) :: mm(:)
     real (kind = dp_t), intent(in   ) :: dh(:)
 
-    integer i,nx
-    real (kind = dp_t) f1
+    integer            :: i,nx
+    real (kind = dp_t) :: f1
 
     f1 = ONE/dh(1)**2
 
-    ! x derivatives
     nx = size(ss,dim=2)
 
     if (bc_neumann(mm( 1),1,-1)) sg( 0) = sg(   1)
@@ -113,7 +118,7 @@ contains
     do i = 1,nx
        ss(1,i) = sg(i  )*f1
        ss(2,i) = sg(i-1)*f1
-       ss(0,i) = -(sg(i)+sg(i-1))*f1
+       ss(0,i) = -(sg(i)+sg(i-1))
     end do
 
   end subroutine s_simple_1d_nodal
@@ -131,34 +136,7 @@ contains
     nx = size(ss,dim=2)
     ny = size(ss,dim=3)
 
-    ! Set sg on edges at a Neumann boundary.
-    do i = 1,nx-1
-       if (bc_neumann(mm(i, 1),2,-1)) sg(i, 0) = sg(i,1)
-       if (bc_neumann(mm(i,ny),2,+1)) sg(i,ny) = sg(i,ny-1)
-    end do
-
-    do j = 1,ny-1
-       if (bc_neumann(mm( 1,j),1,-1)) sg( 0,j) = sg(   1,j)
-       if (bc_neumann(mm(nx,j),1,+1)) sg(nx,j) = sg(nx-1,j)
-    end do
-
-!   Note: we do the corners *after* each of the edge has been done.
-    if (face_type(1,1) == BC_NEU) then
-       sg(0, 0) = sg(1, 0)
-       sg(0,ny) = sg(1,ny)
-    end if
-    if (face_type(1,2) == BC_NEU) then
-       sg(nx, 0) = sg(nx-1,0)
-       sg(nx,ny) = sg(nx-1,ny)
-    end if
-    if (face_type(2,1) == BC_NEU) then
-       sg( 0,0) = sg( 0,1)
-       sg(nx,0) = sg(nx,1)
-    end if
-    if (face_type(2,2) == BC_NEU) then
-       sg( 0,ny) = sg( 0,ny-1)
-       sg(nx,ny) = sg(nx,ny-1)
-    end if
+    call set_faces_edges_corners_2d(nx, ny, sg, mm, face_type)
 
     fac = (HALF / (dh(1))**2)
 
@@ -181,51 +159,22 @@ contains
     integer           , intent(in   ) :: face_type(:,:)
     real (kind = dp_t), intent(in   ) :: dh(:)
 
-    real (kind = dp_t), allocatable :: sg_int(:,:)
-
     integer            :: i, j, nx, ny
     real (kind = dp_t) :: fac
+    real (kind = dp_t) :: sg_int(0:size(sg,dim=1)-1,0:size(sg,dim=2)-1)
 
     nx = size(ss,dim=2)
     ny = size(ss,dim=3)
 
-    allocate(sg_int(0:size(sg,dim=1)-1,0:size(sg,dim=2)-1))
-
     sg_int = ZERO
+
     do j = 1, ny-1
       do i = 1, nx-1
          sg_int(i,j) = sg(i,j)
       end do
     end do
 
-    ! Set sg on edges at a Neumann boundary.
-    do i = 1,nx-1
-       if (bc_neumann(mm(i, 1),2,-1)) sg_int(i, 0) = sg_int(i,1)
-       if (bc_neumann(mm(i,ny),2,+1)) sg_int(i,ny) = sg_int(i,ny-1)
-    end do
-
-    do j = 1,ny-1
-       if (bc_neumann(mm( 1,j),1,-1)) sg_int( 0,j) = sg_int(   1,j)
-       if (bc_neumann(mm(nx,j),1,+1)) sg_int(nx,j) = sg_int(nx-1,j)
-    end do
-
-!   Note: we do the corners *after* each of the edge has been done.
-    if (face_type(1,1) == BC_NEU) then
-       sg_int(0, 0) = sg_int(1, 0)
-       sg_int(0,ny) = sg_int(1,ny)
-    end if
-    if (face_type(1,2) == BC_NEU) then
-       sg_int(nx, 0) = sg_int(nx-1,0)
-       sg_int(nx,ny) = sg_int(nx-1,ny)
-    end if
-    if (face_type(2,1) == BC_NEU) then
-       sg_int( 0,0) = sg_int( 0,1)
-       sg_int(nx,0) = sg_int(nx,1)
-    end if
-    if (face_type(2,2) == BC_NEU) then
-       sg_int( 0,ny) = sg_int( 0,ny-1)
-       sg_int(nx,ny) = sg_int(nx,ny-1)
-    end if
+    call set_faces_edges_corners_2d(nx, ny, sg_int, mm, face_type)
 
     fac = (HALF / (dh(1))**2)
 
@@ -238,8 +187,6 @@ contains
           ss(0,i,j) = -(ss(1,i,j) + ss(2,i,j) + ss(3,i,j) + ss(4,i,j))
       end do
     end do
-
-    deallocate(sg_int)
 
   end subroutine s_simple_2d_one_sided
 
@@ -314,6 +261,47 @@ contains
     end do
 
   end subroutine s_dense_2d_nodal
+
+  subroutine set_faces_edges_corners_2d(nx, ny, sg, mm, face_type)
+    integer           , intent(in   ) :: nx, ny
+    real (kind = dp_t), intent(inout) :: sg(0:,0:)
+    integer           , intent(in   ) :: mm(:,:)
+    integer           , intent(in   ) :: face_type(:,:)
+
+    integer :: i, j
+    !
+    ! Set sg on edges at a Neumann boundary.
+    !
+    do i = 1,nx-1
+       if (bc_neumann(mm(i, 1),2,-1)) sg(i, 0) = sg(i,1)
+       if (bc_neumann(mm(i,ny),2,+1)) sg(i,ny) = sg(i,ny-1)
+    end do
+
+    do j = 1,ny-1
+       if (bc_neumann(mm( 1,j),1,-1)) sg( 0,j) = sg(   1,j)
+       if (bc_neumann(mm(nx,j),1,+1)) sg(nx,j) = sg(nx-1,j)
+    end do
+    !
+    ! Note: we do the corners *after* each of the edges has been done.
+    !
+    if (face_type(1,1) == BC_NEU) then
+       sg(0, 0) = sg(1, 0)
+       sg(0,ny) = sg(1,ny)
+    end if
+    if (face_type(1,2) == BC_NEU) then
+       sg(nx, 0) = sg(nx-1,0)
+       sg(nx,ny) = sg(nx-1,ny)
+    end if
+    if (face_type(2,1) == BC_NEU) then
+       sg( 0,0) = sg( 0,1)
+       sg(nx,0) = sg(nx,1)
+    end if
+    if (face_type(2,2) == BC_NEU) then
+       sg( 0,ny) = sg( 0,ny-1)
+       sg(nx,ny) = sg(nx,ny-1)
+    end if
+
+  end subroutine set_faces_edges_corners_2d
 
   subroutine set_faces_edges_corners_3d(nx, ny, nz, sg, mm)
     integer           , intent(in   ) :: nx, ny, nz
@@ -432,8 +420,6 @@ contains
     integer            :: i, j, k, nx, ny, nz
     real (kind = dp_t) :: fac
 
-
-
     nx = size(ss,dim=2)
     ny = size(ss,dim=3)
     nz = size(ss,dim=4)
@@ -450,12 +436,11 @@ contains
     !
     !   END STENCIL
     !
-    ss = ZERO
-
     call set_faces_edges_corners_3d(nx, ny, nz, sg, mm)
 
     fac = (FOURTH / (dh(1))**2)
 
+    !$OMP PARALLEL DO PRIVATE(i,j,k) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -487,6 +472,7 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine s_cross_3d_nodal
 
@@ -517,8 +503,6 @@ contains
     !
     !   END STENCIL
     !
-    ss = ZERO
-
     allocate(sg_int(0:size(sg,dim=1)-1,0:size(sg,dim=2)-1,0:size(sg,dim=3)-1))
 
     sg_int = ZERO
@@ -535,6 +519,7 @@ contains
 
     fac = (FOURTH / (dh(1))**2)
 
+    !$OMP PARALLEL DO PRIVATE(i,j,k) IF(nz.ge.4)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -566,6 +551,7 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
     deallocate(sg_int)
 
@@ -580,7 +566,7 @@ contains
     integer            :: i, j, k, nx, ny, nz
     real (kind = dp_t) :: fx,fy,fz,f0,fac,fxyz,f2y2zx,f2x2zy,f2x2yz
 
-    real (kind = dp_t), parameter :: thirtysixth = ONE / (36.0_dp_t)
+    real (kind = dp_t), parameter :: ONETHIRTYSIXTH = ONE / (36.0_dp_t)
 
     nx = size(ss,dim=2)
     ny = size(ss,dim=3)
@@ -600,9 +586,9 @@ contains
     !
     call set_faces_edges_corners_3d(nx, ny, nz, sg, mm)
 
-    fx     = thirtysixth
-    fy     = thirtysixth
-    fz     = thirtysixth
+    fx     = ONETHIRTYSIXTH
+    fy     = ONETHIRTYSIXTH
+    fz     = ONETHIRTYSIXTH
     f0     = FOUR * (fx + fy + fz)
     fac    = (ONE / ((dh(1))**2))
     fxyz   = (fx+fy+fz)
@@ -610,6 +596,7 @@ contains
     f2x2zy = (TWO*fx+TWO*fz-fy)
     f2x2yz = (TWO*fx+TWO*fy-fz)
 
+    !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k = 1, nz
        do j = 1, ny
           do i = 1, nx
@@ -678,17 +665,18 @@ contains
           end do
        end do
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine s_dense_3d_nodal
 
-  subroutine stencil_apply_1d_nodal(ss, dd, uu, mm, ng, stencil_type)
+  subroutine stencil_apply_1d_nodal(ss, dd, uu, mm, ng)
     integer, intent(in) :: ng
     real (kind = dp_t), intent(in   ) :: ss(0:,:)
     real (kind = dp_t), intent(inout) :: dd(0:)
     real (kind = dp_t), intent(inout) :: uu(1-ng:)
     integer           , intent(in   ) :: mm(:)
-    integer           , intent(in   ) :: stencil_type
-    integer i,lo(1)
+
+    integer :: i,lo(1)
  
     dd = ZERO
 
@@ -786,18 +774,17 @@ contains
 
   end subroutine stencil_apply_2d_nodal
 
-  subroutine stencil_apply_3d_nodal(ss, dd, uu, mm, ng, stencil_type, uniform_dh)
+  subroutine stencil_apply_3d_nodal(ss, dd, uu, mm, ng, stencil_type, uniform_dh, bottom_solver)
     integer           , intent(in   ) :: ng
     real (kind = dp_t), intent(inout) :: uu(1-ng:,1-ng:,1-ng:)
     real (kind = dp_t), intent(inout) :: dd(0:,0:,0:)
     real (kind = dp_t), intent(in   ) :: ss(0:,:,:,:)
     integer           , intent(in   ) :: mm(:,:,:)
     integer           , intent(in   ) :: stencil_type
-    logical           , intent(in   ) :: uniform_dh
+    logical           , intent(in   ) :: uniform_dh, bottom_solver
 
-    integer i,j,k,lo(3),nx,ny,nz
-
-    logical doit,jface,kface
+    integer :: i,j,k,lo(3),nx,ny,nz
+    logical :: jface,kface
 
     lo = 1
 
@@ -809,6 +796,7 @@ contains
 
     if (stencil_type .eq. ND_CROSS_STENCIL) then
 
+       !$OMP PARALLEL DO PRIVATE(i,j,k,jface,kface) IF(.not.bottom_solver)
        do k = 1,nz
           kface = .false. ; if ( (k.eq.1) .or. (k.eq.nz) ) kface = .true.
 
@@ -817,13 +805,9 @@ contains
 
              do i = 1,nx
 
-                doit = .true.
-
-                if ( jface .or. kface .or. (i.eq.1) .or. (i.eq.nx) ) then
-                   if (bc_dirichlet(mm(i,j,k),1,0)) doit = .false.
-                end if
-
-                if (doit) then
+                if ( (jface .or. kface .or. (i.eq.1) .or. (i.eq.nx)) .and. bc_dirichlet(mm(i,j,k),1,0) ) then
+                   dd(i,j,k) = ZERO
+                else
                    dd(i,j,k) = &
                         ss(0,i,j,k) * uu(i,j,k)       + &
                         ss(1,i,j,k) * uu(i+1,j  ,k  ) + &
@@ -832,16 +816,16 @@ contains
                         ss(4,i,j,k) * uu(i  ,j-1,k  ) + &
                         ss(5,i,j,k) * uu(i  ,j  ,k+1) + &
                         ss(6,i,j,k) * uu(i  ,j  ,k-1)
-                else
-                   dd(i,j,k) = ZERO
                 end if
 
              end do
           end do
        end do
+       !$OMP END PARALLEL DO
 
     else if (stencil_type .eq. ND_DENSE_STENCIL) then
 
+       !$OMP PARALLEL DO PRIVATE(i,j,k,jface,kface) IF(.not.bottom_solver)
        do k = 1,nz
           kface = .false. ; if ( (k.eq.1) .or. (k.eq.nz) ) kface = .true.
 
@@ -850,13 +834,9 @@ contains
 
              do i = 1,nx
 
-                doit = .true.
-
-                if ( jface .or. kface .or. (i.eq.1) .or. (i.eq.nx) ) then
-                   if (bc_dirichlet(mm(i,j,k),1,0)) doit = .false.
-                end if
-
-                if (doit) then
+                if ( (jface .or. kface .or. (i.eq.1) .or. (i.eq.nx)) .and. bc_dirichlet(mm(i,j,k),1,0) ) then
+                   dd(i,j,k) = ZERO
+                else
                    dd(i,j,k) = ss(0,i,j,k)*uu(i,j,k) &
                         + ss( 1,i,j,k) * uu(i-1,j-1,k-1) + ss( 2,i,j,k) * uu(i  ,j-1,k-1) &
                         + ss( 3,i,j,k) * uu(i+1,j-1,k-1) + ss( 4,i,j,k) * uu(i-1,j  ,k-1) &
@@ -878,13 +858,12 @@ contains
                            + ss(23,i,j,k) * uu(i  ,j-1,k  ) + ss(24,i,j,k) * uu(i  ,j+1,k  ) &
                            + ss(25,i,j,k) * uu(i  ,j  ,k-1) + ss(26,i,j,k) * uu(i  ,j  ,k+1)
                    end if
-                else
-                   dd(i,j,k) = ZERO
                 end if
 
              end do
           end do
        end do
+       !$OMP END PARALLEL DO
     else
        call bl_error("stencil_apply_3d_nodal: dont know this stencil_type")
     end if

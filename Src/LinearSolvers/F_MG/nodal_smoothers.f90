@@ -278,6 +278,7 @@ contains
          !
          allocate(wrk(lo(1):hi(1),lo(2):hi(2),lo(3):hi(3)))
 
+         !$OMP PARALLEL DO PRIVATE(i,j,k,dd,jface,kface,doit)
          do k = lo(3),hi(3)
             kface = .false. ; if ( (k.eq.lo(3)) .or. (k.eq.hi(3)) ) kface = .true.
 
@@ -297,6 +298,7 @@ contains
                           + ss(2,i,j,k) * uu(i-1,j  ,k  ) + ss(1,i,j,k) * uu(i+1,j  ,k  ) &
                           + ss(4,i,j,k) * uu(i  ,j-1,k  ) + ss(3,i,j,k) * uu(i  ,j+1,k  ) &
                           + ss(6,i,j,k) * uu(i  ,j  ,k-1) + ss(5,i,j,k) * uu(i  ,j  ,k+1)
+
                      wrk(i,j,k) = uu(i,j,k) + omega/ss(0,i,j,k)*(ff(i,j,k) - dd)
                   else
                      wrk(i,j,k) = uu(i,j,k)
@@ -304,6 +306,7 @@ contains
                end do
             end do
          end do
+         !$OMP END PARALLEL DO
 
          do k = lo(3),hi(3)
             do j = lo(2),hi(2)
@@ -319,6 +322,7 @@ contains
          !
          ! Use this for Gauss-Seidel iteration.
          !
+         !$OMP PARALLEL DO PRIVATE(k,ipar,j,i,dd,jface,kface,doit)
          do k = lo(3),hi(3)
             kface = .false. ; if ( (k.eq.lo(3)) .or. (k.eq.hi(3)) ) kface = .true.
 
@@ -346,12 +350,13 @@ contains
                end do
             end do
          end do
+         !$OMP END PARALLEL DO
 
       end if
 
-    else if ( stencil_type .eq. ND_DENSE_STENCIL ) then
+    else if (stencil_type .eq. ND_DENSE_STENCIL) then
        !
-       ! Do Gauss-Seidel.
+       ! Gauss-Seidel.
        !
        do k = lo(3),hi(3)
           kface = .false. ; if ( (k.eq.lo(3)) .or. (k.eq.hi(3)) ) kface = .true.
@@ -395,6 +400,7 @@ contains
              end do
           end do
        end do
+
     else
       call bl_error('BAD STENCIL_TYPE IN NODAL_SMOOTHER ',stencil_type)
     end if
