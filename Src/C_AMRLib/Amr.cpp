@@ -1043,6 +1043,7 @@ Amr::checkInput ()
        std::cout << "Successfully read inputs file ... " << '\n';
 }
 
+#if 0
 void
 Amr::set_t_nodes(const Array<Real>& tn)
 {
@@ -1094,6 +1095,7 @@ Amr::set_t_nodes(const Array<Real>& tn)
 	}
     }
 }
+#endif
 
 void
 Amr::init (Real strt_time,

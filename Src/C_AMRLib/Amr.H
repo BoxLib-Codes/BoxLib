@@ -46,10 +46,12 @@ public:
     // The destructor.
     //
     virtual ~Amr ();
+#if 0
     //
     // set up t_nodes (for SDC) after construction. Must be called before init if doing SDC.
     //
     void set_t_nodes (const Array<Real>& tnodes);
+#endif
     //
     // Init data after construction. Must be called before timestepping.
     //
@@ -101,11 +103,13 @@ public:
     // Timestep at a specific region.
     //
     Real dtRegion(ID id) const { return dt_region.getData(id); }
+#if 0
     //
     // Array of inner node times on specified level 
     //
     const Array<Real>& tNodes (int level) const {
 	return (multi_level_sdc) ? t_nodes[level] : t_nodes[0]; }
+#endif
     //
     // Multi-level SDC?
     //
@@ -535,7 +539,6 @@ protected:
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Real             start_time;   // Physical time this simulation started.
-<<<<<<< HEAD
 
     Tree<Real>       dt_region;     // Timestep for this region.
     Tree<int>        region_steps;  // Number of time steps taken by this region -- 

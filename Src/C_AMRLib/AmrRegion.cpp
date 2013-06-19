@@ -99,7 +99,7 @@ AmrRegion::AmrRegion (Amr&            papa,
 
     state.resize(desc_lst.size());
 
-    const Array<Real>& t_nodes = parent->tNodes(level);
+    // const Array<Real>& t_nodes = parent->tNodes(level);
 
     for (int i = 0; i < state.size(); i++)
     {
@@ -318,29 +318,8 @@ AmrRegion::removeOldData ()
 }
 
 void
-<<<<<<< HEAD
+
 AmrRegion::reset ()
-=======
-AmrLevel::allocMidData ()
-{
-    for (int i = 0; i < desc_lst.size(); i++)
-    {
-        state[i].allocMidData();
-    }
-}
-
-void
-AmrLevel::removeMidData ()
-{
-    for (int i = 0; i < desc_lst.size(); i++)
-    {
-        state[i].removeMidData();
-    }
-}
-
-void
-AmrLevel::reset ()
->>>>>>> master
 {
     for (int i = 0; i < desc_lst.size(); i++)
     {
@@ -524,21 +503,12 @@ FillPatchIteratorHelper::Initialize (int           boxGrow,
         //
         IntAAAFBIDMapValType v1(i,Array<Array<Array<FillBoxId> > >());
 
-<<<<<<< HEAD
-            m_fbid.insert(m_fbid.end(),v1)->second.resize(m_amrregion.level+1);
-=======
-        m_fbid.insert(m_fbid.end(),v1)->second.resize(m_amrlevel.level+1);
->>>>>>> master
+        m_fbid.insert(m_fbid.end(),v1)->second.resize(m_amrregion.level+1);
 
         IntAABoxMapValType v2(i,Array<Array<Box> >());
 
-<<<<<<< HEAD
-            m_fbox.insert(m_fbox.end(),v2)->second.resize(m_amrregion.level+1);
-            m_cbox.insert(m_cbox.end(),v2)->second.resize(m_amrregion.level+1);
-=======
-        m_fbox.insert(m_fbox.end(),v2)->second.resize(m_amrlevel.level+1);
-        m_cbox.insert(m_cbox.end(),v2)->second.resize(m_amrlevel.level+1);
->>>>>>> master
+        m_fbox.insert(m_fbox.end(),v2)->second.resize(m_amrregion.level+1);
+        m_cbox.insert(m_cbox.end(),v2)->second.resize(m_amrregion.level+1);
 
         m_ba.insert(m_ba.end(),std::map<int,Box>::value_type(i,BoxLib::grow(m_leveldata.boxArray()[i],m_growsize)));
     }
@@ -923,13 +893,7 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     BL_ASSERT(fab.box() == m_ba[idx]);
     BL_ASSERT(fab.nComp() >= dcomp + m_ncomp);
 
-<<<<<<< HEAD
-    Array<IntVect>             pshifts(27);
-    Array<BCRec>               bcr(m_ncomp);
     Array< PArray<FArrayBox> > cfab(m_amrregion.level+1);
-=======
-    Array< PArray<FArrayBox> >          cfab(m_amrlevel.level+1);
->>>>>>> master
     Array< Array<Box> >&                TheCrseBoxes = m_cbox[idx];
     Array< Array<Box> >&                TheFineBoxes = m_fbox[idx];
     Array< Array< Array<FillBoxId> > >& TheFBIDs     = m_fbid[idx];
@@ -978,13 +942,8 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
     //
     // Now work from the bottom up interpolating to next higher level.
     //
-<<<<<<< HEAD
-    FArrayBox finefab, crsefab;
 
     for (int l = 0; l < m_amrregion.level; l++)
-=======
-    for (int l = 0; l < m_amrlevel.level; l++)
->>>>>>> master
     {
         AmrRegion&          TheLevel   = amrRegions[l];
         PArray<FArrayBox>& CrseFabs   = cfab[l];
@@ -1079,12 +1038,8 @@ FillPatchIteratorHelper::fill (FArrayBox& fab,
         StateData&          fState        = fineAmrRegion.state[m_index];
         const Box&          fDomain       = fState.getDomain();
         PArray<FArrayBox>&  FinerCrseFabs = cfab[l+1];
-<<<<<<< HEAD
         const Array<BCRec>& theBCs        = AmrRegion::desc_lst[m_index].getBCs();
-=======
-        const Array<BCRec>& theBCs        = AmrLevel::desc_lst[m_index].getBCs();
         const int           NF            = FineBoxes.size();
->>>>>>> master
 
 #ifdef _OPENMP
 #pragma omp parallel for
