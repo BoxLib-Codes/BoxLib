@@ -193,7 +193,6 @@ ADR::variable_setup ()
         sprintf(buf, "adv_%d", i);
         cnt++; set_scalar_bc(bc,phys_bc); bcs[cnt] = bc; name[cnt] = string(buf);
     }
-    std::cout << "NAME " << name[cnt] << std::endl;
 
     // Get the species names from the network model.
     char* spec_names[NumSpec];

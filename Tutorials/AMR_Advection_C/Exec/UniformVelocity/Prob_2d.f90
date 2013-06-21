@@ -77,6 +77,7 @@
       integer          :: i,j
       double precision :: x,y,r1,r2
 
+      state(:,:,UFA  ) = 0.d0
       state(:,:,UFS  ) = 0.d0
       state(:,:,UFS+1) = 1.d0
       state(:,:,UFS+2:UFS+nspec-1) = 0.d0

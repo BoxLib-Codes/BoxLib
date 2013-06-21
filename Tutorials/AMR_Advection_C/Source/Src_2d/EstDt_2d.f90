@@ -35,12 +35,6 @@
          enddo
       enddo
 
-      ! Only modify fine grid dt
-      if (lo(2).ne.0 .and. s_max .gt. 1.5) then
-!         print *,'Multiplying dt_loc ',dt_loc,' by half to get ', dt_loc * 0.5d0
-          dt_loc = dt_loc * 0.5d0
-      end if
-
       dt = min(dt,dt_loc)
 
       end subroutine estdt

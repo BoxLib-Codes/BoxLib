@@ -11,13 +11,13 @@ amr.multi_region    = true
 
 #  ***********************************
 # Use this for strict subcycling 
-#act.strict_subcycling = 1
+amr.strict_subcycling = 1
 
 #  or this for no subcycling
 #amr.subcycling_mode = None
 
 #  or this for optimal subcycling
-amr.subcycling_mode = Optimal
+#amr.subcycling_mode = Optimal
 #  ***********************************
 
 # PROBLEM SIZE & GEOMETRY
@@ -36,6 +36,7 @@ act.lo_bc       =  0   0
 act.hi_bc       =  0   0
 
 # WHICH PHYSICS 
+act.do_hydro = 1
 act.do_react = 0
 
 # TIME STEP CONTROL
