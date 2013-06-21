@@ -41,18 +41,17 @@ public:
                const StateDescriptor* d,
                Real                   cur_time,
                Real                   dt);
-
+    //
     // Constructor that properly initializes data members including node data.
     //
-    // StateData (const Box&             p_domain,
-    //            const BoxArray&        grds,
-    //            const StateDescriptor* d,
-    //            Real                   cur_time,
-    //            Real                   dt,
-    // 	          const Array<Real>&     t_nodes);
-
+    StateData (const Box&             p_domain,
+               const BoxArray&        grds,
+               const StateDescriptor* d,
+               Real                   cur_time,
+               Real                   dt,
+	       const Array<Real>&     t_nodes);
     //
-    // Constructs a merged statedata out a list of state datas.
+    // Constructs a merged statedata out a list of StateDatas.
     //
     StateData (PArray<StateData>& sds);
 

@@ -143,6 +143,7 @@ StateData::define (const Box&             p_domain,
     old_data = 0;
 
     n_mid_nodes = t_nodes.size();
+    std::cout << "SIZE OF NODES " << n_mid_nodes << std::endl;
     if (n_mid_nodes > 0)
     {
 	if (t_typ == StateDescriptor::Point)
@@ -468,6 +469,7 @@ StateData::RegisterData (MultiFabCopyDescriptor& multiFabCopyDesc,
     mfid.resize(2+n_mid_nodes);
     mfid[MFNEWDATA] = multiFabCopyDesc.RegisterFabArray(new_data);
     mfid[MFOLDDATA] = multiFabCopyDesc.RegisterFabArray(old_data);
+    std::cout << "SIZE OF NODES NOW " << n_mid_nodes << std::endl;
     for (int i=0; i<n_mid_nodes; i++)
     {
 	mfid[MFMIDDATA+i] = multiFabCopyDesc.RegisterFabArray(&mid_data[i]);
