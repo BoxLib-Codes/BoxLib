@@ -200,16 +200,14 @@ public:
     //
     virtual void removeOldData ();
     //
-
     // Alloc space for mid time data.
     //
-    // virtual void allocMidData ();
+    virtual void allocMidData ();
     //
     // Delete mid-time data.
     //
-    // virtual void removeMidData ();
+    virtual void removeMidData ();
     //
-
     // Init data on this level from another AmrRegion (during regrid).
     // This is a pure virtual function and hence MUST be
     // implemented by derived classes.
@@ -471,6 +469,7 @@ class FillPatchIterator
   public:
 
     friend class AmrRegion;
+
     FillPatchIterator (AmrRegion& amrlevel,
                        MultiFab& leveldata);
 

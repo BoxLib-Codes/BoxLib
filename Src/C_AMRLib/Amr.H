@@ -535,19 +535,17 @@ protected:
     Array<Geometry>  geom;         // Index extent of domain at all levels.
     Real             cumtime;      // Physical time variable.
     Real             start_time;   // Physical time this simulation started.
-<<<<<<< HEAD
 
     Tree<Real>       dt_region;     // Timestep for this region.
-    Tree<int>        region_steps;  // Number of time steps taken by this region -- 
-                                    // unreliable right now--I'm not sure what use it is
+    Tree<int>        region_steps;  // This is unreliable right now--I'm not sure what use it is
     Tree<int>        region_count;
     Tree<int>        n_cycle;
     Array<int>       manual_n_cycle;
 
+    Array<Array<Real> > t_nodes;   // Time of (SDC) inner nodes in the range of (0,1)
+
     std::string      subcycling_mode; //Type of subcycling to use.
     Tree<Real>       dt_reg_min; 
-
-//  Array<Array<Real> > t_nodes;   // Time of (SDC) inner nodes in the range of (0,1)
 
     bool             isPeriodic[BL_SPACEDIM];  // Domain periodic?
     Array<int>       regrid_int;      // Interval between regridding.

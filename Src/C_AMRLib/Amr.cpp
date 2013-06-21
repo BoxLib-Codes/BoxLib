@@ -396,15 +396,18 @@ Amr::Amr ()
     
     initRegions();
 
-//  if (multi_level_sdc)
-//  {
-//     t_nodes.resize(nlev);
-//  }
-//  else
-//  {
-//	t_nodes.resize(1);
-//  }
-
+#if 0
+    // Don't know how to correctly do this with regions
+    amr_level.resize(nlev);
+    if (multi_level_sdc)
+    {
+	t_nodes.resize(nlev);
+    }
+    else
+#endif
+    {
+	t_nodes.resize(1);
+    }
     //
     // Set bogus values.
     //
@@ -2325,7 +2328,6 @@ Amr::regrid (ID base_id,
     // Note that evictees is doubly managed so that it will delete
     // all the necessary Regions.
     //
-
     RegionList evictees(PListManage);
     amr_regions.extractChildrenOfNode(base_region.getID(), evictees);
     if (regrid_level_zero)
@@ -2333,17 +2335,14 @@ Amr::regrid (ID base_id,
         evictees.push_back(amr_regions.removeData(ROOT_ID));
     }
 
-//  for (int lev = start; lev <= finest_level; lev++)
-//  {
-//      amr_level[lev].removeOldData();
-//      amr_level[lev].removeMidData();
-//  }
-
     //
     // Reclaim old-time grid space for all remain levels > lbase.
     //
     for (RegionList::iterator it = evictees.begin(); it != evictees.end(); it++)
+    {
             (*it)->removeOldData();
+            (*it)->removeMidData();
+    }
 
     finest_level = new_finest;
 
