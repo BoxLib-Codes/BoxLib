@@ -488,11 +488,11 @@ protected:
     //
     // Do a single timestep on the base region.
     //
-    void timeStep (AmrRegion& base_region,
-                   Real dt,
-                   int  iter,
-                   int  ncycle,
-                   Real stop_time);
+    virtual void timeStep (AmrRegion& base_region,
+			   Real dt,
+			   int  iter,
+			   int  ncycle,
+			   Real stop_time);
 
     //
     // Whether to write a plotfile now
