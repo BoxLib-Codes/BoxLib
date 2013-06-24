@@ -3594,9 +3594,10 @@ Amr::FOFCluster (int d, int level, BoxArray boxes, std::list<BoxArray>& cluster_
             // We didn't find a cluster. Make a new one.
             BoxList* new_cluster = new BoxList(box);
             clusters.push_back(*new_cluster);
+	    delete new_cluster;
         }
     }
-;
+
     for (std::list<BoxList>::iterator it = clusters.begin(); it != clusters.end(); ++it)
     {
         BoxArray ba(*it);
