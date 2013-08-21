@@ -49,7 +49,7 @@ void mf_encap_saxpy(void *yp, sdc_dtype_t a, void *xp)
 END_EXTERN_C
 
 
-void MLSDCAmr::build_encap()
+void SDCAmr::build_encap()
 {
   encap.create  = mf_encap_create;
   encap.destroy = mf_encap_destroy;

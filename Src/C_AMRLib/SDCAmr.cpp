@@ -1,6 +1,5 @@
 
 #include <SDCAmr.H>
-#include <SDCLevelBld.H>
 #include <MultiFab.H>
 #include <ParmParse.H>
 
@@ -44,15 +43,15 @@ void SDCAmr::timeStep (int  level,
 }
 
 
-SDCAmr::SDCAmr ()
+SDCAmr::SDCAmr (sdc_level_bld_f bld)
 {
     Initialize();
     InitAmr();
-    InitSDCAmr();
+    InitSDCAmr(bld);
 }
 
 void
-SDCAmr::InitSDCAmr()
+SDCAmr::InitSDCAmr(sdc_level_bld_f bld)
 {
   // get parameters
   //
@@ -60,7 +59,7 @@ SDCAmr::InitSDCAmr()
   if (!ppsdc.query("max_iters", max_iters)) max_iters = 22;
   if (!ppsdc.query("max_trefs", max_trefs)) max_trefs = 3;
 
-  sdc_level_bld = getSDCLevelBld();
+  sdc_level_bld = bld;
   
   //
   // build MultiFab encapsulation for SDCLib
@@ -72,7 +71,7 @@ SDCAmr::InitSDCAmr()
   //
   // build multigrid sdc sweeper, add coarsest level
   //
-  sweepers.push_back(sdc_level_bld->build(*this, 0, 0));
+  sweepers.push_back(sdc_level_bld(0));
 
   sdc_mg_build(&mg, max_level);
   sdc_mg_add_level(&mg, sweepers[0], mlsdc_amr_interpolate, mlsdc_amr_restrict);

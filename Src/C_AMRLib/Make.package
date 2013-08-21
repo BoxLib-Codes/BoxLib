@@ -55,6 +55,6 @@ endif
 ifeq ($(USE_SDCLIB), TRUE)
   DEFINES += -DUSE_SDCLIB
   CEXE_sources += SDCAmr.cpp SDCAmrEncap.cpp
-  CEXE_headers += SDCLevelBld.H SDCAmr.H
+  CEXE_headers += SDCAmr.H
 endif
 

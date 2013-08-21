@@ -9,13 +9,14 @@
 #include <Amr.H>
 #include <sdc.h>
 
+using namespace std;
 
 /*
  * MultiFab encapsulation context for SDCLib.
  */
 
 typedef struct {
-  BoxArray& ba;
+  BoxArray* ba;
   int       ncomp;
   int       ngrow;
 } mf_encap_t;
@@ -24,9 +25,7 @@ typedef struct {
  * Multigrid SDC+AMR class.
  */
 
-using namespace std;
-
-class SDCLevelBld;
+typedef sdc_sweeper_t* (*sdc_level_bld_f)(int level);
 
 class SDCAmr : public Amr
 {
@@ -39,11 +38,11 @@ public:
   sdc_encap_t encap;
   mf_encap_t  encap_ctx;
 
-  SDCAmr();
+  SDCAmr(sdc_level_bld_f);
   ~SDCAmr();
-  void InitSDCAmr();
+  void InitSDCAmr(sdc_level_bld_f);
 
-  SDCLevelBld* sdc_level_bld;
+  sdc_level_bld_f sdc_level_bld;
   vector<sdc_sweeper_t*> sweepers;
 
   void build_encap();
