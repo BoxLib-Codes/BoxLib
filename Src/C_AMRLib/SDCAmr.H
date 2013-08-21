@@ -25,7 +25,9 @@ typedef struct {
  * Multigrid SDC+AMR class.
  */
 
-typedef sdc_sweeper_t* (*sdc_level_bld_f)(int level);
+class SDCAmr;
+
+typedef sdc_sweeper_t* (*sdc_level_bld_f)(SDCAmr& amr, int level);
 
 class SDCAmr : public Amr
 {
@@ -38,22 +40,17 @@ public:
   sdc_encap_t encap;
   mf_encap_t  encap_ctx;
 
-  SDCAmr(sdc_level_bld_f);
-  ~SDCAmr();
-  void InitSDCAmr(sdc_level_bld_f);
-
   sdc_level_bld_f sdc_level_bld;
   vector<sdc_sweeper_t*> sweepers;
 
+  SDCAmr(sdc_level_bld_f);
+  ~SDCAmr();
   void build_encap();
-
   virtual void timeStep(int  level,
                         Real time,
                         int  iteration,
                         int  niter,
                         Real stop_time);
-
-
 };
 
 #endif

@@ -39,22 +39,19 @@ void SDCAmr::timeStep (int  level,
 
   cout << "!!! USING SDC TIME STEP !!!" << endl;
 
+  if (sweepers.size() == 0) {
+    sweepers.push_back(sdc_level_bld(*this, 0));
+    sdc_mg_add_level(&mg, sweepers[0], mlsdc_amr_interpolate, mlsdc_amr_restrict);
+    sdc_mg_setup(&mg);
+    sdc_mg_allocate(&mg);
+  }
+
   Amr::timeStep(level, time, iteration, niter, stop_time);
 }
 
 
 SDCAmr::SDCAmr (sdc_level_bld_f bld)
 {
-    Initialize();
-    InitAmr();
-    InitSDCAmr(bld);
-}
-
-void
-SDCAmr::InitSDCAmr(sdc_level_bld_f bld)
-{
-  // get parameters
-  //
   ParmParse ppsdc("mlsdc");
   if (!ppsdc.query("max_iters", max_iters)) max_iters = 22;
   if (!ppsdc.query("max_trefs", max_trefs)) max_trefs = 3;
@@ -66,18 +63,12 @@ SDCAmr::InitSDCAmr(sdc_level_bld_f bld)
   //
   encap_ctx.ncomp = 1;
   encap_ctx.ngrow = 1;
-  // build_encap();
+  build_encap();
 
   //
   // build multigrid sdc sweeper, add coarsest level
   //
-  sweepers.push_back(sdc_level_bld(0));
-
   sdc_mg_build(&mg, max_level);
-  sdc_mg_add_level(&mg, sweepers[0], mlsdc_amr_interpolate, mlsdc_amr_restrict);
-  
-  sdc_mg_setup(&mg);
-  sdc_mg_allocate(&mg);
 }
 
 

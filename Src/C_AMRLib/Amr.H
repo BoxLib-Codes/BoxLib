@@ -34,7 +34,6 @@ public:
     // The constructor.
     //
     Amr ();
-    void InitAmr();
     //
     // The destructor.
     //
