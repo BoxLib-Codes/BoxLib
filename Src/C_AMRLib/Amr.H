@@ -348,7 +348,7 @@ protected:
     //
     // Initialize grid hierarchy.
     //
-    void initialInit (Real strt_time, Real stop_time);
+    virtual void initialInit (Real strt_time, Real stop_time);
     //
     // Read the probin file.
     //

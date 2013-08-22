@@ -45,14 +45,26 @@ public:
   ~SDCAmr();
 
   sdc_encap_t* build_encap(int lev);
+  void rebuild_mlsdc();
+
   virtual void timeStep(int  level,
                         Real time,
                         int  iteration,
                         int  niter,
                         Real stop_time);
+
   virtual void regrid (int  lbase,
 		       Real time,
-		       bool initial = false);
+		       bool initial = false) {
+    Amr::regrid(lbase, time, initial);
+    rebuild_mlsdc();
+  }
+
+  virtual void initialInit (Real strt_time, Real stop_time) {
+    Amr::initialInit(strt_time, stop_time);
+    //    rebuild_mlsdc();
+  }
+
 
 };
 

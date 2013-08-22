@@ -10,15 +10,12 @@ BEGIN_EXTERN_C
 
 void *mf_encap_create(int type, void *encap_ctx)
 {
-  // throw "SDCLib should not call mf_encap_create.";
   mf_encap_t* ctx = (mf_encap_t*) encap_ctx;
-  cout << ctx->ba->numPts() << endl;
   return new MultiFab(*ctx->ba, ctx->ncomp, ctx->ngrow);
 }
 
 void mf_encap_destroy(void *sol)
 {
-  // throw "SDCLib should not call mf_encap_destroy.";
   MultiFab* mf = (MultiFab*) sol;
   delete mf;
 }
