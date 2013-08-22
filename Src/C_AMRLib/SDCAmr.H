@@ -16,7 +16,7 @@ using namespace std;
  */
 
 typedef struct {
-  BoxArray* ba;
+  const BoxArray* ba;
   int       ncomp;
   int       ngrow;
 } mf_encap_t;
@@ -36,21 +36,24 @@ public:
   int max_iters;                // maximum number of sdc iterations
   int max_trefs;                // maximum number of time refinements
 
-  sdc_mg_t    mg;
-  sdc_encap_t encap;
-  mf_encap_t  encap_ctx;
-
+  sdc_mg_t mg;
   sdc_level_bld_f sdc_level_bld;
   vector<sdc_sweeper_t*> sweepers;
+  vector<sdc_encap_t*>   encaps;
 
   SDCAmr(sdc_level_bld_f);
   ~SDCAmr();
-  void build_encap();
+
+  sdc_encap_t* build_encap(int lev);
   virtual void timeStep(int  level,
                         Real time,
                         int  iteration,
                         int  niter,
                         Real stop_time);
+  virtual void regrid (int  lbase,
+		       Real time,
+		       bool initial = false);
+
 };
 
 #endif
