@@ -19,7 +19,12 @@ typedef struct {
   const BoxArray* ba;
   int       ncomp;
   int       ngrow;
-} mf_encap_t;
+} mf_encap;
+
+typedef struct {
+  Amr *amr;
+  int level;
+} sdc_level_ctx;
 
 /*
  * Multigrid SDC+AMR class.
@@ -27,7 +32,7 @@ typedef struct {
 
 class SDCAmr;
 
-typedef sdc_sweeper_t* (*sdc_level_bld_f)(SDCAmr& amr, int level);
+typedef sdc_sweeper* (*sdc_sweeper_bld_f)(int level);
 
 class SDCAmr : public Amr
 {
@@ -36,15 +41,15 @@ public:
   int max_iters;                // maximum number of sdc iterations
   int max_trefs;                // maximum number of time refinements
 
-  sdc_mg_t mg;
-  sdc_level_bld_f sdc_level_bld;
-  vector<sdc_sweeper_t*> sweepers;
-  vector<sdc_encap_t*>   encaps;
+  sdc_mg mg;
+  sdc_sweeper_bld_f sdc_sweeper_bld;
+  vector<sdc_sweeper*> sweepers;
+  vector<sdc_encap*>   encaps;
 
-  SDCAmr(sdc_level_bld_f);
+  SDCAmr(sdc_sweeper_bld_f);
   ~SDCAmr();
 
-  sdc_encap_t* build_encap(int lev);
+  sdc_encap* build_encap(int lev);
   void rebuild_mlsdc();
 
   virtual void timeStep(int  level,
