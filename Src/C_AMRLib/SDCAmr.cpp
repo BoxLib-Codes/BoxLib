@@ -26,44 +26,31 @@ void mlsdc_amr_interpolate(void *F, void *G, void *vctxF, void *vctxG)
   AmrLevel& levelG    = amr.getLevel(ctxG->level);
 
   const DescriptorList& dl = levelF.get_desc_lst();
-  for (int st=0; st<dl.size(); st++) {
-    int ncomp = dl[st].nComp();
+  BL_ASSERT(dl.size() == 1);
 
-    const Array<BCRec>& bcs = dl[st].getBCs();
+  StateData& stateF = levelF.get_state_data(0);
+  BL_ASSERT(stateF.descriptor()->timeType() == StateDescriptor::Point);
+  BL_ASSERT(stateF.hasOldData() == false);
+  BL_ASSERT(stateF.hasNewData() == true);
 
-    Array<BCRec> bcr(ncomp);
+  StateData& stateG = levelG.get_state_data(0);
+  BL_ASSERT(stateG.descriptor()->timeType() == StateDescriptor::Point);
+  BL_ASSERT(stateG.hasOldData() == false);
+  BL_ASSERT(stateG.hasNewData() == true);
 
-    const IntVect& fine_ratio = amr.refRatio(ctxG->level);
-    Interpolater& mapper      = *dl[st].interp();
-
-    const Box& fine_domain = levelF.get_state_data(st).getDomain();
-
-    for (MFIter mfi(UF); mfi.isValid(); ++mfi) { 
-
-      const Box& fine_box = mfi.validbox();
-
-      FArrayBox fine(fine_box);
-      FArrayBox crse(mapper.CoarseBox(fine_box, fine_ratio));
-      for (int j=0; j<UG.size(); j++) crse.copy(UG[j]);
-
-      cout << crse.box() << endl;
-      cout << fine.box() << endl;
-      cout << fine_box << endl;
-      cout << ncomp << endl;
-      // cout << levelG.Geom() << endl;
-      // cout << levelF.Geom() << endl;
-
-      BoxLib::setBC(fine_box, fine_domain, st, 0, ncomp, bcs, bcr);
-
-      const Geometry& crse_geom = levelG.Geom();
-      const Geometry& fine_geom = levelF.Geom();
+  // copy into coarse state data
+  MultiFab& sdG = stateG.newData();
+  sdG.copy(UG);
 
 
-      cout << "interpolating..." << endl;
-      mapper.interp(crse, 0, fine, 0, ncomp,
-                    fine_box, fine_ratio, crse_geom, fine_geom, bcr, st, st);
-      cout << "interpolating... done." << endl;
-    }
+  // now use fill patch iterator to interpolate
+  int ncomp = dl[0].nComp();
+  int ngrow = dl[0].nExtra();
+  Real time = 0.0;
+
+  FillPatchIterator fpi(levelF, UF, ngrow, time, 0, 0, ncomp);
+  for (; fpi.isValid(); ++fpi) {
+    UF[fpi].copy(fpi());
   }
 
 }
