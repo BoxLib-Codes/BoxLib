@@ -29,27 +29,18 @@ void mlsdc_amr_interpolate(void *F, void *G, void *vctxF, void *vctxG)
   BL_ASSERT(dl.size() == 1);
 
   StateData& stateF = levelF.get_state_data(0);
-  BL_ASSERT(stateF.descriptor()->timeType() == StateDescriptor::Point);
-  BL_ASSERT(stateF.hasOldData() == false);
-  BL_ASSERT(stateF.hasNewData() == true);
-
   StateData& stateG = levelG.get_state_data(0);
-  BL_ASSERT(stateG.descriptor()->timeType() == StateDescriptor::Point);
-  BL_ASSERT(stateG.hasOldData() == false);
-  BL_ASSERT(stateG.hasNewData() == true);
 
-  // copy into coarse state data
-  MultiFab& sdG = stateG.newData();
-  sdG.copy(UG);
+  Real time = 0.5 * (stateF.curTime() + stateF.curTime());
+  stateG.setMidData(&UG, time);
+  stateF.setMidData(&UF, time);
 
-
-  // now use fill patch iterator to interpolate
   int ncomp = dl[0].nComp();
   int ngrow = dl[0].nExtra();
-  Real time = 0.0;
 
   FillPatchIterator fpi(levelF, UF, ngrow, time, 0, 0, ncomp);
   for (; fpi.isValid(); ++fpi) {
+    // cout << fpi.UngrownBox() << endl;
     UF[fpi].copy(fpi());
   }
 
@@ -62,6 +53,29 @@ void mlsdc_amr_restrict(void *F, void *G, void *ctxF, void *ctxG)
   AmrLevel& levelF = *((AmrLevel*) ctxF);
   AmrLevel& levelG = *((AmrLevel*) ctxG);
 
+    // crse_fvolume.copy(volume);
+
+  const DescriptorList& dl = levelF.get_desc_lst();
+  BL_ASSERT(dl.size() == 1);
+  int ncomp = dl[0].nComp();
+
+  for (MFIter mfi(UF); mfi.isValid(); ++mfi) {
+    const int        i        = mfi.index();
+    // const Box&       ovlp     = crse_S_fine_BA[i];
+    FArrayBox&       fine_fab = UF[i];
+    FArrayBox&       crse_fab = UG[i];
+    const FArrayBox& fine_vol = levelF.volume[i];
+    const FArrayBox& crse_vol = levelG.volume[i];
+    // const FArrayBox& fine_fab = S_fine[i];
+    // const FArrayBox& fine_vol = fvolume[i];
+
+    BL_FORT_PROC_CALL(AVGDOWN,avgdown)
+      (BL_TO_FORTRAN(crse_fab), ncomp,
+       BL_TO_FORTRAN(crse_vol),
+       BL_TO_FORTRAN(fine_fab),
+       BL_TO_FORTRAN(fine_vol),
+       ovlp.loVect(),ovlp.hiVect(),fine_ratio.getVect());
+  }
 }
 
 END_EXTERN_C
