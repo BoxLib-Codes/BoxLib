@@ -322,7 +322,7 @@ contains
           do j = lo(2), hi(2)
              if ( bc_skewed(mm(lo(1),j,k),1,+1) .or. bc_skewed(mm(hi(1),j,k),1,-1) ) then
                 lskwd = .true.
-                goto 1234
+                exit
              end if
           end do
        end do
@@ -330,7 +330,7 @@ contains
           do i = lo(1), hi(1)
              if ( bc_skewed(mm(i,lo(2),k),2,+1) .or. bc_skewed(mm(i,hi(2),k),2,-1) ) then
                 lskwd = .true.
-                goto 1234
+                exit
              end if
           end do
        end do
@@ -338,13 +338,13 @@ contains
           do i = lo(1), hi(1)
              if ( bc_skewed(mm(i,j,lo(3)),3,+1) .or. bc_skewed(mm(i,j,hi(3)),3,-1) ) then
                 lskwd = .true.
-                goto 1234
+                exit
              end if
           end do
        end do
     end if
 
-1234 if ( lskwd ) then
+    if ( lskwd ) then
 
        do k = lo(3), hi(3)
           do i = lo(1), hi(1)
