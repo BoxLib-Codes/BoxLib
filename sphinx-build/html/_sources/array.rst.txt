@@ -3,7 +3,7 @@
 Array
 =====
 
-.. cpp:class:: template<class T> class Array : public std::vector<T>
+.. cpp:class:: template<class T> Array : public std::vector<T>
 
   Located in :boxlib:`Src/C_BaseLib/Array.H`.
 

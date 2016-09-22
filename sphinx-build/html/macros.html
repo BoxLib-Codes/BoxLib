@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Macros &mdash; BoxLib Reference</title>
+    <title>Macros &#8212; BoxLib Reference</title>
     
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -17,18 +17,22 @@
         VERSION:     '16.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
     <link rel="top" title="BoxLib Reference" href="index.html" />
     <link rel="next" title="Namespaces" href="namespaces.html" />
     <link rel="prev" title="PArray" href="parray.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,14 +44,14 @@
         <li class="right" >
           <a href="parray.html" title="PArray"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="id1">
 <h1>Macros<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
@@ -55,39 +59,39 @@
 <blockquote>
 <div><dl class="macro">
 <dt id="c.BL_ASSERT">
-<tt class="descname">BL_ASSERT</tt><a class="headerlink" href="#c.BL_ASSERT" title="Permalink to this definition">¶</a></dt>
+<code class="descname">BL_ASSERT</code><a class="headerlink" href="#c.BL_ASSERT" title="Permalink to this definition">¶</a></dt>
 <dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/BLassert.H">Src/C_BaseLib/BLassert.H</a>.</p>
-<p>The macro <tt class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></tt> is a debugging macro.  The argument
-<tt class="docutils literal"><span class="pre">EX</span></tt> is a C++ expression that you expect to always evaluate to
+<p>The macro <code class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></code> is a debugging macro.  The argument
+<code class="docutils literal"><span class="pre">EX</span></code> is a C++ expression that you expect to always evaluate to
 true.</p>
-<p>If the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><tt class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></tt></a> macro is defined and the
-<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><tt class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></tt></a> is not defined, the <tt class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></tt>
+<p>If the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><code class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></code></a> macro is defined and the
+<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><code class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></code></a> is not defined, the <code class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></code>
 call becomes a null statement in the code, which will be
 eliminated by the compiler.</p>
-<p>if the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><tt class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></tt></a> macro is not defined or the
-<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><tt class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></tt></a> macro is defined, the
-<tt class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></tt> macro expands to a boolean test of the
-expression <tt class="docutils literal"><span class="pre">EX</span></tt>.  If that expression evaluates to true, nothing
+<p>if the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><code class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></code></a> macro is not defined or the
+<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><code class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></code></a> macro is defined, the
+<code class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></code> macro expands to a boolean test of the
+expression <code class="docutils literal"><span class="pre">EX</span></code>.  If that expression evaluates to true, nothing
 happens.  But, if the expression evaluates to false, a message is
-output detailing the file and line number of the <tt class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></tt>
-statement, as well as the literal expression <tt class="docutils literal"><span class="pre">EX</span></tt> itself, a
-<a class="reference internal" href="backtrace.html#backtrace"><em>backtrace</em></a> will be generated, and then the run
+output detailing the file and line number of the <code class="docutils literal"><span class="pre">BL_ASSERT(EX)</span></code>
+statement, as well as the literal expression <code class="docutils literal"><span class="pre">EX</span></code> itself, a
+<a class="reference internal" href="backtrace.html#backtrace"><span class="std std-ref">backtrace</span></a> will be generated, and then the run
 aborts.</p>
 </dd></dl>
 
 <dl class="macro">
 <dt id="c.BL_SPACEDIM">
-<tt class="descname">BL_SPACEDIM</tt><a class="headerlink" href="#c.BL_SPACEDIM" title="Permalink to this definition">¶</a></dt>
+<code class="descname">BL_SPACEDIM</code><a class="headerlink" href="#c.BL_SPACEDIM" title="Permalink to this definition">¶</a></dt>
 <dt id="c.SPACEDIM">
-<tt class="descname">SPACEDIM</tt><a class="headerlink" href="#c.SPACEDIM" title="Permalink to this definition">¶</a></dt>
-<dd><p><tt class="docutils literal"><span class="pre">BL_SPACEDIM</span></tt> is defined by make to the <tt class="docutils literal"><span class="pre">DIM</span></tt> variable, and
-<tt class="docutils literal"><span class="pre">SPACEDIM</span></tt> is set to the value of <tt class="docutils literal"><span class="pre">BL_SPACEDIM</span></tt> in
+<code class="descname">SPACEDIM</code><a class="headerlink" href="#c.SPACEDIM" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> is defined by make to the <code class="docutils literal"><span class="pre">DIM</span></code> variable, and
+<code class="docutils literal"><span class="pre">SPACEDIM</span></code> is set to the value of <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> in
 <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">Src/C_BaseLib/SPACE.H</a>.</p>
 <p>BoxLib is built with an explicit space dimension.  The
-<tt class="docutils literal"><span class="pre">BL_SPACEDIM</span></tt> and <tt class="docutils literal"><span class="pre">BL_SPACEDIM</span></tt> macros specify the dimension,
+<code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> and <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> macros specify the dimension,
 which is either 1, 2, or 3.</p>
 <p><em>Example</em>:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="n">BL_SPACEDIM</span><span class="p">];</span>  <span class="c1">// define an array with size of 1, 2, or 3</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="n">BL_SPACEDIM</span><span class="p">];</span>  <span class="c1">// define an array with size of 1, 2, or 3</span>
 
 <span class="cp">#if (BL_SPACEDIM == 1)</span>
   <span class="n">function_1d</span><span class="p">();</span>
@@ -102,7 +106,7 @@ which is either 1, 2, or 3.</p>
 
 <dl class="macro">
 <dt id="c.BL_USE_ASSERTION">
-<tt class="descname">BL_USE_ASSERTION</tt><a class="headerlink" href="#c.BL_USE_ASSERTION" title="Permalink to this definition">¶</a></dt>
+<code class="descname">BL_USE_ASSERTION</code><a class="headerlink" href="#c.BL_USE_ASSERTION" title="Permalink to this definition">¶</a></dt>
 <dd><p>Defined by the make system.</p>
 <p>The BL_USE_ASSERTION macro is defined when the make system
 variable USE_ASSERTION is set to TRUE or the make system variable
@@ -111,12 +115,12 @@ DEBUG is set to TRUE.</p>
 
 <dl class="macro">
 <dt id="c.DEBUG">
-<tt class="descname">DEBUG</tt><a class="headerlink" href="#c.DEBUG" title="Permalink to this definition">¶</a></dt>
+<code class="descname">DEBUG</code><a class="headerlink" href="#c.DEBUG" title="Permalink to this definition">¶</a></dt>
 <dt id="c.NDEBUG">
-<tt class="descname">NDEBUG</tt><a class="headerlink" href="#c.NDEBUG" title="Permalink to this definition">¶</a></dt>
+<code class="descname">NDEBUG</code><a class="headerlink" href="#c.NDEBUG" title="Permalink to this definition">¶</a></dt>
 <dd><p>Defined by the make system.</p>
-<p>The <tt class="docutils literal"><span class="pre">DEBUG</span></tt> and <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> macros are set by the make system with flags
-like <tt class="docutils literal"><span class="pre">-DDEBUG</span></tt> passed to the compiler.  The table below shows how
+<p>The <code class="docutils literal"><span class="pre">DEBUG</span></code> and <code class="docutils literal"><span class="pre">NDEBUG</span></code> macros are set by the make system with flags
+like <code class="docutils literal"><span class="pre">-DDEBUG</span></code> passed to the compiler.  The table below shows how
 the flags are set.</p>
 <blockquote>
 <div><table border="1" class="docutils">
@@ -153,21 +157,21 @@ the flags are set.</p>
 </div></blockquote>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last"><tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=True</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=true</span></tt> is equivalent to
-<tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=FALSE</span></tt>.</p>
+<p class="last"><code class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=True</span></code> or <code class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=true</span></code> is equivalent to
+<code class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=FALSE</span></code>.</p>
 </div>
 </dd></dl>
 
 <dl class="macro">
 <dt id="c.D_DECL">
-<tt class="descname">D_DECL</tt><big>(</big>a, b, c<big>)</big><a class="headerlink" href="#c.D_DECL" title="Permalink to this definition">¶</a></dt>
+<code class="descname">D_DECL</code><span class="sig-paren">(</span>a, b, c<span class="sig-paren">)</span><a class="headerlink" href="#c.D_DECL" title="Permalink to this definition">¶</a></dt>
 <dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">Src/C_BaseLib/SPACE.H</a>.</p>
 <p>This macro expands to a comma-separated list of 1, 2, or all 3 of
 the arguments of the call, depending on the value of
-<a class="reference internal" href="#c.BL_SPACEDIM" title="BL_SPACEDIM"><tt class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></tt></a>.  This can be used to write portable codes
+<a class="reference internal" href="#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>.  This can be used to write portable codes
 that depend on 1, 2, or 3 arguments, corresponding to the value of
-<tt class="docutils literal"><span class="pre">BL_SPACEDIM</span></tt>.  For example:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="c1">// define and initialize an integer array with the size of space dimension</span>
+<code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code>.  For example:</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="c1">// define and initialize an integer array with the size of space dimension</span>
 <span class="kt">int</span> <span class="n">index</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">D_DECL</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="p">};</span>
 </pre></div>
 </div>
@@ -180,7 +184,7 @@ that depend on 1, 2, or 3 arguments, corresponding to the value of
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="parray.html"
@@ -188,29 +192,28 @@ that depend on 1, 2, or 3 arguments, corresponding to the value of
   <h4>Next topic</h4>
   <p class="topless"><a href="namespaces.html"
                         title="next chapter">Namespaces</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/macros.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/macros.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -222,12 +225,12 @@ that depend on 1, 2, or 3 arguments, corresponding to the value of
         <li class="right" >
           <a href="parray.html" title="PArray"
              >previous</a> |</li>
-        <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5a1.
     </div>
   </body>
 </html>
