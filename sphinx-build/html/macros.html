@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Macros &mdash; BoxLib Reference</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '16.09',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="BoxLib Reference" href="index.html" />
+    <link rel="next" title="Classes" href="classes.html" />
+    <link rel="prev" title="Welcome to BoxLib Reference!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to BoxLib Reference!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="id1">
+<h1>Macros<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><strong>Common macros</strong>:</p>
+<blockquote>
+<div><dl class="macro">
+<dt id="c.BL_SPACEDIM">
+<tt class="descname">BL_SPACEDIM</tt><a class="headerlink" href="#c.BL_SPACEDIM" title="Permalink to this definition">¶</a></dt>
+<dt id="c.SPACEDIM">
+<tt class="descname">SPACEDIM</tt><a class="headerlink" href="#c.SPACEDIM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defined by make or in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">boxlib Src/C_BaseLib/SPACE.H</a>.</p>
+<p>BoxLib is built with an explicit space dimension.  The BL_SPACEDIM
+and BL_SPACEDIM macros specify the dimension, which is either 1,
+2, or 3.</p>
+<p><em>Example</em>:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="n">BL_SPACEDIM</span><span class="p">];</span>  <span class="cm">/* define an array with size of 1, 2, or 3 */</span>
+
+<span class="cp">#if (BL_SPACEDIM == 1)</span>
+  <span class="n">function_1d</span><span class="p">();</span>
+<span class="cp">#elif (BL_SPACEDIM == 2)</span>
+  <span class="n">function_2d</span><span class="p">();</span>
+<span class="cp">#else</span>
+  <span class="n">function_3d</span><span class="p">();</span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.D_DECL">
+<tt class="descname">D_DECL</tt><big>(</big>a, b, c<big>)</big><a class="headerlink" href="#c.D_DECL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">boxlib Src/C_BaseLib/SPACE.H</a>.</p>
+<p>This macro</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to BoxLib Reference!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="classes.html"
+                        title="next chapter">Classes</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/macros.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to BoxLib Reference!"
+             >previous</a> |</li>
+        <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

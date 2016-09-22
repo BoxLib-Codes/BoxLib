@@ -1,0 +1,8 @@
+.. _box:
+
+Box
+===
+
+This class uses :cpp:func:`define` to 
+
+

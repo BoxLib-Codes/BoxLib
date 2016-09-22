@@ -1,0 +1,54 @@
+.. _intvect:
+
+IntVect
+=======
+
+.. cpp:class:: IntVect
+
+  IntVect is an implementation of an integer vector in a
+  SPACEDIM-dimensional space, where SPACEDIM is 1, or 2, or 3.  It
+  represents a point in a discrete space.  IntVect values are accessed
+  using the operator[] function.  In addition, the basic arithmetic
+  operators have been overloaded to implement scaling and translation
+  operations.
+
+**Constructor**
+
+  .. cpp:function:: IntVect()
+
+  .. cpp:function:: IntVect(D_DECL(int i, int j, int k))
+
+  .. cpp:function:: IntVect(const int* a)
+
+  .. cpp:function:: IntVect(const Array<int>& a)
+
+  Compiler generated copy constructor
+
+**Destructor**
+
+  .. cpp:function:: ~IntVect()
+
+**Member functions**
+
+**Non-member functions**
+
+
+.. cpp:function:: define(int, int, int)
+                  define2()
+
+  This
+
+    .. note::
+
+        This note
+
+    .. warning::
+
+        This warning
+
+    .. seealso::
+  
+       This see also
+
+
+Located in BoxLib/C_BaseLib/IntVect.H, IntVect.cpp.

@@ -1,0 +1,37 @@
+.. _macros:
+
+.. highlight:: c
+
+
+******
+Macros
+******
+
+**Common macros**:
+
+  .. c:macro:: BL_SPACEDIM
+               SPACEDIM
+
+    Defined by make or in :boxlib:`Src/C_BaseLib/SPACE.H`.
+
+    BoxLib is built with an explicit space dimension.  The BL_SPACEDIM
+    and BL_SPACEDIM macros specify the dimension, which is either 1,
+    2, or 3.
+
+    *Example*::
+
+      int x[BL_SPACEDIM];  /* define an array with size of 1, 2, or 3 */
+
+      #if (BL_SPACEDIM == 1)
+        function_1d();
+      #elif (BL_SPACEDIM == 2)
+        function_2d();
+      #else
+        function_3d();
+      #endif
+
+  .. c:macro:: D_DECL(a,b,c)
+
+    Defined in :boxlib:`Src/C_BaseLib/SPACE.H`.
+
+    This macro 

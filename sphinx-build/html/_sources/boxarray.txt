@@ -1,0 +1,7 @@
+.. _boxarray:
+
+BoxArray
+========
+
+This class
+
