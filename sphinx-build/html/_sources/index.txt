@@ -8,16 +8,18 @@ Welcome to BoxLib Reference!
 
 BoxLib is a mature software framework for building massively parallel
 adaptive mesh refinement (AMR) applications.  BoxLib and a collection
-of BoxLib application codes are public available on `github
-<https://github.com/BoxLib-Codes/>`_.  BoxLib has C++ and Fortran
+of BoxLib application codes are public available at
+https://github.com/BoxLib-Codes/.  BoxLib has C++ and Fortran
 versions.  This reference manual documents the C++ version.  
 
 .. toctree::
    :maxdepth: 2
 
+   classes
+
    macros
 
-   classes
+   namespaces
 
    topics
 

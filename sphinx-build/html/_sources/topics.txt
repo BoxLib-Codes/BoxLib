@@ -4,5 +4,11 @@
 Topics
 ******
 
-Advanced topics:
+.. toctree::
+   :maxdepth: 1
+
+   backtrace
+
+   make
+
 

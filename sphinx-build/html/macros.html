@@ -24,8 +24,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="BoxLib Reference" href="index.html" />
-    <link rel="next" title="Classes" href="classes.html" />
-    <link rel="prev" title="Welcome to BoxLib Reference!" href="index.html" /> 
+    <link rel="next" title="Namespaces" href="namespaces.html" />
+    <link rel="prev" title="IntVect" href="intvect.html" /> 
   </head>
   <body>
     <div class="related">
@@ -35,10 +35,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="classes.html" title="Classes"
+          <a href="namespaces.html" title="Namespaces"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to BoxLib Reference!"
+          <a href="intvect.html" title="IntVect"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
       </ul>
@@ -54,16 +54,38 @@
 <p><strong>Common macros</strong>:</p>
 <blockquote>
 <div><dl class="macro">
+<dt id="c.BL_ASSERT">
+<tt class="descname">BL_ASSERT</tt><a class="headerlink" href="#c.BL_ASSERT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/BLassert.H">Src/C_BaseLib/BLassert.H</a>.</p>
+<p>The macro BL_ASSERT(EX) is a debugging macro.  The argument EX is
+a C++ expression that you expect to always evaluate to true.</p>
+<p>If the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><tt class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></tt></a> macro is defined and the
+<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><tt class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></tt></a> is not defined, the BL_ASSERT(EX) call
+becomes a null statement in the code, which will be eliminated by
+the compiler.</p>
+<p>if the <a class="reference internal" href="#c.NDEBUG" title="NDEBUG"><tt class="xref c c-macro docutils literal"><span class="pre">NDEBUG</span></tt></a> macro is not defined or the
+<a class="reference internal" href="#c.BL_USE_ASSERTION" title="BL_USE_ASSERTION"><tt class="xref c c-macro docutils literal"><span class="pre">BL_USE_ASSERTION</span></tt></a> macro is defined, the BL_ASSERT(EX) macro
+expands to a boolean test of the expression EX.  If that
+expression evaluates to true, nothing happens.  But, if the
+expression evaluates to false, a message is output detailing the
+file and line number of the BL_ASSERT(EX) statement, as well as
+the literal expression EX itself, a <a class="reference internal" href="backtrace.html#backtrace"><em>backtrace</em></a>
+will be generated, and then the run aborts.</p>
+</dd></dl>
+
+<dl class="macro">
 <dt id="c.BL_SPACEDIM">
 <tt class="descname">BL_SPACEDIM</tt><a class="headerlink" href="#c.BL_SPACEDIM" title="Permalink to this definition">¶</a></dt>
 <dt id="c.SPACEDIM">
 <tt class="descname">SPACEDIM</tt><a class="headerlink" href="#c.SPACEDIM" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defined by make or in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">boxlib Src/C_BaseLib/SPACE.H</a>.</p>
+<dd><p>BL_SPACEDIM is defined by make to the DIM variable, and SPACEDIM
+is set to the value of BL_SPACEDIM in
+<a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">Src/C_BaseLib/SPACE.H</a>.</p>
 <p>BoxLib is built with an explicit space dimension.  The BL_SPACEDIM
 and BL_SPACEDIM macros specify the dimension, which is either 1,
 2, or 3.</p>
 <p><em>Example</em>:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="n">BL_SPACEDIM</span><span class="p">];</span>  <span class="cm">/* define an array with size of 1, 2, or 3 */</span>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="n">BL_SPACEDIM</span><span class="p">];</span>  <span class="c1">// define an array with size of 1, 2, or 3</span>
 
 <span class="cp">#if (BL_SPACEDIM == 1)</span>
   <span class="n">function_1d</span><span class="p">();</span>
@@ -77,10 +99,75 @@ and BL_SPACEDIM macros specify the dimension, which is either 1,
 </dd></dl>
 
 <dl class="macro">
+<dt id="c.BL_USE_ASSERTION">
+<tt class="descname">BL_USE_ASSERTION</tt><a class="headerlink" href="#c.BL_USE_ASSERTION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defined by the make system.</p>
+<p>The BL_USE_ASSERTION macro is defined when the make system
+variable USE_ASSERTION is set to TRUE or the make system variable
+DEBUG is set to TRUE.</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.DEBUG">
+<tt class="descname">DEBUG</tt><a class="headerlink" href="#c.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dt id="c.NDEBUG">
+<tt class="descname">NDEBUG</tt><a class="headerlink" href="#c.NDEBUG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defined by the make system.</p>
+<p>The DEBUG and NDEBUG macros are set by the make system with flags
+like -DDEBUG passed to the compiler.  The table below shows how
+the flags are set.</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="25%" />
+<col width="27%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Make variable: DEBUG</th>
+<th class="head">Macro: DEBUG</th>
+<th class="head">Macro: NDEBUG</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>TRUE</td>
+<td>defined</td>
+<td>undefined</td>
+</tr>
+<tr class="row-odd"><td>FALSE</td>
+<td>undefined</td>
+<td>defined</td>
+</tr>
+<tr class="row-even"><td>&lt;neither TRUE nor FALSE&gt;</td>
+<td>undefined</td>
+<td>defined</td>
+</tr>
+<tr class="row-odd"><td>&lt;undefined&gt;</td>
+<td>defined</td>
+<td>undefined</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=True</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=true</span></tt> is equivalent to
+<tt class="docutils literal"><span class="pre">make</span> <span class="pre">DEBUG=FALSE</span></tt>.</p>
+</div>
+</dd></dl>
+
+<dl class="macro">
 <dt id="c.D_DECL">
 <tt class="descname">D_DECL</tt><big>(</big>a, b, c<big>)</big><a class="headerlink" href="#c.D_DECL" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">boxlib Src/C_BaseLib/SPACE.H</a>.</p>
-<p>This macro</p>
+<dd><p>Defined in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/SPACE.H">Src/C_BaseLib/SPACE.H</a>.</p>
+<p>This macro expands to a comma-separated list of 1, 2, or all 3 of
+the arguments of the call, depending on the value of
+<a class="reference internal" href="#c.BL_SPACEDIM" title="BL_SPACEDIM"><tt class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></tt></a>.  This can be used to write portable codes
+that depend on 1, 2, or 3 arguments, corresponding to the value of
+BL_SPACEDIM.  For example:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="n">index</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">D_DECL</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="p">};</span>  <span class="c1">// define and initialize an integer array with the size of space dimension</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div></blockquote>
@@ -93,11 +180,11 @@ and BL_SPACEDIM macros specify the dimension, which is either 1,
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to BoxLib Reference!</a></p>
+  <p class="topless"><a href="intvect.html"
+                        title="previous chapter">IntVect</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="classes.html"
-                        title="next chapter">Classes</a></p>
+  <p class="topless"><a href="namespaces.html"
+                        title="next chapter">Namespaces</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/macros.txt"
@@ -127,10 +214,10 @@ and BL_SPACEDIM macros specify the dimension, which is either 1,
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="classes.html" title="Classes"
+          <a href="namespaces.html" title="Namespaces"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to BoxLib Reference!"
+          <a href="intvect.html" title="IntVect"
              >previous</a> |</li>
         <li><a href="index.html">BoxLib Reference</a> &raquo;</li> 
       </ul>
