@@ -1,0 +1,7 @@
+.. _paralleldescriptor:
+
+ParallelDesciptor
+=================
+
+This namespace
+

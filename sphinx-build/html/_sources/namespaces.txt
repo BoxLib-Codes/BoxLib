@@ -1,0 +1,16 @@
+.. _namespaces:
+
+**********
+Namespaces
+**********
+
+List of selected classes:
+
+.. toctree::
+   :maxdepth: 1
+
+   paralleldescriptor
+
+   boxlibnsp
+
+
