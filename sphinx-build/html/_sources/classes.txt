@@ -9,9 +9,12 @@ List of selected classes:
 .. toctree::
    :maxdepth: 1
 
+   array
+
    box
 
    boxarray
 
    intvect
 
+   parray

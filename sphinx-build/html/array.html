@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Array &mdash; BoxLib Reference</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '16.09',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="BoxLib Reference" href="index.html" />
+    <link rel="up" title="Classes" href="classes.html" />
+    <link rel="next" title="Box" href="box.html" />
+    <link rel="prev" title="Classes" href="classes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="box.html" title="Box"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">BoxLib Reference</a> &raquo;</li>
+          <li><a href="classes.html" accesskey="U">Classes</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="array">
+<span id="id1"></span><h1>Array<a class="headerlink" href="#array" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+<tt class="descname">template&lt;class T&gt; class Array : public std::vector&lt;T&gt;</tt></dt>
+<dd><p>Located in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/Array.H">Src/C_BaseLib/Array.H</a>.</p>
+<p>This class implements an array of objects of the parameterized type
+<tt class="docutils literal"><span class="pre">T</span></tt>.  It is derived from <tt class="docutils literal"><span class="pre">std::vector</span></tt>.  An <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> object
+knows its size and can be dynamically resized.  When the
+<tt class="xref c c-macro docutils literal"><span class="pre">NBEBUG</span></tt> macro is defined, it provides automatic bounds
+checking.</p>
+<p>The <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> class works by storing copies of the objects it
+contains.  If the objects are large, it is probably better to use
+<a class="reference internal" href="parray.html#PArray" title="PArray"><tt class="xref cpp cpp-class docutils literal"><span class="pre">PArray</span></tt></a>, an array class that stores pointers to the
+objects (avoiding expensive deep copies).</p>
+<p><strong>Constructors and copy assignment operator</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="Array">
+ <tt class="descname">Array</tt><big>(</big><big>)</big><a class="headerlink" href="#Array" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default constructor constructs an <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> with no
+elements.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Array__s">
+<em class="property">explicit</em>  <tt class="descname">Array</tt><big>(</big>size_t <em>len</em><big>)</big><a class="headerlink" href="#Array__s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> of size <tt class="docutils literal"><span class="pre">len</span></tt> with the value of
+each element defined by the default constructor for <tt class="docutils literal"><span class="pre">T</span></tt>.  For
+built-in types, such as <tt class="docutils literal"><span class="pre">int</span></tt>, this means zero initialization.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Array__s.TCR">
+ <tt class="descname">Array</tt><big>(</big>size_t <em>len</em>, const T&amp; <em>initialvalue</em><big>)</big><a class="headerlink" href="#Array__s.TCR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> of size <tt class="docutils literal"><span class="pre">len</span></tt> with the value of
+each elements given by <tt class="docutils literal"><span class="pre">initialvalue</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Array__TCP.s">
+ <tt class="descname">Array</tt><big>(</big>const T* <em>vec</em>, size_t <em>len</em><big>)</big><a class="headerlink" href="#Array__TCP.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an <tt class="docutils literal"><span class="pre">Array&lt;T&gt;</span></tt> of size <tt class="docutils literal"><span class="pre">len</span></tt> in which the <tt class="docutils literal"><span class="pre">K</span></tt>&#8216;th
+value is a copy of <tt class="docutils literal"><span class="pre">vec[K]</span></tt>.</p>
+</dd></dl>
+
+<p>The copy constructor and copy assignment operator are
+auto-generated by the compiler.</p>
+</div></blockquote>
+<p><strong>Destructor</strong></p>
+<blockquote>
+<div>The destructor is auto-generated by the compiler.</div></blockquote>
+<p><strong>Member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="sizeC">
+int <tt class="descname">size</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#sizeC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the array.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="subscript-operator__s">
+T&amp; <tt class="descname">operator[]</tt><big>(</big>size_t <em>i</em><big>)</big><a class="headerlink" href="#subscript-operator__s" title="Permalink to this definition">¶</a></dt>
+<dt id="subscript-operator__sC">
+const T&amp; <tt class="descname">operator[]</tt><big>(</big>size_t <em>i</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#subscript-operator__sC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a reference to the <tt class="docutils literal"><span class="pre">i</span></tt>&#8216;th element in the array.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dataPtr">
+T* <tt class="descname">dataPtr</tt><big>(</big><big>)</big><a class="headerlink" href="#dataPtr" title="Permalink to this definition">¶</a></dt>
+<dt id="dataPtrC">
+const T* <tt class="descname">dataPtr</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#dataPtrC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a raw pointer to the data.  This is useful for passing
+the data to Fortran subroutines.</p>
+</dd></dl>
+
+</div></blockquote>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="parray.html#PArray" title="PArray"><tt class="xref cpp cpp-class docutils literal"><span class="pre">PArray</span></tt></a></p>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="classes.html"
+                        title="previous chapter">Classes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="box.html"
+                        title="next chapter">Box</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/array.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="box.html" title="Box"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             >previous</a> |</li>
+        <li><a href="index.html">BoxLib Reference</a> &raquo;</li>
+          <li><a href="classes.html" >Classes</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="BoxLib Reference" href="index.html" />
     <link rel="up" title="Classes" href="classes.html" />
-    <link rel="next" title="Macros" href="macros.html" />
+    <link rel="next" title="PArray" href="parray.html" />
     <link rel="prev" title="BoxArray" href="boxarray.html" /> 
   </head>
   <body>
@@ -36,7 +36,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="macros.html" title="Macros"
+          <a href="parray.html" title="PArray"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="boxarray.html" title="BoxArray"
@@ -56,71 +56,59 @@
 <dl class="class">
 <dt id="IntVect">
 <em class="property">class </em><tt class="descname">IntVect</tt><a class="headerlink" href="#IntVect" title="Permalink to this definition">¶</a></dt>
-<dd><p>IntVect is an implementation of an integer vector in a
-SPACEDIM-dimensional space, where SPACEDIM is 1, or 2, or 3.  It
-represents a point in a discrete space.  IntVect values are accessed
-using the operator[] function.  In addition, the basic arithmetic
-operators have been overloaded to implement scaling and translation
-operations.</p>
+<dd><p>Located in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/IntVect.H">Src/C_BaseLib/IntVect.H</a> and <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/IntVect.cpp">Src/C_BaseLib/IntVect.cpp</a>.</p>
+<p>IntVect is an implementation of an integer vector in a
+SPACEDIM-dimensional space, where the <a class="reference internal" href="macros.html#c.SPACEDIM" title="SPACEDIM"><tt class="xref c c-macro docutils literal"><span class="pre">SPACEDIM</span></tt></a> macro is
+1, 2, or 3.  It represents a point in a discrete space.  IntVect
+values are accessed using the operator[] function.  In addition, the
+basic arithmetic operators have been overloaded to implement scaling
+and translation operations.</p>
 </dd></dl>
 
-<p><strong>Constructor</strong></p>
+<p><strong>Constructors and copy assignment operator</strong></p>
 <blockquote>
 <div><dl class="function">
 <dt>
  <tt class="descname">IntVect</tt><big>(</big><big>)</big></dt>
-<dd></dd></dl>
+<dd><p>The default constructor constructs an IntVect object whose
+components are all <strong>zero</strong>.</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">IntVect(D_DECL(int i, int j, int k))</tt></dt>
-<dd></dd></dl>
+<dt id="IntVect__i">
+ <tt class="descname">IntVect</tt><big>(</big>int <em>i</em><big>)</big><a class="headerlink" href="#IntVect__i" title="Permalink to this definition">¶</a></dt>
+<dt id="IntVect__i.i">
+ <tt class="descname">IntVect</tt><big>(</big>int <em>i</em>, int <em>j</em><big>)</big><a class="headerlink" href="#IntVect__i.i" title="Permalink to this definition">¶</a></dt>
+<dt id="IntVect__i.i.i">
+ <tt class="descname">IntVect</tt><big>(</big>int <em>i</em>, int <em>j</em>, int <em>k</em><big>)</big><a class="headerlink" href="#IntVect__i.i.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an IntVect given the specific values for its
+coordinates.  Depending on the <a class="reference internal" href="macros.html#c.SPACEDIM" title="SPACEDIM"><tt class="xref c c-macro docutils literal"><span class="pre">SPACEDIM</span></tt></a> macro, only one
+of the three version is present.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="IntVect__iCP">
- <tt class="descname">IntVect</tt><big>(</big>const int* <em>a</em><big>)</big><a class="headerlink" href="#IntVect__iCP" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">explicit</em>  <tt class="descname">IntVect</tt><big>(</big>const int* <em>a</em><big>)</big><a class="headerlink" href="#IntVect__iCP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an IntVect setting the coordinates to the corresponding
+values in the integer array a.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="IntVect__Array:i:CR">
- <tt class="descname">IntVect</tt><big>(</big>const Array&lt;int&gt;&amp; <em>a</em><big>)</big><a class="headerlink" href="#IntVect__Array:i:CR" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">explicit</em>  <tt class="descname">IntVect</tt><big>(</big>const Array&lt;int&gt;&amp; <em>a</em><big>)</big><a class="headerlink" href="#IntVect__Array:i:CR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an IntVect from an <a class="reference internal" href="array.html#Array" title="Array"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></tt></a>&lt;int&gt;.  It is an
+error if the <a class="reference internal" href="array.html#Array" title="Array"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></tt></a>&lt;int&gt; doesn&#8217;t have the same
+dimension as this IntVect.</p>
+</dd></dl>
 
-<p>Compiler generated copy constructor</p>
+<p>The copy constructor and copy assignment operator are auto-generated
+by the compiler.</p>
 </div></blockquote>
 <p><strong>Destructor</strong></p>
 <blockquote>
-<div><dl class="function">
-<dt id="~IntVect">
- <tt class="descname">~IntVect</tt><big>(</big><big>)</big><a class="headerlink" href="#~IntVect" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div></blockquote>
+<div>The destructor is auto-generated by the compiler.</div></blockquote>
 <p><strong>Member functions</strong></p>
 <p><strong>Non-member functions</strong></p>
-<dl class="function">
-<dt id="define__X.X.X">
- <tt class="descname">define</tt><big>(</big><em>int</em>, <em>int</em>, <em>int</em><big>)</big><a class="headerlink" href="#define__X.X.X" title="Permalink to this definition">¶</a></dt>
-<dt id="define2">
- <tt class="descname">define2</tt><big>(</big><big>)</big><a class="headerlink" href="#define2" title="Permalink to this definition">¶</a></dt>
-<dd><p>This</p>
-<blockquote>
-<div><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This note</p>
-</div>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This warning</p>
-</div>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last">This see also</p>
-</div>
-</div></blockquote>
-</dd></dl>
-
-<p>Located in BoxLib/C_BaseLib/IntVect.H, IntVect.cpp.</p>
 </div>
 
 
@@ -133,8 +121,8 @@ operations.</p>
   <p class="topless"><a href="boxarray.html"
                         title="previous chapter">BoxArray</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="macros.html"
-                        title="next chapter">Macros</a></p>
+  <p class="topless"><a href="parray.html"
+                        title="next chapter">PArray</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/intvect.txt"
@@ -164,7 +152,7 @@ operations.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="macros.html" title="Macros"
+          <a href="parray.html" title="PArray"
              >next</a> |</li>
         <li class="right" >
           <a href="boxarray.html" title="BoxArray"

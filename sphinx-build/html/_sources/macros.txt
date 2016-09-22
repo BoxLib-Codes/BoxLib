@@ -13,33 +13,35 @@ Macros
 
     Defined in :boxlib:`Src/C_BaseLib/BLassert.H`.
 
-    The macro BL_ASSERT(EX) is a debugging macro.  The argument EX is
-    a C++ expression that you expect to always evaluate to true.  
+    The macro ``BL_ASSERT(EX)`` is a debugging macro.  The argument
+    ``EX`` is a C++ expression that you expect to always evaluate to
+    true.
 
     If the :c:macro:`NDEBUG` macro is defined and the
-    :c:macro:`BL_USE_ASSERTION` is not defined, the BL_ASSERT(EX) call
-    becomes a null statement in the code, which will be eliminated by
-    the compiler.
+    :c:macro:`BL_USE_ASSERTION` is not defined, the ``BL_ASSERT(EX)``
+    call becomes a null statement in the code, which will be
+    eliminated by the compiler.
 
     if the :c:macro:`NDEBUG` macro is not defined or the
-    :c:macro:`BL_USE_ASSERTION` macro is defined, the BL_ASSERT(EX) macro
-    expands to a boolean test of the expression EX.  If that
-    expression evaluates to true, nothing happens.  But, if the
-    expression evaluates to false, a message is output detailing the
-    file and line number of the BL_ASSERT(EX) statement, as well as
-    the literal expression EX itself, a :ref:`backtrace <backtrace>`
-    will be generated, and then the run aborts.
+    :c:macro:`BL_USE_ASSERTION` macro is defined, the
+    ``BL_ASSERT(EX)`` macro expands to a boolean test of the
+    expression ``EX``.  If that expression evaluates to true, nothing
+    happens.  But, if the expression evaluates to false, a message is
+    output detailing the file and line number of the ``BL_ASSERT(EX)``
+    statement, as well as the literal expression ``EX`` itself, a
+    :ref:`backtrace <backtrace>` will be generated, and then the run
+    aborts.
 
   .. c:macro:: BL_SPACEDIM
                SPACEDIM
 
-    BL_SPACEDIM is defined by make to the DIM variable, and SPACEDIM
-    is set to the value of BL_SPACEDIM in
+    ``BL_SPACEDIM`` is defined by make to the ``DIM`` variable, and
+    ``SPACEDIM`` is set to the value of ``BL_SPACEDIM`` in
     :boxlib:`Src/C_BaseLib/SPACE.H`.
 
-    BoxLib is built with an explicit space dimension.  The BL_SPACEDIM
-    and BL_SPACEDIM macros specify the dimension, which is either 1,
-    2, or 3.
+    BoxLib is built with an explicit space dimension.  The
+    ``BL_SPACEDIM`` and ``BL_SPACEDIM`` macros specify the dimension,
+    which is either 1, 2, or 3.
 
     *Example*::
 
@@ -66,8 +68,8 @@ Macros
 
     Defined by the make system.
 
-    The DEBUG and NDEBUG macros are set by the make system with flags
-    like -DDEBUG passed to the compiler.  The table below shows how
+    The ``DEBUG`` and ``NDEBUG`` macros are set by the make system with flags
+    like ``-DDEBUG`` passed to the compiler.  The table below shows how
     the flags are set.
 
       +--------------------------+--------------+---------------+
@@ -95,7 +97,8 @@ Macros
     the arguments of the call, depending on the value of
     :c:macro:`BL_SPACEDIM`.  This can be used to write portable codes
     that depend on 1, 2, or 3 arguments, corresponding to the value of
-    BL_SPACEDIM.  For example::
+    ``BL_SPACEDIM``.  For example::
 
-      int index[] = { D_DECL(i,j,k) };  // define and initialize an integer array with the size of space dimension
+      // define and initialize an integer array with the size of space dimension
+      int index[] = { D_DECL(i,j,k) };
 

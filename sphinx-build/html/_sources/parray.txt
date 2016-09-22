@@ -1,0 +1,12 @@
+.. _parray:
+
+PArray
+======
+
+.. cpp:class:: PArray
+
+  Located in :boxlib:`Src/C_BaseLib/PArray.H`.
+
+  .. seealso::
+
+    :cpp:class:`Array`
