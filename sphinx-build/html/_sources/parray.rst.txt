@@ -43,11 +43,6 @@ PArray
       copy constructor allows us to construct ``Array< PArray<T> >``
       objects.
 
-      .. note::
-
-        This function contains an assertion that the size of ``rhs``
-	is zero using the :c:macro:`BL_ASSERT` macro. 
-
     .. cpp:function:: PArray<T>& operator=(const PArray<T>& rhs)
 
       Because of the memory management issue, this copy assignment
@@ -63,12 +58,6 @@ PArray
         {
           mfs.resize(2); // resize requires copy assignment operator
         }
-
-      .. note::
-
-        This function contains assertions that the objects on both
-	sides of the assignment operator are empty using the
-	:c:macro:`BL_ASSERT` macro.
 
   **Destructor**
 
@@ -115,26 +104,45 @@ PArray
       function will also delete the object pointed by the ``i``'th
       pointer.
 
+    .. cpp:function:: void resize(int newsize)
 
-  *Example 1*::
+      This function changes the size of the array to ``newsize`` while
+      preserving the value of as many array elements as possible.  If
+      ``newsize`` is greater than the current length, the array is
+      grown and the new elements are null pointers.  If newsize is
+      less than the current length the array is cropped with the
+      remaining elements retaining their original pointer values. If
+      the memory management policy was set to ``PArrayManage``, any
+      cropped pointers are deleted.
+
+    .. cpp:function:: void resize(int newsize, PArrayPolicy newmanagedpolicy)
+
+      This function does a resize and changes the memory management
+      policy.  (Especially for arrays of PArray where the user wants
+      the default policy to be managed--the default constructor makes
+      the default unmanaged).  If the new managed policy is different
+      from the old one, none of the elements of the original are
+      retained.
+
+    .. cpp:function:: T* remove(int i)
+
+      Removes the ``i``'th element from the ``PArray`` and returns the
+      pointer to the calling function.  Nulls out the pointer in the
+      ``PArray<T>``.
+
+    .. cpp:function:: T* push_back(T* p)
+
+      Pushes a pointer to the back of the array.  This also returns
+      the pushed pointer.
+
+  *Example*::
 
      PArray<MultiFab> mf_parray(4, PArrayManage);
      for (int i = 0; i < 4; ++i) {
          mf_parray.set(i, new MultiFab());
      }
      const MultiFab& mf = mf_parray[3];
-     std::cout << "Number of ghost cells: " << mf.nGrow();
-
-  *Example 2*::
-
-     PArray<MultiFab> mf_parray;
-     mf_parray.resize(4, PArrayManage);
-     for (int i = 0; i < 4; ++i) {
-         mf_parray.set(i, new MultiFab());
-     }
-     const MultiFab& mf = mf_parray[3];
-     std::cout << "Number of ghost cells: " << mf.nGrow();
-
+     std::cout << "Size of this MultiFab " << mf.size();
 
 PArrayPolicy
 ************

@@ -99,11 +99,6 @@ underlying objects upon destruction.</p>
 should <strong>NOT</strong> be used explicitly in any codes.  But, having the
 copy constructor allows us to construct <code class="docutils literal"><span class="pre">Array&lt;</span> <span class="pre">PArray&lt;T&gt;</span> <span class="pre">&gt;</span></code>
 objects.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This function contains an assertion that the size of <code class="docutils literal"><span class="pre">rhs</span></code>
-is zero using the <a class="reference internal" href="macros.html#c.BL_ASSERT" title="BL_ASSERT"><code class="xref c c-macro docutils literal"><span class="pre">BL_ASSERT</span></code></a> macro.</p>
-</div>
 </dd></dl>
 
 <dl class="function">
@@ -122,12 +117,6 @@ below:</p>
   <span class="n">mfs</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span> <span class="c1">// resize requires copy assignment operator</span>
 <span class="p">}</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This function contains assertions that the objects on both
-sides of the assignment operator are empty using the
-<a class="reference internal" href="macros.html#c.BL_ASSERT" title="BL_ASSERT"><code class="xref c c-macro docutils literal"><span class="pre">BL_ASSERT</span></code></a> macro.</p>
 </div>
 </dd></dl>
 
@@ -194,24 +183,53 @@ function will also delete the object pointed by the <code class="docutils litera
 pointer.</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="_CPPv2N6PArray6resizeEi">
+<span id="PArray::resize__i"></span>void <code class="descclassname"></code><code class="descname">resize</code><span class="sig-paren">(</span>int <em>newsize</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6resizeEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function changes the size of the array to <code class="docutils literal"><span class="pre">newsize</span></code> while
+preserving the value of as many array elements as possible.  If
+<code class="docutils literal"><span class="pre">newsize</span></code> is greater than the current length, the array is
+grown and the new elements are null pointers.  If newsize is
+less than the current length the array is cropped with the
+remaining elements retaining their original pointer values. If
+the memory management policy was set to <code class="docutils literal"><span class="pre">PArrayManage</span></code>, any
+cropped pointers are deleted.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray6resizeEi12PArrayPolicy">
+<span id="PArray::resize__i.PArrayPolicy"></span>void <code class="descclassname"></code><code class="descname">resize</code><span class="sig-paren">(</span>int <em>newsize</em>, <a class="reference internal" href="#_CPPv212PArrayPolicy" title="PArrayPolicy">PArrayPolicy</a> <em>newmanagedpolicy</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6resizeEi12PArrayPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function does a resize and changes the memory management
+policy.  (Especially for arrays of PArray where the user wants
+the default policy to be managed&#8211;the default constructor makes
+the default unmanaged).  If the new managed policy is different
+from the old one, none of the elements of the original are
+retained.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray6removeEi">
+<span id="PArray::remove__i"></span>T *<code class="descclassname"></code><code class="descname">remove</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6removeEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element from the <code class="docutils literal"><span class="pre">PArray</span></code> and returns the
+pointer to the calling function.  Nulls out the pointer in the
+<code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray9push_backEP1T">
+<span id="PArray::push_back__TP"></span>T *<code class="descclassname"></code><code class="descname">push_back</code><span class="sig-paren">(</span>T *<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray9push_backEP1T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pushes a pointer to the back of the array.  This also returns
+the pushed pointer.</p>
+</dd></dl>
+
 </div></blockquote>
-<p><em>Example 1</em>:</p>
+<p><em>Example</em>:</p>
 <div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="n">mf_parray</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">PArrayManage</span><span class="p">);</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">mf_parray</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="k">new</span> <span class="n">MultiFab</span><span class="p">());</span>
 <span class="p">}</span>
 <span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span> <span class="o">=</span> <span class="n">mf_parray</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
-<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of ghost cells: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">nGrow</span><span class="p">();</span>
-</pre></div>
-</div>
-<p><em>Example 2</em>:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="n">mf_parray</span><span class="p">;</span>
-<span class="n">mf_parray</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">PArrayManage</span><span class="p">);</span>
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">mf_parray</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="k">new</span> <span class="n">MultiFab</span><span class="p">());</span>
-<span class="p">}</span>
-<span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span> <span class="o">=</span> <span class="n">mf_parray</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
-<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of ghost cells: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">nGrow</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Size of this MultiFab &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
 </pre></div>
 </div>
 </dd></dl>
