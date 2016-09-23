@@ -7,22 +7,149 @@ PArray
 
   Located in :boxlib:`Src/C_BaseLib/PArray.H`.
 
-  This class ...
+  The ``PArray<T>`` class is similar to the :cpp:class:`Array` class
+  except that it implements an array of pointers to objects of type
+  ``T`` rather than an array of the objects themselves.  As with
+  ``Array<T> objects``, ``PArray<T>`` objects know about their length,
+  can be dynamically resized and have built-in automatic bounds
+  checking.
+
+  .. warning::
+
+    When a ``PArray<T>`` object is destructed, whether the objects to
+    which it points will be deleted depends on its memory management
+    policy.  The default memory management policy is not to delete.
+    That is, by default, the pointers are *non-owning*.
 
   **Constructors and copy assignment operator**
 
+    .. cpp:function:: explicit PArray(PArrayPolicy _managed=PArrayNoManage)
+
+      Constructs a ``PArray`` with no elements.  The default memory
+      management policy is not to delete the underlying objects upon
+      destruction.
+    
+    .. cpp:function:: explicit PArray(int len, PArrayPolicy \\
+		      _managed=PArrayNoManage)
+
+       Constructs a ``PArray`` of length len of null pointers.  The
+       default memory management policy is not to delete the
+       underlying objects upon destruction.
+
+    .. cpp:function:: PArray(const PArray<T>& rhs)
+
+      Because of the memory management issue, this copy constructor
+      should **NOT** be used explicitly in any codes.  But, having the
+      copy constructor allows us to construct ``Array< PArray<T> >``
+      objects.
+
+      .. note::
+
+        This function contains an assertion that the size of ``rhs``
+	is zero using the :c:macro:`BL_ASSERT` macro. 
+
+    .. cpp:function:: PArray<T>& operator=(const PArray<T>& rhs)
+
+      Because of the memory management issue, this copy assignment
+      operator should **NOT** be used explicitly in any codes.  But,
+      having the copy constructor allows us to write codes like
+      below:: 
+
+        Array< PArray <MultiFab> > mfs;
+	f(mfs);  // call function f
+
+	// definition of function f
+        void f(Array< PArray <MultiFab> >& mfs;
+        {
+          mfs.resize(2); // resize requires copy assignment operator
+        }
+
+      .. note::
+
+        This function contains assertions that the objects on both
+	sides of the assignment operator are empty using the
+	:c:macro:`BL_ASSERT` macro.
+
   **Destructor**
+
+    .. cpp:function:: ~PArray()
+
+      If the memory management policy is ``PArrayManage``, this destructor
+      delete all objects pointed by the pointers in this array.
 
   **Member functions**
 
-  .. seealso::
+    .. cpp:function:: bool defined(int i) const
 
-    :cpp:class:`Array`
+      Returns true if the ``i``'th element is not the null pointer.
+
+    .. cpp:function:: T& operator[] (int i)
+                      const T& operator[] (int i) const
+
+      Return a reference to the object pointed to by the ``i``'th
+      element.
+
+    .. cpp:function:: void set(int i, T* elem)
+                      void set(int i, const T* elem)
+
+      Defines the ``i``'th element of this ``PArray<T>`` to the
+      pointer value elem.  If the memory management policy is
+      ``PArrayManage``, it is an error if the i'th element
+      previously had a non-null value.
+
+    .. cpp:function:: int size() const
+
+      Returns the number of elements.
+
+    .. cpp:function:: void clear()
+
+      This function sets each pointer in this ``PArray<T>`` to null.
+      If the memory management policy is ``PArrayManage``, this
+      function will also delete all objects pointed by the pointers
+      in this array.
+
+    .. cpp:function:: void clear(int i)
+
+      This function sets the ``i``'th pointer in this ``PArray<T>`` to
+      null.  If the memory management policy is ``PArrayManage``, this
+      function will also delete the object pointed by the ``i``'th
+      pointer.
+
+
+  *Example 1*::
+
+     PArray<MultiFab> mf_parray(4, PArrayManage);
+     for (int i = 0; i < 4; ++i) {
+         mf_parray.set(i, new MultiFab());
+     }
+     const MultiFab& mf = mf_parray[3];
+     std::cout << "Number of ghost cells: " << mf.nGrow();
+
+  *Example 2*::
+
+     PArray<MultiFab> mf_parray;
+     mf_parray.resize(4, PArrayManage);
+     for (int i = 0; i < 4; ++i) {
+         mf_parray.set(i, new MultiFab());
+     }
+     const MultiFab& mf = mf_parray[3];
+     std::cout << "Number of ghost cells: " << mf.nGrow();
+
 
 PArrayPolicy
-============
+************
 
 .. cpp:enum:: PArrayPolicy
 
-   An enum 
+  Located in :boxlib:`Src/C_BaseLib/PArray.H`.
+
+  An ``enum`` that controls whether or not ``class PArray<T>`` manages
+  the pointed objects. Valid values are 
+
+    * ``PArrayNoManage``
+    * ``PArrayManage``.
+
+.. seealso::
+
+  :cpp:class:`Array`
 

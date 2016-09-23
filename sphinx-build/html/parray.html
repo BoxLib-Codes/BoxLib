@@ -61,25 +61,182 @@
 <dt id="_CPPv26PArray">
 <span id="PArray"></span><em class="property">class </em><code class="descclassname"></code><code class="descname">PArray</code><a class="headerlink" href="#_CPPv26PArray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Located in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/PArray.H">Src/C_BaseLib/PArray.H</a>.</p>
-<p>This class ...</p>
+<p>The <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> class is similar to the <a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array"><code class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></code></a> class
+except that it implements an array of pointers to objects of type
+<code class="docutils literal"><span class="pre">T</span></code> rather than an array of the objects themselves.  As with
+<code class="docutils literal"><span class="pre">Array&lt;T&gt;</span> <span class="pre">objects</span></code>, <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> objects know about their length,
+can be dynamically resized and have built-in automatic bounds
+checking.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">When a <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> object is destructed, whether the objects to
+which it points will be deleted depends on its memory management
+policy.  The default memory management policy is not to delete.
+That is, by default, the pointers are <em>non-owning</em>.</p>
+</div>
 <p><strong>Constructors and copy assignment operator</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2N6PArray6PArrayE12PArrayPolicy">
+<span id="PArray::PArray__PArrayPolicy"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">PArray</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv212PArrayPolicy" title="PArrayPolicy">PArrayPolicy</a> <em>_managed</em> = PArrayNoManage<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6PArrayE12PArrayPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a <code class="docutils literal"><span class="pre">PArray</span></code> with no elements.  The default memory
+management policy is not to delete the underlying objects upon
+destruction.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray6PArrayEi12PArrayPolicy">
+<span id="PArray::PArray__i.PArrayPolicy"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">PArray</code><span class="sig-paren">(</span>int <em>len</em>, <a class="reference internal" href="#_CPPv212PArrayPolicy" title="PArrayPolicy">PArrayPolicy</a> <em>_managed</em> = PArrayNoManage<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6PArrayEi12PArrayPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a <code class="docutils literal"><span class="pre">PArray</span></code> of length len of null pointers.  The
+default memory management policy is not to delete the
+underlying objects upon destruction.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray6PArrayERK6PArrayI1TE">
+<span id="PArray::PArray__PArray:T:CR"></span><code class="descclassname"></code><code class="descname">PArray</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv2N6PArray6PArrayE12PArrayPolicy" title="PArray::PArray">PArray</a>&lt;T&gt; &amp;<em>rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray6PArrayERK6PArrayI1TE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Because of the memory management issue, this copy constructor
+should <strong>NOT</strong> be used explicitly in any codes.  But, having the
+copy constructor allows us to construct <code class="docutils literal"><span class="pre">Array&lt;</span> <span class="pre">PArray&lt;T&gt;</span> <span class="pre">&gt;</span></code>
+objects.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This function contains an assertion that the size of <code class="docutils literal"><span class="pre">rhs</span></code>
+is zero using the <a class="reference internal" href="macros.html#c.BL_ASSERT" title="BL_ASSERT"><code class="xref c c-macro docutils literal"><span class="pre">BL_ASSERT</span></code></a> macro.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArrayaSERK6PArrayI1TE">
+<span id="PArray::assign-operator__PArray:T:CR"></span><a class="reference internal" href="#_CPPv26PArray" title="PArray">PArray</a>&lt;T&gt; &amp;<code class="descclassname"></code><code class="descname">operator=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv26PArray" title="PArray">PArray</a>&lt;T&gt; &amp;<em>rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArrayaSERK6PArrayI1TE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Because of the memory management issue, this copy assignment
+operator should <strong>NOT</strong> be used explicitly in any codes.  But,
+having the copy constructor allows us to write codes like
+below:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">Array</span><span class="o">&lt;</span> <span class="n">PArray</span> <span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">mfs</span><span class="p">;</span>
+<span class="n">f</span><span class="p">(</span><span class="n">mfs</span><span class="p">);</span>  <span class="c1">// call function f</span>
+
+<span class="c1">// definition of function f</span>
+<span class="kt">void</span> <span class="n">f</span><span class="p">(</span><span class="n">Array</span><span class="o">&lt;</span> <span class="n">PArray</span> <span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="o">&gt;&amp;</span> <span class="n">mfs</span><span class="p">;</span>
+<span class="p">{</span>
+  <span class="n">mfs</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span> <span class="c1">// resize requires copy assignment operator</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This function contains assertions that the objects on both
+sides of the assignment operator are empty using the
+<a class="reference internal" href="macros.html#c.BL_ASSERT" title="BL_ASSERT"><code class="xref c c-macro docutils literal"><span class="pre">BL_ASSERT</span></code></a> macro.</p>
+</div>
+</dd></dl>
+
+</div></blockquote>
 <p><strong>Destructor</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2N6PArrayD0Ev">
+<span id="PArray::~PArray"></span><code class="descclassname"></code><code class="descname">~PArray</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArrayD0Ev" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the memory management policy is <code class="docutils literal"><span class="pre">PArrayManage</span></code>, this destructor
+delete all objects pointed by the pointers in this array.</p>
+</dd></dl>
+
+</div></blockquote>
 <p><strong>Member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2NK6PArray7definedEi">
+<span id="PArray::defined__iC"></span>bool <code class="descclassname"></code><code class="descname">defined</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK6PArray7definedEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element is not the null pointer.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArrayixEi">
+<span id="PArray::subscript-operator__i"></span>T &amp;<code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArrayixEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK6PArrayixEi">
+<span id="PArray::subscript-operator__iC"></span><em class="property">const</em> T &amp;<code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK6PArrayixEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a reference to the object pointed to by the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th
+element.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray3setEiP1T">
+<span id="PArray::set__i.TP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiP1T" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6PArray3setEiPK1T">
+<span id="PArray::set__i.TCP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, <em class="property">const</em> T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiPK1T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element of this <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> to the
+pointer value elem.  If the memory management policy is
+<code class="docutils literal"><span class="pre">PArrayManage</span></code>, it is an error if the i&#8217;th element
+previously had a non-null value.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK6PArray4sizeEv">
+<span id="PArray::sizeC"></span>int <code class="descclassname"></code><code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK6PArray4sizeEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of elements.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray5clearEv">
+<span id="PArray::clear"></span>void <code class="descclassname"></code><code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray5clearEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function sets each pointer in this <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> to null.
+If the memory management policy is <code class="docutils literal"><span class="pre">PArrayManage</span></code>, this
+function will also delete all objects pointed by the pointers
+in this array.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray5clearEi">
+<span id="PArray::clear__i"></span>void <code class="descclassname"></code><code class="descname">clear</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray5clearEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function sets the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th pointer in this <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> to
+null.  If the memory management policy is <code class="docutils literal"><span class="pre">PArrayManage</span></code>, this
+function will also delete the object pointed by the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th
+pointer.</p>
+</dd></dl>
+
+</div></blockquote>
+<p><em>Example 1</em>:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="n">mf_parray</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">PArrayManage</span><span class="p">);</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">mf_parray</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="k">new</span> <span class="n">MultiFab</span><span class="p">());</span>
+<span class="p">}</span>
+<span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span> <span class="o">=</span> <span class="n">mf_parray</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of ghost cells: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">nGrow</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><em>Example 2</em>:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="n">mf_parray</span><span class="p">;</span>
+<span class="n">mf_parray</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">PArrayManage</span><span class="p">);</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">mf_parray</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="k">new</span> <span class="n">MultiFab</span><span class="p">());</span>
+<span class="p">}</span>
+<span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span> <span class="o">=</span> <span class="n">mf_parray</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of ghost cells: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">nGrow</span><span class="p">();</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="section" id="parraypolicy">
+<h2>PArrayPolicy<a class="headerlink" href="#parraypolicy" title="Permalink to this headline">¶</a></h2>
+<dl class="enum">
+<dt id="_CPPv212PArrayPolicy">
+<em class="property">enum </em><code class="descclassname"></code><code class="descname">PArrayPolicy</code><a class="headerlink" href="#_CPPv212PArrayPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Located in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/PArray.H">Src/C_BaseLib/PArray.H</a>.</p>
+<p>An <code class="docutils literal"><span class="pre">enum</span></code> that controls whether or not <code class="docutils literal"><span class="pre">class</span> <span class="pre">PArray&lt;T&gt;</span></code> manages
+the pointed objects. Valid values are</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">PArrayNoManage</span></code></li>
+<li><code class="docutils literal"><span class="pre">PArrayManage</span></code>.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
 <p class="last"><a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array"><code class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></code></a></p>
 </div>
-</dd></dl>
-
 </div>
-<div class="section" id="parraypolicy">
-<h1>PArrayPolicy<a class="headerlink" href="#parraypolicy" title="Permalink to this headline">¶</a></h1>
-<dl class="enum">
-<dt id="_CPPv212PArrayPolicy">
-<em class="property">enum </em><code class="descclassname"></code><code class="descname">PArrayPolicy</code><a class="headerlink" href="#_CPPv212PArrayPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>An enum</p>
-</dd></dl>
-
 </div>
 
 
@@ -90,8 +247,10 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">PArray</a></li>
+<li><a class="reference internal" href="#">PArray</a><ul>
 <li><a class="reference internal" href="#parraypolicy">PArrayPolicy</a></li>
+</ul>
+</li>
 </ul>
 
   <h4>Previous topic</h4>

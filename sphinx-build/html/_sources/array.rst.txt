@@ -65,6 +65,6 @@ Array
       Returns a raw pointer to the data.  This is useful for passing
       the data to Fortran subroutines.
 
-  .. seealso::
+.. seealso::
 
-    :cpp:class:`PArray`
+  :cpp:class:`PArray`
