@@ -10,7 +10,7 @@ Array
   This class implements an array of objects of the parameterized type
   ``T``.  It is derived from ``std::vector``.  An ``Array<T>`` object
   knows its size and can be dynamically resized.  When the
-  :c:macro:`NBEBUG` macro is defined, it provides automatic bounds
+  :c:macro:`NDEBUG` macro is defined, it provides automatic bounds
   checking.
 
   The ``Array<T>`` class works by storing copies of the objects it
@@ -50,10 +50,6 @@ Array
 
   **Member functions**
 
-    .. cpp:function:: int size() const
-
-      Returns the size of the array.
-
     .. cpp:function:: T& operator[] (size_t i)
                       const T& operator[] (size_t i) const
 
@@ -64,6 +60,10 @@ Array
 
       Returns a raw pointer to the data.  This is useful for passing
       the data to Fortran subroutines.
+
+    .. cpp:function:: int size() const
+
+      Returns the size of the array.
 
 .. seealso::
 

@@ -134,12 +134,6 @@ delete all objects pointed by the pointers in this array.</p>
 <p><strong>Member functions</strong></p>
 <blockquote>
 <div><dl class="function">
-<dt id="_CPPv2NK6PArray7definedEi">
-<span id="PArray::defined__iC"></span>bool <code class="descclassname"></code><code class="descname">defined</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK6PArray7definedEi" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns true if the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element is not the null pointer.</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="_CPPv2N6PArrayixEi">
 <span id="PArray::subscript-operator__i"></span>T &amp;<code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArrayixEi" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2NK6PArrayixEi">
@@ -149,14 +143,9 @@ element.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2N6PArray3setEiP1T">
-<span id="PArray::set__i.TP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiP1T" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N6PArray3setEiPK1T">
-<span id="PArray::set__i.TCP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, <em class="property">const</em> T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiPK1T" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defines the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element of this <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> to the
-pointer value elem.  If the memory management policy is
-<code class="docutils literal"><span class="pre">PArrayManage</span></code>, it is an error if the i&#8217;th element
-previously had a non-null value.</p>
+<dt id="_CPPv2NK6PArray7definedEi">
+<span id="PArray::defined__iC"></span>bool <code class="descclassname"></code><code class="descname">defined</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK6PArray7definedEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element is not the null pointer.</p>
 </dd></dl>
 
 <dl class="function">
@@ -181,6 +170,17 @@ in this array.</p>
 null.  If the memory management policy is <code class="docutils literal"><span class="pre">PArrayManage</span></code>, this
 function will also delete the object pointed by the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th
 pointer.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6PArray3setEiP1T">
+<span id="PArray::set__i.TP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiP1T" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6PArray3setEiPK1T">
+<span id="PArray::set__i.TCP"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>i</em>, <em class="property">const</em> T *<em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6PArray3setEiPK1T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th element of this <code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> to the
+pointer value elem.  If the memory management policy is
+<code class="docutils literal"><span class="pre">PArrayManage</span></code>, it is an error if the i&#8217;th element
+previously had a non-null value.</p>
 </dd></dl>
 
 <dl class="function">
@@ -231,6 +231,16 @@ the pushed pointer.</p>
 <span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span> <span class="o">=</span> <span class="n">mf_parray</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
 <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Size of this MultiFab &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">mf</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Pass by reference should be used when a function takes a
+<code class="docutils literal"><span class="pre">PArray&lt;T&gt;</span></code> or <code class="docutils literal"><span class="pre">Array&lt;</span> <span class="pre">PArray&lt;T&gt;</span> <span class="pre">&gt;</span></code> as parameter.  For
+example:</p>
+<div class="last highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;&amp;</span> <span class="n">a</span><span class="p">,</span> <span class="k">const</span> <span class="n">Array</span><span class="o">&lt;</span> <span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="o">&gt;&amp;</span> <span class="n">b</span><span class="p">);</span> <span class="c1">// OK</span>
+<span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="o">&lt;</span> <span class="n">PArray</span><span class="o">&lt;</span><span class="n">MultiFab</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">b</span><span class="p">);</span> <span class="c1">// avoid</span>
+</pre></div>
+</div>
 </div>
 </dd></dl>
 

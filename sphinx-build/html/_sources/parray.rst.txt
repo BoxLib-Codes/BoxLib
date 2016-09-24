@@ -68,23 +68,15 @@ PArray
 
   **Member functions**
 
-    .. cpp:function:: bool defined(int i) const
-
-      Returns true if the ``i``'th element is not the null pointer.
-
     .. cpp:function:: T& operator[] (int i)
                       const T& operator[] (int i) const
 
       Return a reference to the object pointed to by the ``i``'th
       element.
 
-    .. cpp:function:: void set(int i, T* elem)
-                      void set(int i, const T* elem)
+    .. cpp:function:: bool defined(int i) const
 
-      Defines the ``i``'th element of this ``PArray<T>`` to the
-      pointer value elem.  If the memory management policy is
-      ``PArrayManage``, it is an error if the i'th element
-      previously had a non-null value.
+      Returns true if the ``i``'th element is not the null pointer.
 
     .. cpp:function:: int size() const
 
@@ -103,6 +95,14 @@ PArray
       null.  If the memory management policy is ``PArrayManage``, this
       function will also delete the object pointed by the ``i``'th
       pointer.
+
+    .. cpp:function:: void set(int i, T* elem)
+                      void set(int i, const T* elem)
+
+      Defines the ``i``'th element of this ``PArray<T>`` to the
+      pointer value elem.  If the memory management policy is
+      ``PArrayManage``, it is an error if the i'th element
+      previously had a non-null value.
 
     .. cpp:function:: void resize(int newsize)
 
@@ -143,6 +143,15 @@ PArray
      }
      const MultiFab& mf = mf_parray[3];
      std::cout << "Size of this MultiFab " << mf.size();
+
+  .. note::
+
+    Pass by reference should be used when a function takes a
+    ``PArray<T>`` or ``Array< PArray<T> >`` as parameter.  For
+    example::
+  
+      void f(PArray<MultiFab>& a, const Array< PArray<MultiFab> >& b); // OK
+      void f(PArray<MultiFab> a, Array< PArray<MultiFab> > b); // avoid
 
 PArrayPolicy
 ************
