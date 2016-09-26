@@ -245,3 +245,8 @@ IntVect
   
     Returns an ``IntVect`` that is the component-wise integer
     projection of ``IntVect p1`` by ``IntVect p2``.
+
+.. seealso::
+  
+  :c:macro:`BL_SPACEDIM`; :cpp:class:`IndexType`; :cpp:class:`Box`
+  

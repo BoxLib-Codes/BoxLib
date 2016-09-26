@@ -27,7 +27,10 @@
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="BoxLib Reference" href="index.html" /> 
+    <link rel="top" title="BoxLib Reference" href="index.html" />
+    <link rel="up" title="Classes" href="classes.html" />
+    <link rel="next" title="IntVect" href="intvect.html" />
+    <link rel="prev" title="BoxArray" href="boxarray.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -36,7 +39,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
+        <li class="right" >
+          <a href="intvect.html" title="IntVect"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="boxarray.html" title="BoxArray"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="classes.html" accesskey="U">Classes</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -52,15 +62,204 @@
 <span id="IndexType"></span><em class="property">class </em><code class="descclassname"></code><code class="descname">IndexType</code><a class="headerlink" href="#_CPPv29IndexType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Located in <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/IndexType.H">Src/C_BaseLib/IndexType.H</a> and
 <a class="reference external" href="https://github.com/BoxLib-Codes/BoxLib/blob/master/Src/C_BaseLib/IndexType.cpp">Src/C_BaseLib/IndexType.cpp</a>.</p>
-<p><code class="docutils literal"><span class="pre">IndexType</span></code> is ...</p>
-<dl class="enum">
+<p>The class <code class="docutils literal"><span class="pre">IndexType</span></code> defines an index as being cell based or node
+(edge) based in each of the c:macro:<cite>BL_SPACEDIM</cite> directions.  This
+class defines an enumerated type <code class="docutils literal"><span class="pre">CellIndex</span></code> to be either <code class="docutils literal"><span class="pre">CELL</span></code>
+or <code class="docutils literal"><span class="pre">NODE</span></code>; i.e. each of the c:macro:<cite>BL_SPACEDIM</cite> dimensions must
+be either <code class="docutils literal"><span class="pre">CELL</span></code> or <code class="docutils literal"><span class="pre">NODE</span></code>.</p>
+<p><strong>Constructors and copy assignment operator</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2N9IndexType9IndexTypeEv">
+<span id="IndexType::IndexType"></span><code class="descclassname"></code><code class="descname">IndexType</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType9IndexTypeEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default constructor constructs an <code class="docutils literal"><span class="pre">IndexType</span></code> object whose
+index types are <code class="docutils literal"><span class="pre">CELL</span></code> in all directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType9IndexTypeERK7IntVect">
+<span id="IndexType::IndexType__IntVectCR"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">IndexType</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>iv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType9IndexTypeERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an <code class="docutils literal"><span class="pre">IndexType</span></code> object with index types specified by
+an <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType9IndexTypeE9CellIndex">
+<span id="IndexType::IndexType__CellIndex"></span><code class="descclassname"></code><code class="descname">IndexType</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType9IndexTypeE9CellIndex" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N9IndexType9IndexTypeE9CellIndex9CellIndex">
+<span id="IndexType::IndexType__CellIndex.CellIndex"></span><code class="descclassname"></code><code class="descname">IndexType</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>i</em>, <a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType9IndexTypeE9CellIndex9CellIndex" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N9IndexType9IndexTypeE9CellIndex9CellIndex9CellIndex">
+<span id="IndexType::IndexType__CellIndex.CellIndex.CellIndex"></span><code class="descclassname"></code><code class="descname">IndexType</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>i</em>, <a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>j</em>, <a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType9IndexTypeE9CellIndex9CellIndex9CellIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an <code class="docutils literal"><span class="pre">IndexType</span></code> given the specific index types for
+all dimensions.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Depending on the <a class="reference internal" href="macros.html#c.SPACEDIM" title="SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">SPACEDIM</span></code></a> macro, only one of the
+three versions above is present.</p>
+</div>
+</dd></dl>
+
+<p>The copy constructor and copy assignment operator are
+auto-generated by the compiler.</p>
+</div></blockquote>
+<p><strong>Destructor</strong></p>
+<blockquote>
+<div>The destructor is auto-generated by the compiler.</div></blockquote>
+<p><strong>Member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2NK9IndexType6ixTypeEi">
+<span id="IndexType::ixType__iC"></span><a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <code class="descclassname"></code><code class="descname">ixType</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType6ixTypeEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the <code class="docutils literal"><span class="pre">CellIndex</span></code> in direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexTypeixEi">
+<span id="IndexType::subscript-operator__iC"></span>int <code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexTypeixEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an integer representing the <code class="docutils literal"><span class="pre">IndexType</span></code> in direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType4testEi">
+<span id="IndexType::test__iC"></span>bool <code class="descclassname"></code><code class="descname">test</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType4testEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">NODE</span></code> based in direction
+<code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType3anyEv">
+<span id="IndexType::anyC"></span>bool <code class="descclassname"></code><code class="descname">any</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType3anyEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">NODE</span></code> based in any
+direction.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType12cellCenteredEv">
+<span id="IndexType::cellCenteredC"></span>bool <code class="descclassname"></code><code class="descname">cellCentered</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType12cellCenteredEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">CELL</span></code> based in all
+directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType12cellCenteredEi">
+<span id="IndexType::cellCentered__iC"></span>bool <code class="descclassname"></code><code class="descname">cellCentered</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType12cellCenteredEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">CELL</span></code> based in direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType12nodeCenteredEv">
+<span id="IndexType::nodeCenteredC"></span>bool <code class="descclassname"></code><code class="descname">nodeCentered</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType12nodeCenteredEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">NODE</span></code> based in all
+directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType12nodeCenteredEi">
+<span id="IndexType::nodeCentered__iC"></span>bool <code class="descclassname"></code><code class="descname">nodeCentered</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType12nodeCenteredEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if <code class="docutils literal"><span class="pre">IndexType</span></code> is <code class="docutils literal"><span class="pre">NODE</span></code> based in direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK9IndexType2okEv">
+<span id="IndexType::okC"></span>bool <code class="descclassname"></code><code class="descname">ok</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK9IndexType2okEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return true if <code class="docutils literal"><span class="pre">IndexType</span></code> is valid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType7setTypeEi9CellIndex">
+<span id="IndexType::setType__i.CellIndex"></span>void <code class="descclassname"></code><code class="descname">setType</code><span class="sig-paren">(</span>int <em>dir</em>, <a class="reference internal" href="#_CPPv2N9IndexType9CellIndexE" title="IndexType::CellIndex">CellIndex</a> <em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType7setTypeEi9CellIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IndexType11</span> <span class="pre">to</span> <span class="pre">``CellIndex</span></code> type <code class="docutils literal"><span class="pre">t</span></code> in direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType3setEi">
+<span id="IndexType::set__i"></span>void <code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType3setEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IndexType</span></code> to be <code class="docutils literal"><span class="pre">NODE</span></code> based in direction
+<code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType6setallEv">
+<span id="IndexType::setall"></span>void <code class="descclassname"></code><code class="descname">setall</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType6setallEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IndexType</span></code> to be <code class="docutils literal"><span class="pre">NODE</span></code> based in all directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType5unsetEi">
+<span id="IndexType::unset__i"></span>void <code class="descclassname"></code><code class="descname">unset</code><span class="sig-paren">(</span>int <em>dir</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType5unsetEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modidies <code class="docutils literal"><span class="pre">IndexType</span></code> to be <code class="docutils literal"><span class="pre">CELL</span></code> based in direction
+<code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType5clearEv">
+<span id="IndexType::clear"></span>void <code class="descclassname"></code><code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType5clearEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IndexType</span></code> to be <code class="docutils literal"><span class="pre">CELL</span></code> based in all directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType4flipEi">
+<span id="IndexType::flip__i"></span>void <code class="descclassname"></code><code class="descname">flip</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType4flipEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes from <code class="docutils literal"><span class="pre">CELL</span></code> to <code class="docutils literal"><span class="pre">NODE</span></code> or <code class="docutils literal"><span class="pre">NODE</span></code> to <code class="docutils literal"><span class="pre">CELL</span></code> in
+direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexTypeeqERK9IndexType">
+<span id="IndexType::eq-operator__IndexTypeCR"></span><code class="descclassname"></code><code class="descname">operator==</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> &amp;<em>rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexTypeeqERK9IndexType" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N9IndexTypeneERK9IndexType">
+<span id="IndexType::neq-operator__IndexTypeCR"></span><code class="descclassname"></code><code class="descname">operator!=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> &amp;<em>rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexTypeneERK9IndexType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compares two <code class="docutils literal"><span class="pre">IndexType</span></code>s.  They are identical if and only
+if they have the same index type in all directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType11TheCellTypeEv">
+<span id="IndexType::TheCellType"></span><em class="property">static</em> <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> <code class="descclassname"></code><code class="descname">TheCellType</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType11TheCellTypeEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <code class="docutils literal"><span class="pre">IndexType</span></code> object of value <code class="docutils literal"><span class="pre">IndexType::CELL</span></code> in
+all directions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N9IndexType11TheNodeTypeEv">
+<span id="IndexType::TheNodeType"></span><em class="property">static</em> <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> <code class="descclassname"></code><code class="descname">TheNodeType</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N9IndexType11TheNodeTypeEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <code class="docutils literal"><span class="pre">IndexType</span></code> object of value <code class="docutils literal"><span class="pre">IndexType::NODE</span></code> in
+all directions.</p>
+</dd></dl>
+
+</div></blockquote>
+<p><strong>Other members</strong></p>
+<blockquote>
+<div><dl class="enum">
 <dt id="_CPPv2N9IndexType9CellIndexE">
 <em class="property">enum </em><code class="descclassname"></code><code class="descname">CellIndex</code><a class="headerlink" href="#_CPPv2N9IndexType9CellIndexE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Valid values are</p>
+<dd><p>The cell index types are</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">CELL</span></code></li>
+<li><code class="docutils literal"><span class="pre">NODE</span></code></li>
+</ul>
+</div></blockquote>
 </dd></dl>
 
+</div></blockquote>
 </dd></dl>
 
+<p><strong>Non-member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2lsRNSt7ostreamERK9IndexType">
+<span id="lshift-operator__osR.IndexTypeCR"></span>std::ostream &amp;<code class="descclassname"></code><code class="descname">operator&lt;&lt;</code><span class="sig-paren">(</span>std::ostream &amp;<em>os</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> &amp;<em>itype</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2lsRNSt7ostreamERK9IndexType" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2rsRNSt7istreamER9IndexType">
+<span id="rshift-operator__isR.IndexTypeR"></span>std::istream &amp;<code class="descclassname"></code><code class="descname">operator&gt;&gt;</code><span class="sig-paren">(</span>std::istream &amp;<em>os</em>, <a class="reference internal" href="#_CPPv29IndexType" title="IndexType">IndexType</a> &amp;<em>itype</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2rsRNSt7istreamER9IndexType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs stream output or input on <code class="docutils literal"><span class="pre">IndexType</span></code>.</p>
+</dd></dl>
+
+</div></blockquote>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>; <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect"><code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect</span></code></a>; <a class="reference internal" href="box.html#_CPPv23Box" title="Box"><code class="xref cpp cpp-class docutils literal"><span class="pre">Box</span></code></a></p>
+</div>
 </div>
 
 
@@ -69,6 +268,12 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="boxarray.html"
+                        title="previous chapter">BoxArray</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="intvect.html"
+                        title="next chapter">IntVect</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -96,7 +301,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
+        <li class="right" >
+          <a href="intvect.html" title="IntVect"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="boxarray.html" title="BoxArray"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="classes.html" >Classes</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
