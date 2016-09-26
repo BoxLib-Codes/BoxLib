@@ -1,0 +1,16 @@
+.. _indextype:
+
+IndexType
+=========
+
+.. cpp:class:: IndexType
+
+  Located in :boxlib:`Src/C_BaseLib/IndexType.H` and
+  :boxlib:`Src/C_BaseLib/IndexType.cpp`.
+
+  ``IndexType`` is ...
+
+  .. cpp:enum:: CellIndex
+
+    Valid values are 
+

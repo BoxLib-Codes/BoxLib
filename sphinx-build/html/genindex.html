@@ -53,7 +53,6 @@
  <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#D"><strong>D</strong></a>
- | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -84,11 +83,21 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="macros.html#c.BL_ASSERT">BL_ASSERT (C macro)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="macros.html#c.BL_SPACEDIM">BL_SPACEDIM (C macro)</a>
 </li>
       <li><a href="macros.html#c.BL_USE_ASSERTION">BL_USE_ASSERTION (C macro)</a>
+</li>
+      <li><a href="box.html#_CPPv23Box">Box (C++ class)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVectRK7IntVect">BoxLib::coarsen (C++ function)</a>, <a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVecti">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N6BoxLib3maxERK7IntVectRK7IntVect">BoxLib::max (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N6BoxLib3minERK7IntVectRK7IntVect">BoxLib::min (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N6BoxLib5scaleERK7IntVecti">BoxLib::scale (C++ function)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -105,26 +114,74 @@
   </ul></td>
 </tr></table>
 
-<h2 id="G">G</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv27getVectv">getVect (C++ function)</a>, <a href="intvect.html#_CPPv2NK7getVectEv">[1]</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv27IntVect">IntVect (C++ class)</a>
-
-      <ul>
-        <li><a href="intvect.html#_CPPv27IntVectPKi">(C++ function)</a>, <a href="intvect.html#_CPPv27IntVectRK5ArrayIiE">[1]</a>, <a href="intvect.html#_CPPv27IntVecti">[2]</a>, <a href="intvect.html#_CPPv27IntVectii">[3]</a>, <a href="intvect.html#_CPPv27IntVectiii">[4]</a>, <a href="intvect.html#_CPPv27IntVectv">[5]</a>
+      <li><a href="indextype.html#_CPPv29IndexType">IndexType (C++ class)</a>
 </li>
-      </ul></li>
+      <li><a href="indextype.html#_CPPv2N9IndexType9CellIndexE">IndexType::CellIndex (C++ enum)</a>
+</li>
+      <li><a href="intvect.html#_CPPv27IntVect">IntVect (C++ class)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect7coarsenERK7IntVect">IntVect::coarsen (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVect7coarsenEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect7getVectEv">IntVect::getVect (C++ function)</a>, <a href="intvect.html#_CPPv2NK7IntVect7getVectEv">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect7IntVectEPKi">IntVect::IntVect (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVect7IntVectERK5ArrayIiE">[1]</a>, <a href="intvect.html#_CPPv2N7IntVect7IntVectEi">[2]</a>, <a href="intvect.html#_CPPv2N7IntVect7IntVectEii">[3]</a>, <a href="intvect.html#_CPPv2N7IntVect7IntVectEiii">[4]</a>, <a href="intvect.html#_CPPv2N7IntVect7IntVectEv">[5]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect7IntVect7CompareE">IntVect::IntVect::Compare (C++ class)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect3maxERK7IntVect">IntVect::max (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect3minERK7IntVect">IntVect::min (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectneERK7IntVect">IntVect::operator!= (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectmlERK7IntVect">IntVect::operator* (C++ function)</a>, <a href="intvect.html#_CPPv2NK7IntVectmlEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVectmLERK7IntVect">IntVect::operator*= (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVectmLEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectplERK7IntVect">IntVect::operator+ (C++ function)</a>, <a href="intvect.html#_CPPv2NK7IntVectplEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVectpLERK7IntVect">IntVect::operator+= (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVectpLEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectmiERK7IntVect">IntVect::operator- (C++ function)</a>, <a href="intvect.html#_CPPv2NK7IntVectmiEi">[1]</a>, <a href="intvect.html#_CPPv2NK7IntVectmiEv">[2]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVectmIERK7IntVect">IntVect::operator-= (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVectmIEi">[1]</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv2N7IntVect7CompareE">IntVect::Compare (C++ class)</a>
+      <li><a href="intvect.html#_CPPv2NK7IntVectdvERK7IntVect">IntVect::operator/ (C++ function)</a>, <a href="intvect.html#_CPPv2NK7IntVectdvEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVectdVERK7IntVect">IntVect::operator/= (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVectdVEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectltERK7IntVect">IntVect::operator&lt; (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectleERK7IntVect">IntVect::operator&lt;= (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVecteqERK7IntVect">IntVect::operator== (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectgtERK7IntVect">IntVect::operator&gt; (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2NK7IntVectgeERK7IntVect">IntVect::operator&gt;= (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVectixEi">IntVect::operator[] (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVectixEi">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect6setValEii">IntVect::setVal (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect5shiftERK7IntVect">IntVect::shift (C++ function)</a>, <a href="intvect.html#_CPPv2N7IntVect5shiftEii">[1]</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect18TheDimensionVectorEi">IntVect::TheDimensionVector (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect12TheMaxVectorEv">IntVect::TheMaxVector (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect12TheMinVectorEv">IntVect::TheMinVector (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect13TheNodeVectorEv">IntVect::TheNodeVector (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect13TheUnitVectorEv">IntVect::TheUnitVector (C++ function)</a>
+</li>
+      <li><a href="intvect.html#_CPPv2N7IntVect13TheZeroVectorEv">IntVect::TheZeroVector (C++ function)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -140,37 +197,11 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv2NKneERK7IntVect">operator!= (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKmlERK7IntVect">operator* (C++ function)</a>, <a href="intvect.html#_CPPv2NKmlEi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2mLRK7IntVect">operator*= (C++ function)</a>, <a href="intvect.html#_CPPv2mLi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKplERK7IntVect">operator+ (C++ function)</a>, <a href="intvect.html#_CPPv2NKplEi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2pLRK7IntVect">operator+= (C++ function)</a>, <a href="intvect.html#_CPPv2pLi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKmiERK7IntVect">operator- (C++ function)</a>, <a href="intvect.html#_CPPv2NKmiEi">[1]</a>, <a href="intvect.html#_CPPv2NKmiEv">[2]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2mIRK7IntVect">operator-= (C++ function)</a>, <a href="intvect.html#_CPPv2mIi">[1]</a>
+      <li><a href="intvect.html#_CPPv2lsRNSt7ostreamERK7IntVect">operator&lt;&lt; (C++ function)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv2NKdvERK7IntVect">operator/ (C++ function)</a>, <a href="intvect.html#_CPPv2NKdvEi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2dVRK7IntVect">operator/= (C++ function)</a>, <a href="intvect.html#_CPPv2dVi">[1]</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKltERK7IntVect">operator&lt; (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKleERK7IntVect">operator&lt;= (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKeqERK7IntVect">operator== (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKgtERK7IntVect">operator&gt; (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2NKgeERK7IntVect">operator&gt;= (C++ function)</a>
-</li>
-      <li><a href="intvect.html#_CPPv2ixi">operator[] (C++ function)</a>, <a href="intvect.html#_CPPv2ixi">[1]</a>
+      <li><a href="intvect.html#_CPPv2rsRNSt7istreamER7IntVect">operator&gt;&gt; (C++ function)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -211,10 +242,6 @@
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="intvect.html#_CPPv26setValii">setVal (C++ function)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="macros.html#c.SPACEDIM">SPACEDIM (C macro)</a>
 </li>

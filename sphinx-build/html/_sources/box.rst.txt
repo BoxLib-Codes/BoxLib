@@ -3,6 +3,12 @@
 Box
 ===
 
-This class uses :cpp:func:`define` to 
+.. cpp:class:: Box
+
+  Located in :boxlib:`Src/C_BaseLib/Box.H` and
+  :boxlib:`Src/C_BaseLib/Box.cpp`.
+
+  ``Box`` is ...
+
 
 

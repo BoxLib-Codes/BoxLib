@@ -15,6 +15,8 @@ List of selected classes:
 
    boxarray
 
+   indextype
+
    intvect
 
    parray

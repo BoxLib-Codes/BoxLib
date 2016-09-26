@@ -30,7 +30,7 @@
     <link rel="top" title="BoxLib Reference" href="index.html" />
     <link rel="up" title="Classes" href="classes.html" />
     <link rel="next" title="PArray" href="parray.html" />
-    <link rel="prev" title="BoxArray" href="boxarray.html" /> 
+    <link rel="prev" title="IndexType" href="indextype.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -43,7 +43,7 @@
           <a href="parray.html" title="PArray"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="boxarray.html" title="BoxArray"
+          <a href="indextype.html" title="IndexType"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="classes.html" accesskey="U">Classes</a> &#187;</li> 
@@ -67,24 +67,22 @@ is 1, 2, or 3.  It represents a point in a discrete space.
 <code class="docutils literal"><span class="pre">IntVect</span></code> values are accessed using the <code class="docutils literal"><span class="pre">operator[]</span></code> function.
 In addition, the basic arithmetic operators have been overloaded to
 implement scaling and translation operations.</p>
-</dd></dl>
-
 <p><strong>Constructors and copy assignment operator</strong></p>
 <blockquote>
 <div><dl class="function">
-<dt id="_CPPv27IntVectv">
-<code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVectv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectEv">
+<span id="IntVect::IntVect"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectEv" title="Permalink to this definition">¶</a></dt>
 <dd><p>The default constructor constructs an IntVect object whose
 components are all <strong>zero</strong>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv27IntVecti">
-<span id="IntVect__i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVecti" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv27IntVectii">
-<span id="IntVect__i.i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em>, int <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVectii" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv27IntVectiii">
-<span id="IntVect__i.i.i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em>, int <em>j</em>, int <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVectiii" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectEi">
+<span id="IntVect::IntVect__i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectEii">
+<span id="IntVect::IntVect__i.i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em>, int <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectEii" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectEiii">
+<span id="IntVect::IntVect__i.i.i"></span><code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span>int <em>i</em>, int <em>j</em>, int <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectEiii" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs an <code class="docutils literal"><span class="pre">IntVect</span></code> given the specific values for its
 coordinates.</p>
 <div class="admonition note">
@@ -95,15 +93,15 @@ three versions above is present.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv27IntVectPKi">
-<span id="IntVect__iCP"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><em class="property">const</em> int *<em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVectPKi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectEPKi">
+<span id="IntVect::IntVect__iCP"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><em class="property">const</em> int *<em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectEPKi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs an <code class="docutils literal"><span class="pre">IntVect</span></code> setting the coordinates to the
 corresponding values in the integer array a.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv27IntVectRK5ArrayIiE">
-<span id="IntVect__Array:i:CR"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array">Array</a>&lt;int&gt; &amp;<em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27IntVectRK5ArrayIiE" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVectERK5ArrayIiE">
+<span id="IntVect::IntVect__Array:i:CR"></span><em class="property">explicit</em> <code class="descclassname"></code><code class="descname">IntVect</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array">Array</a>&lt;int&gt; &amp;<em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7IntVectERK5ArrayIiE" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs an <code class="docutils literal"><span class="pre">IntVect</span></code> from an <a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array"><code class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></code></a>&lt;int&gt;.  It
 is an error if the <a class="reference internal" href="array.html#_CPPv2I0E5Array" title="Array"><code class="xref cpp cpp-class docutils literal"><span class="pre">Array</span></code></a>&lt;int&gt; doesn&#8217;t have the same
 dimension as this <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
@@ -118,124 +116,276 @@ by the compiler.</p>
 <p><strong>Member functions</strong></p>
 <blockquote>
 <div><dl class="function">
-<dt id="_CPPv2ixi">
-<span id="subscript-operator__i"></span>int &amp;<code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2ixi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectixEi">
+<span id="IntVect::subscript-operator__i"></span>int &amp;<code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectixEi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a reference to the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th coordinate of the
 <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2ixi">
-int <code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2ixi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectixEi">
+int <code class="descclassname"></code><code class="descname">operator[]</code><span class="sig-paren">(</span>int<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectixEi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the value of the <code class="docutils literal"><span class="pre">i</span></code>&#8216;th coordinate of the <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2NK7getVectEv">
-<span id="getVectC"></span><em class="property">const</em> int *<code class="descclassname"></code><code class="descname">getVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7getVectEv" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv27getVectv">
-<span id="getVect"></span>int *<code class="descclassname"></code><code class="descname">getVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv27getVectv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVect7getVectEv">
+<span id="IntVect::getVectC"></span><em class="property">const</em> int *<code class="descclassname"></code><code class="descname">getVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVect7getVectEv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7getVectEv">
+<span id="IntVect::getVect"></span>int *<code class="descclassname"></code><code class="descname">getVect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7getVectEv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a pointer to an array of coordinates of the <code class="docutils literal"><span class="pre">IntVect</span></code>.
 Useful for argument to <a class="reference internal" href="fortran.html#fortran"><span class="std std-ref">Fortran calls</span></a>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv26setValii">
-<span id="setVal__i.i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">setVal</code><span class="sig-paren">(</span>int <em>i</em>, int <em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv26setValii" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect6setValEii">
+<span id="IntVect::setVal__i.i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">setVal</code><span class="sig-paren">(</span>int <em>i</em>, int <em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect6setValEii" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets <code class="docutils literal"><span class="pre">i</span></code>&#8216;th coordinate of <code class="docutils literal"><span class="pre">IntVect</span></code> to <code class="docutils literal"><span class="pre">val</span></code>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2NKeqERK7IntVect">
-<span id="eq-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator==</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKeqERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVecteqERK7IntVect">
+<span id="IntVect::eq-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator==</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVecteqERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns true if <code class="docutils literal"><span class="pre">IntVect</span></code> is equivalent to argument <code class="docutils literal"><span class="pre">IntVect</span></code>.
 All comparisons between analogous components must be satisfied.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2NKneERK7IntVect">
-<span id="neq-operator__IntVectCRC"></span><code class="descclassname"></code><code class="descname">operator!=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKneERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectneERK7IntVect">
+<span id="IntVect::neq-operator__IntVectCRC"></span><code class="descclassname"></code><code class="descname">operator!=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectneERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns true if <code class="docutils literal"><span class="pre">IntVect</span></code> is different from argument <code class="docutils literal"><span class="pre">IntVect</span></code>
 for <strong>any</strong> of their corresponding components.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2NKltERK7IntVect">
-<span id="lt-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&lt;</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKltERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKleERK7IntVect">
-<span id="lte-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&lt;=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKleERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKgtERK7IntVect">
-<span id="gt-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&gt;</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKgtERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKgeERK7IntVect">
-<span id="gte-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&gt;=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKgeERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectltERK7IntVect">
+<span id="IntVect::lt-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&lt;</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectltERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectleERK7IntVect">
+<span id="IntVect::lte-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&lt;=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectleERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectgtERK7IntVect">
+<span id="IntVect::gt-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&gt;</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectgtERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectgeERK7IntVect">
+<span id="IntVect::gte-operator__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">operator&gt;=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectgeERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns true if <strong>all</strong> comparisons between analogous components
 are satisfied.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This is NOT a strictly weak ordering usable by STL sorting
-algorithms.  For that one can use <a class="reference internal" href="#_CPPv2N7IntVect7CompareE" title="IntVect::Compare"><code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect::Compare</span></code></a>.</p>
+<p class="last">This is NOT a strict weak ordering usable by STL sorting
+algorithms.  For that one can use <code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect::Compare</span></code>.</p>
 </div>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2NKmiEv">
-<span id="sub-operatorC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKmiEv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectmiEv">
+<span id="IntVect::sub-operatorC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectmiEv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Unary minus operator that negates all components.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2pLi">
-<span id="add-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator+=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2pLi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2mIi">
-<span id="sub-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator-=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2mIi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2mLi">
-<span id="mul-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator*=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2mLi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2dVi">
-<span id="div-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator/=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2dVi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKplEi">
-<span id="add-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator+</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKplEi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKmiEi">
-<span id="sub-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKmiEi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKmlEi">
-<span id="mul-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator*</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKmlEi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKdvEi">
-<span id="div-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator/</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKdvEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectpLEi">
+<span id="IntVect::add-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator+=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectpLEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectmIEi">
+<span id="IntVect::sub-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator-=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectmIEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectmLEi">
+<span id="IntVect::mul-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator*=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectmLEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectdVEi">
+<span id="IntVect::div-assign-operator__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator/=</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectdVEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectplEi">
+<span id="IntVect::add-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator+</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectplEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectmiEi">
+<span id="IntVect::sub-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectmiEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectmlEi">
+<span id="IntVect::mul-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator*</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectmlEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectdvEi">
+<span id="IntVect::div-operator__iC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator/</code><span class="sig-paren">(</span>int <em>s</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectdvEi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Component-wise operators with a scalar.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="_CPPv2pLRK7IntVect">
-<span id="add-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator+=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2pLRK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2mIRK7IntVect">
-<span id="sub-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator-=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2mIRK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2mLRK7IntVect">
-<span id="mul-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator*=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2mLRK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2dVRK7IntVect">
-<span id="div-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator/=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2dVRK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKplERK7IntVect">
-<span id="add-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator+</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKplERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKmiERK7IntVect">
-<span id="sub-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKmiERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKmlERK7IntVect">
-<span id="mul-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator*</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKmlERK7IntVect" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2NKdvERK7IntVect">
-<span id="div-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator/</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NKdvERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectpLERK7IntVect">
+<span id="IntVect::add-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator+=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectpLERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectmIERK7IntVect">
+<span id="IntVect::sub-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator-=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectmIERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectmLERK7IntVect">
+<span id="IntVect::mul-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator*=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectmLERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVectdVERK7IntVect">
+<span id="IntVect::div-assign-operator__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">operator/=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVectdVERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectplERK7IntVect">
+<span id="IntVect::add-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator+</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectplERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectmiERK7IntVect">
+<span id="IntVect::sub-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator-</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectmiERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectmlERK7IntVect">
+<span id="IntVect::mul-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator*</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectmlERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK7IntVectdvERK7IntVect">
+<span id="IntVect::div-operator__IntVectCRC"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname"></code><code class="descname">operator/</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK7IntVectdvERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Component-wise operators with an <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect3minERK7IntVect">
+<span id="IntVect::min__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">min</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect3minERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect3maxERK7IntVect">
+<span id="IntVect::max__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">max</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect3maxERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IntVect</span></code> by taking component-wise min or max with argument.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect5shiftEii">
+<span id="IntVect::shift__i.i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">shift</code><span class="sig-paren">(</span>int <em>coord</em>, int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect5shiftEii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IntVect</span></code> by adding <code class="docutils literal"><span class="pre">s</span></code> to given coordinate <code class="docutils literal"><span class="pre">coord</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect5shiftERK7IntVect">
+<span id="IntVect::shift__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">shift</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>iv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect5shiftERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">operator+=</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect7coarsenERK7IntVect">
+<span id="IntVect::coarsen__IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7coarsenERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7coarsenEi">
+<span id="IntVect::coarsen__i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">coarsen</code><span class="sig-paren">(</span>int <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect7coarsenEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies <code class="docutils literal"><span class="pre">IntVect</span></code> by component-wise integer projection.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>This coarsen function is same as <code class="docutils literal"><span class="pre">operator/=</span></code> for non-negative
+values, but they are different for negative values:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;BoxLib.H&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;IntVect.H&gt;</span><span class="cp"></span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="n">BoxLib</span><span class="o">::</span><span class="n">Initialize</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span><span class="n">argv</span><span class="p">);</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;IntVect(D_DECL(0, 1, 4)).coarsen(4) gives &quot;</span>
+              <span class="o">&lt;&lt;</span>  <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)).</span><span class="n">coarsen</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;IntVect(D_DECL(0, 1, 4)).operator/=(4) gives &quot;</span>
+              <span class="o">&lt;&lt;</span>  <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)).</span><span class="k">operator</span><span class="o">/=</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;IntVect(D_DECL(-1,-3,-4)).coarsen(4) gives &quot;</span>
+              <span class="o">&lt;&lt;</span>  <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">4</span><span class="p">)).</span><span class="n">coarsen</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;IntVect(D_DECL(-1,-3,-4)).operator/=(4) gives &quot;</span>
+              <span class="o">&lt;&lt;</span>  <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">4</span><span class="p">)).</span><span class="k">operator</span><span class="o">/=</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="n">BoxLib</span><span class="o">::</span><span class="n">Finalize</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Results:</p>
+<div class="last highlight-cpp"><div class="highlight"><pre><span></span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)).</span><span class="n">coarsen</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="n">gives</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)).</span><span class="k">operator</span><span class="o">/=</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="n">gives</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">4</span><span class="p">)).</span><span class="n">coarsen</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="n">gives</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">4</span><span class="p">)).</span><span class="k">operator</span><span class="o">/=</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="n">gives</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect13TheZeroVectorEv">
+<span id="IntVect::TheZeroVector"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheZeroVector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect13TheZeroVectorEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">const</span></code> reference to an <code class="docutils literal"><span class="pre">IntVect</span></code> object, all of whose
+<a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a> components are set to zero (0).
+Figuratively, it is the zero vector in
+<a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>-dimensional space.  It is provided as a
+convenient way to specify the zero vector.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect13TheUnitVectorEv">
+<span id="IntVect::TheUnitVector"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheUnitVector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect13TheUnitVectorEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">const</span></code> reference to an <code class="docutils literal"><span class="pre">IntVect</span></code> object, all of whose
+<a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a> components are set to one (1).
+Figuratively, it is the unit vector in
+<a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>-dimensional space.  It is provided as a
+convenient way to specify the unit vector.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect18TheDimensionVectorEi">
+<span id="IntVect::TheDimensionVector__i"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheDimensionVector</code><span class="sig-paren">(</span>int <em>d</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect18TheDimensionVectorEi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">const</span></code> reference to an <code class="docutils literal"><span class="pre">IntVect</span></code> object, all of
+whose <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> components are set to zero except that the
+<code class="docutils literal"><span class="pre">d</span></code>-direction is set to one.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect13TheNodeVectorEv">
+<span id="IntVect::TheNodeVector"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheNodeVector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect13TheNodeVectorEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">const</span></code> reference to an <code class="docutils literal"><span class="pre">IntVect</span></code> object, all of
+whose <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> components are set to <code class="docutils literal"><span class="pre">IndexType::NODE</span></code>.
+It is provided as a convenience when defining a <a class="reference internal" href="indextype.html#_CPPv29IndexType" title="IndexType"><code class="xref cpp cpp-class docutils literal"><span class="pre">nodal</span></code></a> <a class="reference internal" href="box.html#_CPPv23Box" title="Box"><code class="xref cpp cpp-class docutils literal"><span class="pre">Box</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N7IntVect12TheMaxVectorEv">
+<span id="IntVect::TheMaxVector"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheMaxVector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect12TheMaxVectorEv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect12TheMinVectorEv">
+<span id="IntVect::TheMinVector"></span><em class="property">static</em> <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<code class="descclassname"></code><code class="descname">TheMinVector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N7IntVect12TheMinVectorEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">const</span></code> reference to an <code class="docutils literal"><span class="pre">IntVect</span></code> object, all of
+whose <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> components are set to the maximal or minimal
+integer.</p>
 </dd></dl>
 
 </div></blockquote>
 <p><strong>Nested class</strong></p>
 <blockquote>
 <div><dl class="class">
-<dt id="_CPPv2N7IntVect7CompareE">
-<span id="IntVect::Compare"></span><em class="property">class </em><code class="descclassname">IntVect::</code><code class="descname">Compare</code><a class="headerlink" href="#_CPPv2N7IntVect7CompareE" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N7IntVect7IntVect7CompareE">
+<span id="IntVect::IntVect::Compare"></span><em class="property">class </em><code class="descclassname">IntVect::</code><code class="descname">Compare</code><a class="headerlink" href="#_CPPv2N7IntVect7IntVect7CompareE" title="Permalink to this definition">¶</a></dt>
 <dd><p>An <code class="docutils literal"><span class="pre">IntVect</span></code> comparison class.  Needed for STL associative
 containers indexed by <code class="docutils literal"><span class="pre">IntVects</span></code>.  Uses lexicographical
 comparison.</p>
 </dd></dl>
 
 </div></blockquote>
+</dd></dl>
+
 <p><strong>Non-member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2lsRNSt7ostreamERK7IntVect">
+<span id="lshift-operator__osR.IntVectCR"></span>std::ostream &amp;<code class="descclassname"></code><code class="descname">operator&lt;&lt;</code><span class="sig-paren">(</span>std::ostream &amp;<em>os</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>iv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2lsRNSt7ostreamERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2rsRNSt7istreamER7IntVect">
+<span id="rshift-operator__isR.IntVectR"></span>std::istream &amp;<code class="descclassname"></code><code class="descname">operator&gt;&gt;</code><span class="sig-paren">(</span>std::istream &amp;<em>os</em>, <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>iv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2rsRNSt7istreamER7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs stream output or input on <code class="docutils literal"><span class="pre">IntVect</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib3minERK7IntVectRK7IntVect">
+<span id="BoxLib::min__IntVectCR.IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname">BoxLib::</code><code class="descname">min</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p1</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p2</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib3minERK7IntVectRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib3maxERK7IntVectRK7IntVect">
+<span id="BoxLib::max__IntVectCR.IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname">BoxLib::</code><code class="descname">max</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p1</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p2</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib3maxERK7IntVectRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the <code class="docutils literal"><span class="pre">IntVect</span></code> that is the component-wise minimum or
+maximum of the two argument <code class="docutils literal"><span class="pre">IntVect</span></code>s.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib5scaleERK7IntVecti">
+<span id="BoxLib::scale__IntVectCR.i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname">BoxLib::</code><code class="descname">scale</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em>, int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib5scaleERK7IntVecti" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <code class="docutils literal"><span class="pre">IntVect</span></code> obtained by multiplying each of the
+components of the argument <code class="docutils literal"><span class="pre">IntVect</span></code> by <code class="docutils literal"><span class="pre">s</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib7coarsenERK7IntVecti">
+<span id="BoxLib::coarsen__IntVectCR.i"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname">BoxLib::</code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em>, int <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7coarsenERK7IntVecti" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <code class="docutils literal"><span class="pre">IntVect</span></code> that is the component-wise integer
+projection of the argument <code class="docutils literal"><span class="pre">IntVect</span></code> by <code class="docutils literal"><span class="pre">s</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib7coarsenERK7IntVectRK7IntVect">
+<span id="BoxLib::coarsen__IntVectCR.IntVectCR"></span><a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> <code class="descclassname">BoxLib::</code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p1</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p2</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7coarsenERK7IntVectRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <code class="docutils literal"><span class="pre">IntVect</span></code> that is the component-wise integer
+projection of <code class="docutils literal"><span class="pre">IntVect</span> <span class="pre">p1</span></code> by <code class="docutils literal"><span class="pre">IntVect</span> <span class="pre">p2</span></code>.</p>
+</dd></dl>
+
+</div></blockquote>
 </div>
 
 
@@ -245,8 +395,8 @@ comparison.</p>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="boxarray.html"
-                        title="previous chapter">BoxArray</a></p>
+  <p class="topless"><a href="indextype.html"
+                        title="previous chapter">IndexType</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="parray.html"
                         title="next chapter">PArray</a></p>
@@ -281,7 +431,7 @@ comparison.</p>
           <a href="parray.html" title="PArray"
              >next</a> |</li>
         <li class="right" >
-          <a href="boxarray.html" title="BoxArray"
+          <a href="indextype.html" title="IndexType"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="classes.html" >Classes</a> &#187;</li> 
