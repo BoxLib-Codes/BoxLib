@@ -3,5 +3,11 @@
 BoxArray
 ========
 
-This class
+.. cpp:class:: BoxArray
+
+  This class
+
+.. seealso::
+
+  :cpp:class:`Box`
 
