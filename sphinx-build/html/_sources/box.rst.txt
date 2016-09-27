@@ -132,6 +132,66 @@ Box
         std::cout << bx.numPts() << "\n"; // 5 x 5 x 5 = 125 in 3D
         std::cout << bx.volume() << "\n"; // 4 x 4 x 4 = 64 in 3D
 
+    .. cpp:function:: int longside () const
+                      int longside (int& dir) const
+
+      Returns the length of the longest side.  The argument ``dir``,
+      if provided, is modified to give direction with the longest
+      side.
+
+    .. cpp:function:: int shortside () const
+                      int shortside (int& dir) const
+
+      Returns the length of the shortest side.  The argument ``dir``,
+      if provided, is modified to give direction with the shorest
+      side.
+
+    .. cpp:function:: long index (const IntVect& v) const
+
+      Returns offset of the point represented by ``IntVect`` from the
+      small end of ``Box``, assuming column-major order as in
+      Fortran.
+
+    .. cpp:function:: Box& setSmall (const IntVect& sm)
+
+      Redefines the small end of ``Box`` to ``IntVect sm``.
+
+    .. cpp:function:: Box& setSmall (int dir, int sm_index)
+
+      Redefines the small end of ``Box`` at direction ``dir`` to
+      ``sm_index``.
+
+    .. cpp:function:: Box& setBig (const IntVect& bg)
+
+      Redefines the big end of ``Box`` to ``IntVect bg``.
+
+    .. cpp:function:: Box& setBig (int dir, int bg_index)
+
+      Redefines the big end of ``Box`` at direction ``dir`` to
+      ``bg_index``.
+
+    .. cpp:function:: Box& setRange (int dir, int sm_index, int n_cells = 1)
+
+      Set the range in direction ``dir``, starting at ``sm_index``
+      with length ``n_cells``.
+
+    .. cpp:function:: Box& shift (int dir, int nzones)
+
+      Shifts ``Box`` in direction ``dir`` by ``nzones`` indexing
+      positions. 
+
+    .. cpp:function:: Box& shift (const IntVect& iv)
+
+      Shifts ``Box`` by ``IntVect iv``.
+
+    .. cpp:function:: Box& convert (IndexType typ)
+                      Box& convert (const IntVect& typ)
+
+      Converts ``Box`` from the current type into the argument type.
+      The ``volume`` of ``Box`` does not change, whereas the
+      ``length`` and the number of points may change.  See also,
+      functions ``volume`` and ``numPts``.
+
     .. cpp:function:: bool contains (const IntVect& p) const
                       bool stictly_contains (const IntVect& p) const
 
@@ -172,5 +232,5 @@ Box
 
 .. seealso::
 
-  :c:macro:`BL_SPACEDIM`; :cpp:class:`IntVect`;
+  :c:macro:`BL_SPACEDIM`; :cpp:class:`IntVect`; \
      :cpp:class:`IndexType`; :cpp:class:`Orientation`; :cpp:class:`BoxArray`

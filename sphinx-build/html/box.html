@@ -225,6 +225,91 @@ For example:</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="_CPPv2NK3Box8longsideEv">
+<span id="Box::longsideC"></span>int <code class="descclassname"></code><code class="descname">longside</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box8longsideEv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK3Box8longsideERi">
+<span id="Box::longside__iRC"></span>int <code class="descclassname"></code><code class="descname">longside</code><span class="sig-paren">(</span>int &amp;<em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box8longsideERi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the length of the longest side.  The argument <code class="docutils literal"><span class="pre">dir</span></code>,
+if provided, is modified to give direction with the longest
+side.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK3Box9shortsideEv">
+<span id="Box::shortsideC"></span>int <code class="descclassname"></code><code class="descname">shortside</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box9shortsideEv" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2NK3Box9shortsideERi">
+<span id="Box::shortside__iRC"></span>int <code class="descclassname"></code><code class="descname">shortside</code><span class="sig-paren">(</span>int &amp;<em>dir</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box9shortsideERi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the length of the shortest side.  The argument <code class="docutils literal"><span class="pre">dir</span></code>,
+if provided, is modified to give direction with the shorest
+side.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2NK3Box5indexERK7IntVect">
+<span id="Box::index__IntVectCRC"></span>long <code class="descclassname"></code><code class="descname">index</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>v</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box5indexERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns offset of the point represented by <code class="docutils literal"><span class="pre">IntVect</span></code> from the
+small end of <code class="docutils literal"><span class="pre">Box</span></code>, assuming column-major order as in
+Fortran.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box8setSmallERK7IntVect">
+<span id="Box::setSmall__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">setSmall</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>sm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box8setSmallERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Redefines the small end of <code class="docutils literal"><span class="pre">Box</span></code> to <code class="docutils literal"><span class="pre">IntVect</span> <span class="pre">sm</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box8setSmallEii">
+<span id="Box::setSmall__i.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">setSmall</code><span class="sig-paren">(</span>int <em>dir</em>, int <em>sm_index</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box8setSmallEii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Redefines the small end of <code class="docutils literal"><span class="pre">Box</span></code> at direction <code class="docutils literal"><span class="pre">dir</span></code> to
+<code class="docutils literal"><span class="pre">sm_index</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box6setBigERK7IntVect">
+<span id="Box::setBig__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">setBig</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>bg</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box6setBigERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Redefines the big end of <code class="docutils literal"><span class="pre">Box</span></code> to <code class="docutils literal"><span class="pre">IntVect</span> <span class="pre">bg</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box6setBigEii">
+<span id="Box::setBig__i.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">setBig</code><span class="sig-paren">(</span>int <em>dir</em>, int <em>bg_index</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box6setBigEii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Redefines the big end of <code class="docutils literal"><span class="pre">Box</span></code> at direction <code class="docutils literal"><span class="pre">dir</span></code> to
+<code class="docutils literal"><span class="pre">bg_index</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box8setRangeEiii">
+<span id="Box::setRange__i.i.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">setRange</code><span class="sig-paren">(</span>int <em>dir</em>, int <em>sm_index</em>, int <em>n_cells</em> = 1<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box8setRangeEiii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the range in direction <code class="docutils literal"><span class="pre">dir</span></code>, starting at <code class="docutils literal"><span class="pre">sm_index</span></code>
+with length <code class="docutils literal"><span class="pre">n_cells</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box5shiftEii">
+<span id="Box::shift__i.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">shift</code><span class="sig-paren">(</span>int <em>dir</em>, int <em>nzones</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box5shiftEii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts <code class="docutils literal"><span class="pre">Box</span></code> in direction <code class="docutils literal"><span class="pre">dir</span></code> by <code class="docutils literal"><span class="pre">nzones</span></code> indexing
+positions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box5shiftERK7IntVect">
+<span id="Box::shift__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">shift</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>iv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box5shiftERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts <code class="docutils literal"><span class="pre">Box</span></code> by <code class="docutils literal"><span class="pre">IntVect</span> <span class="pre">iv</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box7convertE9IndexType">
+<span id="Box::convert__IndexType"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">convert</code><span class="sig-paren">(</span><a class="reference internal" href="indextype.html#_CPPv29IndexType" title="IndexType">IndexType</a> <em>typ</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box7convertE9IndexType" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N3Box7convertERK7IntVect">
+<span id="Box::convert__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">convert</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>typ</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box7convertERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts <code class="docutils literal"><span class="pre">Box</span></code> from the current type into the argument type.
+The <code class="docutils literal"><span class="pre">volume</span></code> of <code class="docutils literal"><span class="pre">Box</span></code> does not change, whereas the
+<code class="docutils literal"><span class="pre">length</span></code> and the number of points may change.  See also,
+functions <code class="docutils literal"><span class="pre">volume</span></code> and <code class="docutils literal"><span class="pre">numPts</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="_CPPv2NK3Box8containsERK7IntVect">
 <span id="Box::contains__IntVectCRC"></span>bool <code class="descclassname"></code><code class="descname">contains</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>p</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box8containsERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2NK3Box16stictly_containsERK7IntVect">
@@ -283,7 +368,7 @@ differ (including type).</p>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
 <dl class="last docutils">
-<dt><a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>; <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect"><code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect</span></code></a>;</dt>
+<dt><a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>; <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect"><code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect</span></code></a>; </dt>
 <dd><a class="reference internal" href="indextype.html#_CPPv29IndexType" title="IndexType"><code class="xref cpp cpp-class docutils literal"><span class="pre">IndexType</span></code></a>; <a class="reference internal" href="orientation.html#_CPPv211Orientation" title="Orientation"><code class="xref cpp cpp-class docutils literal"><span class="pre">Orientation</span></code></a>; <a class="reference internal" href="boxarray.html#_CPPv28BoxArray" title="BoxArray"><code class="xref cpp cpp-class docutils literal"><span class="pre">BoxArray</span></code></a></dd>
 </dl>
 </div>
