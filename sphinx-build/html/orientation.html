@@ -67,9 +67,10 @@
 <a class="reference internal" href="box.html#_CPPv23Box" title="Box"><code class="xref cpp cpp-class docutils literal"><span class="pre">Box</span></code></a> in <a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a> dimensions.  This allows
 iterating over all the faces of a <a class="reference internal" href="box.html#_CPPv23Box" title="Box"><code class="xref cpp cpp-class docutils literal"><span class="pre">Box</span></code></a>.  The ordering
 first traverses the <a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a> low sides from direction
-<code class="docutils literal"><span class="pre">0</span> <span class="pre">..</span> <span class="pre">BL_SPACEDIM-1</span></code> and then the <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> high sides from
-direction <code class="docutils literal"><span class="pre">0</span> <span class="pre">..</span>&#160; <span class="pre">BL_SPACEDIM-1</span></code>.  This class defines an enumerated
-type <code class="docutils literal"><span class="pre">Side</span></code> to be either <code class="docutils literal"><span class="pre">low</span></code> or <code class="docutils literal"><span class="pre">high</span></code>.</p>
+<code class="docutils literal"><span class="pre">0</span></code> to <code class="docutils literal"><span class="pre">BL_SPACEDIM-1</span></code> and then the <code class="docutils literal"><span class="pre">BL_SPACEDIM</span></code> high sides
+from direction <code class="docutils literal"><span class="pre">0</span></code> to <code class="docutils literal"><span class="pre">BL_SPACEDIM-1</span></code>.  This class defines an
+enumerated type <a class="reference internal" href="#_CPPv2N11Orientation4SideE" title="Orientation::Side"><code class="xref cpp cpp-enum docutils literal"><span class="pre">Orientation::Side</span></code></a> to be either <code class="docutils literal"><span class="pre">low</span></code>
+or <code class="docutils literal"><span class="pre">high</span></code>.</p>
 <p><strong>Constructors and copy assignment operator</strong></p>
 <blockquote>
 <div><dl class="function">
@@ -218,7 +219,7 @@ post-increment.</p>
 </div></blockquote>
 </dd></dl>
 
-<p><em>Example</em></p>
+<p><em>Example:</em></p>
 <blockquote>
 <div><div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="n">OrientationIter</span> <span class="n">face</span><span class="p">;</span> <span class="n">face</span><span class="p">;</span> <span class="o">++</span><span class="n">face</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int</span> <span class="n">iface</span> <span class="o">=</span> <span class="n">face</span><span class="p">();</span>

@@ -13,9 +13,10 @@ Orientation
   :cpp:class:`Box` in :c:macro:`BL_SPACEDIM` dimensions.  This allows
   iterating over all the faces of a :cpp:class:`Box`.  The ordering
   first traverses the :c:macro:`BL_SPACEDIM` low sides from direction
-  ``0 .. BL_SPACEDIM-1`` and then the ``BL_SPACEDIM`` high sides from
-  direction ``0 ..  BL_SPACEDIM-1``.  This class defines an enumerated
-  type ``Side`` to be either ``low`` or ``high``.
+  ``0`` to ``BL_SPACEDIM-1`` and then the ``BL_SPACEDIM`` high sides
+  from direction ``0`` to ``BL_SPACEDIM-1``.  This class defines an
+  enumerated type :cpp:enum:`Orientation::Side` to be either ``low``
+  or ``high``.
 
   **Constructors and copy assignment operator**
 
@@ -139,7 +140,7 @@ Orientation
 
       Operators for comparison.
 
-*Example*
+*Example:*
 
   .. code-block:: cpp
 
