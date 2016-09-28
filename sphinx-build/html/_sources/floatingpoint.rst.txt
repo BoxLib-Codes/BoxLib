@@ -1,0 +1,18 @@
+.. _floatingpoint:
+
+Floating Point
+==============
+
+.. cpp:type:: float Real
+              double Real
+
+  By default, BoxLib uses double precision and ``Real`` is defined to
+  be ``double``.  If ``PRECISION=FLOAT`` is set in the make system,
+  ``Real`` is defined to ``float``.  Fortran module ``bl_fort_module``
+  defines a parameter called ``c_real`` that matches ``Real``.  Thus
+  "real(c_real)`` in Fortran code is interoperable with ``Real`` in
+  C++. 
+
+.. seealso::
+
+  :ref:`Fortran`

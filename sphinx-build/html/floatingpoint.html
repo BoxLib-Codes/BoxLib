@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Topics &#8212; BoxLib Reference</title>
+    <title>Floating Point &#8212; BoxLib Reference</title>
     
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -28,8 +28,9 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="top" title="BoxLib Reference" href="index.html" />
-    <link rel="next" title="Backtrace" href="backtrace.html" />
-    <link rel="prev" title="BoxLib" href="boxlibnsp.html" /> 
+    <link rel="up" title="Topics" href="topics.html" />
+    <link rel="next" title="Fortran" href="fortran.html" />
+    <link rel="prev" title="Backtrace" href="backtrace.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -39,12 +40,13 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="backtrace.html" title="Backtrace"
+          <a href="fortran.html" title="Fortran"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="boxlibnsp.html" title="BoxLib"
+          <a href="backtrace.html" title="Backtrace"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="topics.html" accesskey="U">Topics</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -53,15 +55,24 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="topics">
-<span id="id1"></span><h1>Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="backtrace.html">Backtrace</a></li>
-<li class="toctree-l1"><a class="reference internal" href="floatingpoint.html">Floating Point</a></li>
-<li class="toctree-l1"><a class="reference internal" href="fortran.html">Fortran</a></li>
-<li class="toctree-l1"><a class="reference internal" href="make.html">Make</a></li>
-</ul>
+  <div class="section" id="floating-point">
+<span id="floatingpoint"></span><h1>Floating Point<a class="headerlink" href="#floating-point" title="Permalink to this headline">¶</a></h1>
+<dl class="type">
+<dt id="_CPPv24Real">
+<span id="Real"></span><em class="property">typedef </em>float <code class="descclassname"></code><code class="descname">Real</code><a class="headerlink" href="#_CPPv24Real" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv24Real">
+<em class="property">typedef </em>double <code class="descclassname"></code><code class="descname">Real</code><a class="headerlink" href="#_CPPv24Real" title="Permalink to this definition">¶</a></dt>
+<dd><p>By default, BoxLib uses double precision and <code class="docutils literal"><span class="pre">Real</span></code> is defined to
+be <code class="docutils literal"><span class="pre">double</span></code>.  If <code class="docutils literal"><span class="pre">PRECISION=FLOAT</span></code> is set in the make system,
+<code class="docutils literal"><span class="pre">Real</span></code> is defined to <code class="docutils literal"><span class="pre">float</span></code>.  Fortran module <code class="docutils literal"><span class="pre">bl_fort_module</span></code>
+defines a parameter called <code class="docutils literal"><span class="pre">c_real</span></code> that matches <code class="docutils literal"><span class="pre">Real</span></code>.  Thus
+&#8220;real(c_real)`` in Fortran code is interoperable with <code class="docutils literal"><span class="pre">Real</span></code> in
+C++.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="fortran.html#fortran"><span class="std std-ref">Fortran</span></a></p>
 </div>
 </div>
 
@@ -72,15 +83,15 @@
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="boxlibnsp.html"
-                        title="previous chapter">BoxLib</a></p>
-  <h4>Next topic</h4>
   <p class="topless"><a href="backtrace.html"
-                        title="next chapter">Backtrace</a></p>
+                        title="previous chapter">Backtrace</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="fortran.html"
+                        title="next chapter">Fortran</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/topics.rst.txt"
+      <li><a href="_sources/floatingpoint.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -105,12 +116,13 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="backtrace.html" title="Backtrace"
+          <a href="fortran.html" title="Fortran"
              >next</a> |</li>
         <li class="right" >
-          <a href="boxlibnsp.html" title="BoxLib"
+          <a href="backtrace.html" title="Backtrace"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">BoxLib Reference</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="topics.html" >Topics</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
