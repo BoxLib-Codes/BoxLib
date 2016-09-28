@@ -192,13 +192,75 @@ Box
       ``length`` and the number of points may change.  See also,
       functions ``volume`` and ``numPts``.
 
-    .. cpp:function:: bool contains (const IntVect& p) const
-                      bool stictly_contains (const IntVect& p) const
+    .. cpp:function:: Box& surroundingNodes ()
+                      Box& surroundingNodes (int dir)
 
-      Returns true if the coordinates denoted by the argument is
-      contained or strictly contained within ``Box``.  A point/cell on
-      the borders of the ``Box`` is contained but not strictly
-      contained.
+      Converts ``Box`` to ``NODE`` in all directions or given
+      direction ``dir``.  The ``volume`` of ``Box`` does not change,
+      whereas the ``length`` and the number of points will increase if
+      the previous type is ``CELL``.  See also, functions ``volume``
+      and ``numPts``.
+
+    .. cpp:function:: Box& enclosedCells ()
+    .. cpp:function:: Box& enclosedCells (int dir)
+
+      Converts ``Box`` to ``CELL`` in all directions or given
+      direction ``dir``.  The ``volume`` of ``Box`` does not change,
+      whereas the ``length`` and the number of points will decrease if
+      the previous is ``NODE``.  See also, functions ``volume`` and
+      ``numPts``.
+
+    .. cpp:function:: Box operator& (const Box& rhs) const
+
+      Returns a ``Box`` that is intersection of this ``Box`` and
+      argument.  The ``Box``\ es MUST be of same type.
+
+    .. cpp:function:: Box& operator&= (const Box& rhs)
+
+      Intersects this ``Box`` with the argument.  This ``Box`` is
+      modified.  The ``Box``\ es MUST be of same type.
+
+    .. cpp:function:: Box operator+ (const IntVect& v) const
+                      Box operator- (const IntVect& v) const
+
+      Returns a ``Box`` that is this ``Box`` shifted (positively or
+      negatively) by given ``IntVect``.
+
+    .. cpp:function:: Box& operator+= (const IntVect& v)
+                      Box& operator-= (const IntVect& v)
+
+      Modifies this ``Box`` by shifting (positively or negatively) by
+      given ``IntVect``.
+
+    .. cpp:function:: Box& grow (int i)
+
+      Modifies ``Box`` by growing the low and high ends in all
+      directions by given amount.
+
+    .. cpp:function:: Box& grow (const IntVect& v)
+
+      Modifies ``Box`` by growing the low and high ends by specified
+      amount.
+
+    .. cpp:function:: Box& grow (int idir, int n_cell)
+
+      Modifies ``Box`` by growing the low and high ends in direction
+      ``idir`` by ``n_cell`` points.
+
+    .. cpp:function:: Box& growLo (int idir, int n_cell = 1)
+
+      Modifies ``Box`` by growing the low end in direction ``idir`` by
+      ``n_cell`` points.
+
+    .. cpp:function:: Box& growHi (int idir, int n_cell = 1)
+
+      Modifies ``Box`` by growing the high end in direction ``idir`` by
+      ``n_cell`` points.
+
+    .. cpp:function:: Box& grow (Orientation face, int n_cell = 1)
+
+      Modifies ``Box`` by growing the given face by ``n_cell``
+      points. 
 
     .. cpp:function:: bool contains (const Box& b) const
                       bool strictly_contains (const Box& b) const
@@ -207,6 +269,20 @@ Box
       contained within this ``Box``.  By "strictly", it means the two
       ``Box``\ es do not share borders.  It's a runtime error if the
       two ``Box`` es have different types.
+
+    .. cpp:function:: bool contains (const IntVect& p) const
+                      bool stictly_contains (const IntVect& p) const
+
+      Returns true if the coordinates denoted by the argument is
+      contained or strictly contained within ``Box``.  A point/cell on
+      the borders of the ``Box`` is contained but not strictly
+      contained.
+
+    .. cpp:function:: Box& minBox (const Box&)
+
+      Modifies ``Box`` to that of the minimum ``Box`` containing both
+      the original ``Box`` and the argument.  Both ``Box``\ es must
+      have identical type.
 
     .. cpp:function:: bool intersects (const Box& b) const
 
@@ -232,5 +308,4 @@ Box
 
 .. seealso::
 
-  :c:macro:`BL_SPACEDIM`; :cpp:class:`IntVect`; \
-     :cpp:class:`IndexType`; :cpp:class:`Orientation`; :cpp:class:`BoxArray`
+  :c:macro:`BL_SPACEDIM`; :cpp:class:`IntVect`; :cpp:class:`IndexType`; :cpp:class:`Orientation`; :cpp:class:`BoxArray`
