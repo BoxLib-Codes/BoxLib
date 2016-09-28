@@ -221,7 +221,7 @@ IntVect
 **Non-member functions**
 
   .. cpp:function:: std::ostream& operator<< (std::ostream& os, const IntVect& iv)
-                    std::istream& operator>> (std::istream& os, IntVect& iv)
+                    std::istream& operator>> (std::istream& is, IntVect& iv)
 
     Performs stream output or input on ``IntVect``.
 

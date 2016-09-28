@@ -216,8 +216,7 @@ type).</p>
 this <code class="docutils literal"><span class="pre">Box</span></code>.  This is identical to <code class="docutils literal"><span class="pre">numPts()</span></code> for
 cell-centered <code class="docutils literal"><span class="pre">Box</span></code>e; otherwise, <code class="docutils literal"><span class="pre">numPts()</span> <span class="pre">&gt;</span> <span class="pre">volume()</span></code>.
 For example:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">Box</span> <span class="nf">bx</span><span class="p">(</span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)),</span> <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)),</span>
-       <span class="n">IndexType</span><span class="o">::</span><span class="n">TheNodeType</span><span class="p">());</span>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">Box</span> <span class="nf">bx</span><span class="p">(</span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)),</span> <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)),</span> <span class="n">IndexType</span><span class="o">::</span><span class="n">TheNodeType</span><span class="p">());</span>
 <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">bx</span><span class="p">.</span><span class="n">numPts</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span> <span class="c1">// 5 x 5 x 5 = 125 in 3D</span>
 <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">bx</span><span class="p">.</span><span class="n">volume</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span> <span class="c1">// 4 x 4 x 4 = 64 in 3D</span>
 </pre></div>
@@ -307,6 +306,10 @@ positions.</p>
 The <code class="docutils literal"><span class="pre">volume</span></code> of <code class="docutils literal"><span class="pre">Box</span></code> does not change, whereas the
 <code class="docutils literal"><span class="pre">length</span></code> and the number of points may change.  See also,
 functions <code class="docutils literal"><span class="pre">volume</span></code> and <code class="docutils literal"><span class="pre">numPts</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib7convertERK3BoxRK7IntVect" title="BoxLib::convert"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::convert()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -319,6 +322,10 @@ direction <code class="docutils literal"><span class="pre">dir</span></code>.  T
 whereas the <code class="docutils literal"><span class="pre">length</span></code> and the number of points will increase if
 the previous type is <code class="docutils literal"><span class="pre">CELL</span></code>.  See also, functions <code class="docutils literal"><span class="pre">volume</span></code>
 and <code class="docutils literal"><span class="pre">numPts</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib16surroundingNodesERK3Boxi" title="BoxLib::surroundingNodes"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::surroundingNodes()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -334,6 +341,10 @@ direction <code class="docutils literal"><span class="pre">dir</span></code>.  T
 whereas the <code class="docutils literal"><span class="pre">length</span></code> and the number of points will decrease if
 the previous is <code class="docutils literal"><span class="pre">NODE</span></code>.  See also, functions <code class="docutils literal"><span class="pre">volume</span></code> and
 <code class="docutils literal"><span class="pre">numPts</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib13enclosedCellsERK3Boxi" title="BoxLib::enclosedCells"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::enclosedCells()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -373,6 +384,10 @@ given <code class="docutils literal"><span class="pre">IntVect</span></code>.</p
 <span id="Box::grow__i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">grow</code><span class="sig-paren">(</span>int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box4growEi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Modifies <code class="docutils literal"><span class="pre">Box</span></code> by growing the low and high ends in all
 directions by given amount.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib4growERK3Boxi" title="BoxLib::grow"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::grow()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -380,6 +395,10 @@ directions by given amount.</p>
 <span id="Box::grow__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">grow</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>v</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box4growERK7IntVect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Modifies <code class="docutils literal"><span class="pre">Box</span></code> by growing the low and high ends by specified
 amount.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib4growERK3Boxi" title="BoxLib::grow"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::grow()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -411,6 +430,50 @@ points.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="_CPPv2N3Box6refineEi">
+<span id="Box::refine__i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">refine</code><span class="sig-paren">(</span>int <em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box6refineEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N3Box6refineERK7IntVect">
+<span id="Box::refine__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">refine</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box6refineERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Refines <code class="docutils literal"><span class="pre">Box</span></code> by given refinement ratio.  The refined <code class="docutils literal"><span class="pre">Box</span></code>
+covers the same physical domain as before.  Example:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="c1">// Refine a nodal box</span>
+<span class="n">Box</span> <span class="nf">nbx</span><span class="p">(</span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)),</span> <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)),</span> <span class="n">IndexType</span><span class="o">::</span><span class="n">TheNodeType</span><span class="p">());</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">nbx</span><span class="p">.</span><span class="n">refine</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+
+<span class="c1">// Refine a cell-centered box</span>
+<span class="n">Box</span> <span class="nf">cbx</span><span class="p">(</span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)),</span> <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">)));</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">cbx</span><span class="p">.</span><span class="n">refine</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The code above (in 3D) produces:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>  <span class="c1">// a nodal box whose big end is (8,8,8)</span>
+<span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">)</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>  <span class="c1">// a cell box whose big end is (7,7,7)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib6refineERK3Boxi" title="BoxLib::refine"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::refine()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N3Box7coarsenEi">
+<span id="Box::coarsen__i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">coarsen</code><span class="sig-paren">(</span>int <em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box7coarsenEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N3Box7coarsenERK7IntVect">
+<span id="Box::coarsen__IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<code class="descclassname"></code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N3Box7coarsenERK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coarsens <code class="docutils literal"><span class="pre">Box</span></code> by given refinement ratio.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If the coarsened <code class="docutils literal"><span class="pre">Box</span></code> is refined by the same refinement,
+the original <code class="docutils literal"><span class="pre">Box</span></code> is not necessarily reproduced.</p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVecti" title="BoxLib::coarsen"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::coarsen()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
 <dt id="_CPPv2NK3Box8containsERK3Box">
 <span id="Box::contains__BoxCRC"></span>bool <code class="descclassname"></code><code class="descname">contains</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv2NK3Box8containsERK3Box" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2NK3Box17strictly_containsERK3Box">
@@ -438,6 +501,10 @@ contained.</p>
 <dd><p>Modifies <code class="docutils literal"><span class="pre">Box</span></code> to that of the minimum <code class="docutils literal"><span class="pre">Box</span></code> containing both
 the original <code class="docutils literal"><span class="pre">Box</span></code> and the argument.  Both <code class="docutils literal"><span class="pre">Box</span></code>es must
 have identical type.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N6BoxLib6minBoxERK3BoxRK3Box" title="BoxLib::minBox"><code class="xref cpp cpp-func docutils literal"><span class="pre">BoxLib::minBox()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -474,6 +541,123 @@ differ (including type).</p>
 </div></blockquote>
 </dd></dl>
 
+<p><strong>Non-member functions</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="_CPPv2lsRNSt7ostreamERK3Box">
+<span id="lshift-operator__osR.BoxCR"></span>std::ostream &amp;<code class="descclassname"></code><code class="descname">operator&lt;&lt;</code><span class="sig-paren">(</span>std::ostream &amp;<em>os</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>bx</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2lsRNSt7ostreamERK3Box" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2rsRNSt7istreamER3Box">
+<span id="rshift-operator__isR.BoxR"></span>std::istream &amp;<code class="descclassname"></code><code class="descname">operator&gt;&gt;</code><span class="sig-paren">(</span>std::istream &amp;<em>is</em>, <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>bx</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2rsRNSt7istreamER3Box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs stream output or input on <code class="docutils literal"><span class="pre">Box</span></code>.  For example:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">Box</span> <span class="nf">bx</span><span class="p">(</span><span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)),</span> <span class="n">IntVect</span><span class="p">(</span><span class="n">D_DECL</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">)),</span> <span class="n">IndexType</span><span class="o">::</span><span class="n">TheNodeType</span><span class="p">());</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">bx</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>in 3D produces:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">)</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Here <code class="docutils literal"><span class="pre">(4,4,4)</span></code> and <code class="docutils literal"><span class="pre">(16,16,16)</span></code> denote the lower and upper
+corners, respectively.  The <code class="docutils literal"><span class="pre">NODE</span></code> indexing space is denoted by
+<code class="docutils literal"><span class="pre">(1,1,1)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib4growERK3Boxi">
+<span id="BoxLib::grow__BoxCR.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">grow</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, int <em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib4growERK3Boxi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">Box</span></code> by growing the argument <code class="docutils literal"><span class="pre">Box</span></code> in all
+directions by given amount.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box4growEi" title="Box::grow"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::grow()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib4growERK3BoxRK7IntVect">
+<span id="BoxLib::grow__BoxCR.IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">grow</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, <em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>v</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib4growERK3BoxRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">Box</span></code> by growing the argument <code class="docutils literal"><span class="pre">Box</span></code> by specified
+amount.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box4growEi" title="Box::grow"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::grow()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib7coarsenERK3Boxi">
+<span id="BoxLib::coarsen__BoxCR.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, int <em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7coarsenERK3Boxi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib7coarsenERK3BoxRK7IntVect">
+<span id="BoxLib::coarsen__BoxCR.IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">coarsen</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, <em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7coarsenERK3BoxRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a coarsened <code class="docutils literal"><span class="pre">Box</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box7coarsenEi" title="Box::coarsen"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::coarsen()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib6refineERK3Boxi">
+<span id="BoxLib::refine__BoxCR.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">refine</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, int <em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib6refineERK3Boxi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib6refineERK3BoxRK7IntVect">
+<span id="BoxLib::refine__BoxCR.IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">refine</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, <em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>refinement_ratio</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib6refineERK3BoxRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a refined <code class="docutils literal"><span class="pre">Box</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box6refineEi" title="Box::refine"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::refine()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib7convertERK3BoxRK7IntVect">
+<span id="BoxLib::convert__BoxCR.IntVectCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">convert</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, <em class="property">const</em> <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect">IntVect</a> &amp;<em>typ</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7convertERK3BoxRK7IntVect" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib7convertERK3BoxRK9IndexType">
+<span id="BoxLib::convert__BoxCR.IndexTypeCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">convert</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, <em class="property">const</em> <a class="reference internal" href="indextype.html#_CPPv29IndexType" title="IndexType">IndexType</a> &amp;<em>typ</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib7convertERK3BoxRK9IndexType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">Box</span></code> with different type.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box7convertE9IndexType" title="Box::convert"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::convert()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib16surroundingNodesERK3Boxi">
+<span id="BoxLib::surroundingNodes__BoxCR.i"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">surroundingNodes</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, int <em>dir</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib16surroundingNodesERK3Boxi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib16surroundingNodesERK3Box">
+<span id="BoxLib::surroundingNodes__BoxCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">surroundingNodes</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib16surroundingNodesERK3Box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">Box</span></code> that is converted from the argument <code class="docutils literal"><span class="pre">Box</span></code> to
+<code class="docutils literal"><span class="pre">NODE</span></code> in all directions or given direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box16surroundingNodesEv" title="Box::surroundingNodes"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::surroundingNodes()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib13enclosedCellsERK3Boxi">
+<span id="BoxLib::enclosedCells__BoxCR.i"></span><code class="descclassname">BoxLib::</code><code class="descname">enclosedCells</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em>, int <em>dir</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib13enclosedCellsERK3Boxi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N6BoxLib13enclosedCellsERK3Box">
+<span id="BoxLib::enclosedCells__BoxCR"></span><code class="descclassname">BoxLib::</code><code class="descname">enclosedCells</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib13enclosedCellsERK3Box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="docutils literal"><span class="pre">Box</span></code> that is converted from the argument <code class="docutils literal"><span class="pre">Box</span></code> to <code class="docutils literal"><span class="pre">CELL</span></code> in all directions or given
+direction <code class="docutils literal"><span class="pre">dir</span></code>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box13enclosedCellsEv" title="Box::enclosedCells"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::enclosedCells()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N6BoxLib6minBoxERK3BoxRK3Box">
+<span id="BoxLib::minBox__BoxCR.BoxCR"></span><a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> <code class="descclassname">BoxLib::</code><code class="descname">minBox</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b1</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv23Box" title="Box">Box</a> &amp;<em>b2</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N6BoxLib6minBoxERK3BoxRK3Box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the minimum <code class="docutils literal"><span class="pre">Box</span></code> containing both argument <code class="docutils literal"><span class="pre">Box</span></code>es,
+which must have identical type.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#_CPPv2N3Box6minBoxERK3Box" title="Box::minBox"><code class="xref cpp cpp-func docutils literal"><span class="pre">Box::minBox()</span></code></a></p>
+</div>
+</dd></dl>
+
+</div></blockquote>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
 <p class="last"><a class="reference internal" href="macros.html#c.BL_SPACEDIM" title="BL_SPACEDIM"><code class="xref c c-macro docutils literal"><span class="pre">BL_SPACEDIM</span></code></a>; <a class="reference internal" href="intvect.html#_CPPv27IntVect" title="IntVect"><code class="xref cpp cpp-class docutils literal"><span class="pre">IntVect</span></code></a>; <a class="reference internal" href="indextype.html#_CPPv29IndexType" title="IndexType"><code class="xref cpp cpp-class docutils literal"><span class="pre">IndexType</span></code></a>; <a class="reference internal" href="orientation.html#_CPPv211Orientation" title="Orientation"><code class="xref cpp cpp-class docutils literal"><span class="pre">Orientation</span></code></a>; <a class="reference internal" href="boxarray.html#_CPPv28BoxArray" title="BoxArray"><code class="xref cpp cpp-class docutils literal"><span class="pre">BoxArray</span></code></a></p>

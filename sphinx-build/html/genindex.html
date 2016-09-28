@@ -95,6 +95,8 @@
 </li>
       <li><a href="box.html#_CPPv2NK3Box12cellCenteredEv">Box::cellCentered (C++ function)</a>
 </li>
+      <li><a href="box.html#_CPPv2N3Box7coarsenERK7IntVect">Box::coarsen (C++ function)</a>, <a href="box.html#_CPPv2N3Box7coarsenEi">[1]</a>
+</li>
       <li><a href="box.html#_CPPv2NK3Box8containsERK3Box">Box::contains (C++ function)</a>, <a href="box.html#_CPPv2NK3Box8containsERK7IntVect">[1]</a>
 </li>
       <li><a href="box.html#_CPPv2N3Box7convertE9IndexType">Box::convert (C++ function)</a>, <a href="box.html#_CPPv2N3Box7convertERK7IntVect">[1]</a>
@@ -133,14 +135,14 @@
 </li>
       <li><a href="box.html#_CPPv2NK3BoxanERK3Box">Box::operator&amp; (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="box.html#_CPPv2N3BoxaNERK3Box">Box::operator&amp;= (C++ function)</a>
 </li>
       <li><a href="box.html#_CPPv2NK3BoxplERK7IntVect">Box::operator+ (C++ function)</a>
 </li>
       <li><a href="box.html#_CPPv2N3BoxpLERK7IntVect">Box::operator+= (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="box.html#_CPPv2NK3BoxmiERK7IntVect">Box::operator- (C++ function)</a>
 </li>
       <li><a href="box.html#_CPPv2N3BoxmIERK7IntVect">Box::operator-= (C++ function)</a>
@@ -148,6 +150,8 @@
       <li><a href="box.html#_CPPv2NK3BoxeqERK3Box">Box::operator== (C++ function)</a>
 </li>
       <li><a href="box.html#_CPPv2NK3BoxixE11Orientation">Box::operator[] (C++ function)</a>
+</li>
+      <li><a href="box.html#_CPPv2N3Box6refineERK7IntVect">Box::refine (C++ function)</a>, <a href="box.html#_CPPv2N3Box6refineEi">[1]</a>
 </li>
       <li><a href="box.html#_CPPv2NK3Box8sameSizeERK3Box">Box::sameSize (C++ function)</a>
 </li>
@@ -179,13 +183,25 @@
 </li>
       <li><a href="boxarray.html#_CPPv28BoxArray">BoxArray (C++ class)</a>
 </li>
-      <li><a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVectRK7IntVect">BoxLib::coarsen (C++ function)</a>, <a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVecti">[1]</a>
+      <li><a href="box.html#_CPPv2N6BoxLib7coarsenERK3BoxRK7IntVect">BoxLib::coarsen (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib7coarsenERK3Boxi">[1]</a>, <a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVectRK7IntVect">[2]</a>, <a href="intvect.html#_CPPv2N6BoxLib7coarsenERK7IntVecti">[3]</a>
+</li>
+      <li><a href="box.html#_CPPv2N6BoxLib7convertERK3BoxRK7IntVect">BoxLib::convert (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib7convertERK3BoxRK9IndexType">[1]</a>
+</li>
+      <li><a href="box.html#_CPPv2N6BoxLib13enclosedCellsERK3Box">BoxLib::enclosedCells (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib13enclosedCellsERK3Boxi">[1]</a>
+</li>
+      <li><a href="box.html#_CPPv2N6BoxLib4growERK3BoxRK7IntVect">BoxLib::grow (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib4growERK3Boxi">[1]</a>
 </li>
       <li><a href="intvect.html#_CPPv2N6BoxLib3maxERK7IntVectRK7IntVect">BoxLib::max (C++ function)</a>
 </li>
       <li><a href="intvect.html#_CPPv2N6BoxLib3minERK7IntVectRK7IntVect">BoxLib::min (C++ function)</a>
 </li>
+      <li><a href="box.html#_CPPv2N6BoxLib6minBoxERK3BoxRK3Box">BoxLib::minBox (C++ function)</a>
+</li>
+      <li><a href="box.html#_CPPv2N6BoxLib6refineERK3BoxRK7IntVect">BoxLib::refine (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib6refineERK3Boxi">[1]</a>
+</li>
       <li><a href="intvect.html#_CPPv2N6BoxLib5scaleERK7IntVecti">BoxLib::scale (C++ function)</a>
+</li>
+      <li><a href="box.html#_CPPv2N6BoxLib16surroundingNodesERK3Box">BoxLib::surroundingNodes (C++ function)</a>, <a href="box.html#_CPPv2N6BoxLib16surroundingNodesERK3Boxi">[1]</a>
 </li>
   </ul></td>
 </tr></table>
@@ -321,9 +337,9 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="indextype.html#_CPPv2lsRNSt7ostreamERK9IndexType">operator&lt;&lt; (C++ function)</a>, <a href="intvect.html#_CPPv2lsRNSt7ostreamERK7IntVect">[1]</a>, <a href="orientation.html#_CPPv2lsRNSt7ostreamER11Orientation">[2]</a>
+      <li><a href="box.html#_CPPv2lsRNSt7ostreamERK3Box">operator&lt;&lt; (C++ function)</a>, <a href="indextype.html#_CPPv2lsRNSt7ostreamERK9IndexType">[1]</a>, <a href="intvect.html#_CPPv2lsRNSt7ostreamERK7IntVect">[2]</a>, <a href="orientation.html#_CPPv2lsRNSt7ostreamER11Orientation">[3]</a>
 </li>
-      <li><a href="indextype.html#_CPPv2rsRNSt7istreamER9IndexType">operator&gt;&gt; (C++ function)</a>, <a href="intvect.html#_CPPv2rsRNSt7istreamER7IntVect">[1]</a>
+      <li><a href="box.html#_CPPv2rsRNSt7istreamER3Box">operator&gt;&gt; (C++ function)</a>, <a href="indextype.html#_CPPv2rsRNSt7istreamER9IndexType">[1]</a>, <a href="intvect.html#_CPPv2rsRNSt7istreamER7IntVect">[2]</a>
 </li>
       <li><a href="orientation.html#_CPPv211Orientation">Orientation (C++ class)</a>
 </li>

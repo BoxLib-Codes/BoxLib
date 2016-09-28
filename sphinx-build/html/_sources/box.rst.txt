@@ -127,8 +127,7 @@ Box
       cell-centered ``Box``\ e; otherwise, ``numPts() > volume()``.
       For example::
 
-	Box bx(IntVect(D_DECL(0,0,0)), IntVect(D_DECL(4,4,4)),
-               IndexType::TheNodeType());
+	Box bx(IntVect(D_DECL(0,0,0)), IntVect(D_DECL(4,4,4)), IndexType::TheNodeType());
         std::cout << bx.numPts() << "\n"; // 5 x 5 x 5 = 125 in 3D
         std::cout << bx.volume() << "\n"; // 4 x 4 x 4 = 64 in 3D
 
@@ -192,6 +191,10 @@ Box
       ``length`` and the number of points may change.  See also,
       functions ``volume`` and ``numPts``.
 
+      .. seealso::
+
+        :cpp:func:`BoxLib::convert`
+
     .. cpp:function:: Box& surroundingNodes ()
                       Box& surroundingNodes (int dir)
 
@@ -201,6 +204,10 @@ Box
       the previous type is ``CELL``.  See also, functions ``volume``
       and ``numPts``.
 
+      .. seealso::
+
+        :cpp:func:`BoxLib::surroundingNodes`
+
     .. cpp:function:: Box& enclosedCells ()
     .. cpp:function:: Box& enclosedCells (int dir)
 
@@ -209,6 +216,10 @@ Box
       whereas the ``length`` and the number of points will decrease if
       the previous is ``NODE``.  See also, functions ``volume`` and
       ``numPts``.
+
+      .. seealso::
+
+        :cpp:func:`BoxLib::enclosedCells`
 
     .. cpp:function:: Box operator& (const Box& rhs) const
 
@@ -237,10 +248,18 @@ Box
       Modifies ``Box`` by growing the low and high ends in all
       directions by given amount.
 
+      .. seealso::
+
+        :cpp:func:`BoxLib::grow`
+
     .. cpp:function:: Box& grow (const IntVect& v)
 
       Modifies ``Box`` by growing the low and high ends by specified
       amount.
+
+      .. seealso::
+
+        :cpp:func:`BoxLib::grow`
 
     .. cpp:function:: Box& grow (int idir, int n_cell)
 
@@ -261,6 +280,43 @@ Box
 
       Modifies ``Box`` by growing the given face by ``n_cell``
       points. 
+
+    .. cpp:function:: Box& refine (int refinement_ratio)
+                      Box& refine (const IntVect& refinement_ratio)
+
+      Refines ``Box`` by given refinement ratio.  The refined ``Box``
+      covers the same physical domain as before.  Example::
+
+        // Refine a nodal box
+	Box nbx(IntVect(D_DECL(0,0,0)), IntVect(D_DECL(4,4,4)), IndexType::TheNodeType());
+        std::cout << nbx.refine(2) << "\n"; 
+
+        // Refine a cell-centered box
+	Box cbx(IntVect(D_DECL(0,0,0)), IntVect(D_DECL(3,3,3)));
+        std::cout << cbx.refine(2) << "\n"; 
+
+      The code above (in 3D) produces::
+
+        ((0,0,0) (8,8,8) (1,1,1))  // a nodal box whose big end is (8,8,8)
+        ((0,0,0) (7,7,7) (0,0,0))  // a cell box whose big end is (7,7,7)
+
+      .. seealso::
+
+        :cpp:func:`BoxLib::refine`
+
+    .. cpp:function:: Box& coarsen (int refinement_ratio)
+                      Box& coarsen (const IntVect& refinement_ratio)
+
+      Coarsens ``Box`` by given refinement ratio.
+
+      .. note::
+
+        If the coarsened ``Box`` is refined by the same refinement,
+	the original ``Box`` is not necessarily reproduced.
+
+      .. seealso::
+
+        :cpp:func:`BoxLib::coarsen`
 
     .. cpp:function:: bool contains (const Box& b) const
                       bool strictly_contains (const Box& b) const
@@ -284,6 +340,10 @@ Box
       the original ``Box`` and the argument.  Both ``Box``\ es must
       have identical type.
 
+      .. seealso::
+
+        :cpp:func:`BoxLib::minBox`
+
     .. cpp:function:: bool intersects (const Box& b) const
 
       Return true if ``Box``\ es intersect.  It's a runtime error if
@@ -306,6 +366,99 @@ Box
       Returns true if ``Box``\ es are identical (including type) or
       differ (including type). 
 
+**Non-member functions**
+
+  .. cpp:function:: std::ostream& operator<< (std::ostream& os, const Box& bx)
+                    std::istream& operator>> (std::istream& is, Box& bx)
+
+    Performs stream output or input on ``Box``.  For example::
+
+      Box bx(IntVect(D_DECL(4,4,4)), IntVect(D_DECL(16,16,16)), IndexType::TheNodeType());
+      std::cout << bx; 
+
+    in 3D produces::
+
+      ((4,4,4) (16,16,16) (1,1,1))
+
+    Here ``(4,4,4)`` and ``(16,16,16)`` denote the lower and upper
+    corners, respectively.  The ``NODE`` indexing space is denoted by
+    ``(1,1,1)``. 
+
+  .. cpp:function:: Box BoxLib::grow (const Box& b, int i)
+
+    Returns a ``Box`` by growing the argument ``Box`` in all
+    directions by given amount.
+
+    .. seealso::
+
+      :cpp:func:`Box::grow`
+
+  .. cpp:function:: Box BoxLib::grow (const Box& b, const IntVect& v)
+
+    Returns a ``Box`` by growing the argument ``Box`` by specified
+    amount. 
+
+    .. seealso::
+
+      :cpp:func:`Box::grow`
+
+  .. cpp:function:: Box BoxLib::coarsen (const Box& b, int refinement_ratio)
+                    Box BoxLib::coarsen (const Box& b, const IntVect& refinement_ratio)
+
+    Returns a coarsened ``Box``.
+
+    .. seealso::
+
+      :cpp:func:`Box::coarsen`
+
+  .. cpp:function:: Box BoxLib::refine (const Box& b, int refinement_ratio)
+                    Box BoxLib::refine (const Box& b, const IntVect& refinement_ratio)
+
+    Returns a refined ``Box``.
+
+    .. seealso::
+
+      :cpp:func:`Box::refine`
+
+  .. cpp:function:: Box BoxLib::convert(const Box& b, const IntVect& typ)
+                    Box BoxLib::convert (const Box& b, const IndexType& typ)
+
+    Returns a ``Box`` with different type.
+
+    .. seealso::
+
+      :cpp:func:`Box::convert`
+
+  .. cpp:function:: Box BoxLib::surroundingNodes (const Box& b, int dir)
+                    Box BoxLib::surroundingNodes (const Box& b)
+
+    Returns a ``Box`` that is converted from the argument ``Box`` to
+    ``NODE`` in all directions or given direction ``dir``.
+
+    .. seealso::
+
+      :cpp:func:`Box::surroundingNodes`
+
+  .. cpp:function:: BoxLib::enclosedCells (const Box& b, int dir)
+                    BoxLib::enclosedCells (const Box& b)
+
+    Returns a ``Box`` that is converted from the argument ``Box`` to ``CELL`` in all directions or given
+    direction ``dir``.
+
+    .. seealso::
+
+      :cpp:func:`Box::enclosedCells`
+
+  .. cpp:function:: Box BoxLib::minBox (const Box& b1, const Box& b2)
+
+    Returns the minimum ``Box`` containing both argument ``Box``\ es,
+    which must have identical type. 
+
+    .. seealso::
+
+      :cpp:func:`Box::minBox`
+
 .. seealso::
 
   :c:macro:`BL_SPACEDIM`; :cpp:class:`IntVect`; :cpp:class:`IndexType`; :cpp:class:`Orientation`; :cpp:class:`BoxArray`
+
