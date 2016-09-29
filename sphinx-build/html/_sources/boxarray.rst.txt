@@ -5,7 +5,137 @@ BoxArray
 
 .. cpp:class:: BoxArray
 
-  This class
+  Located in :boxlib:`Src/C_BaseLib/BoxArray.H` and
+  :boxlib:`Src/C_BaseLib/BoxArray.cpp`.
+
+  A ``BoxArray`` is an array of :cpp:class:`Box`\ es.  All ``Box``\ es
+  in a ``BoxArray`` must have the same indexing type.  It is a
+  reference-counted concrete class.  Thus many operations such as
+  making a copy is cheap.  The implementation of this class also
+  allows ``BoxArray``\ es of different indexing types share the same
+  internal data (resulting in efficient use of memory), if
+  ``BoxArray``\ es have the same origin.
+
+  **Constructors and copy assignment operator**
+
+    .. cpp:function:: BoxArray()
+
+      The default constructor constructs an empty ``BoxArray``.
+
+    .. cpp:function:: explicit BoxArray (const Box& bx)
+
+      Constructs a ``BoxArray`` of a single ``Box``.
+
+    .. cpp:function:: BoxArray (const BoxArray& rhs)
+
+      The copy constructor.
+
+    .. cpp:function:: BoxArray& operator= (const BoxArray& rhs)
+
+      The copy assignment operator.
+
+  **Destructor**
+
+    .. cpp:function:: ~BoxArray()
+
+      The destructor.
+
+  **Member functions**
+
+    .. cpp:function:: void define (const Box& bx)
+
+      Initializes the ``BoxArray`` from a single ``Box``.  The
+      ``BoxArray`` must be empty before the call.
+
+    .. cpp:function:: Box operator[] (int index) const
+
+      Returns a *copy* of the ``index``'th ``Box`` of this
+      ``BoxArray``.
+
+      .. note::
+
+        This ``operator[]`` does NOT return a reference to the
+	internal data.
+
+    .. cpp:function:: long size () const
+
+      Returns the number of ``Box``\ es in the ``BoxArray``.
+
+    .. cpp:function:: bool empty () const
+
+      Returns true if ``BoxArray`` is empty.
+
+    .. cpp:function:: long numPts() const
+                      double d_numPts() const
+
+      Returns the number of points in the ``BoxArray``.
+
+    .. cpp:function:: BoxArray& maxSize (int block_size)
+                      BoxArray& maxSize (const IntVect& block_size)
+
+      Modifies the ``BoxArray`` so that each ``Box`` has length
+      smaller than the specified ``block_size``.  For example::
+
+        Box bx(D_DECL(0,0,0), D_DECL(1023,1023,1023));  // 1024^3 cells Box
+        BoxArray ba(bx);   // BoxArray has a single Box of 1024^3 cells
+        ba.maxSize(64);    // BoxArray now contains 16^3 Boxes. Each Box has 64^3 cells.
+
+    .. cpp:function:: BoxArray& refine (int refinement_ratio)
+                      BoxArray& refine (const IntVect& refinement_ratio)
+
+      Refines each ``Box`` in the ``BoxArray`` by the specified ratio.
+
+    .. cpp:function:: BoxArray& coarsen (int refinement_ratio)
+                      BoxArray& coarsen (const IntVect& refinement_ratio)
+
+      Coarsens each ``Box`` in the ``BoxArray`` by the specified
+      ratio.
+
+    .. cpp:function:: BoxArray& surroundingNodes ()
+                      BoxArray& surroundingNodes (int dir)
+
+      Converts every ``Box`` in the ``BoxArray`` to "NODE" in all
+      directions or given direction ``dir``.
+
+      .. note::
+
+        This operation is cheap thanks to the internal implementation
+	of ``BoxArray``.  It does not need to make a new copy of all
+	the ``Box``\ es and applies the conversion to each of them,
+	even though conceptually that is what this function does.
+
+    .. cpp:function:: BoxArray& enclosedCells ()
+                      BoxArray& enclosedCells (int dir)
+
+      Converts every ``Box`` in the ``BoxArray`` to "CELL" in all
+      directions or given direction ``dir``.
+
+      .. note::
+
+        This operation is cheap thanks to the internal implementation
+	of ``BoxArray``.  It does not need to make a new copy of all
+	the ``Box``\ es and applies the conversion to each of them,
+	even though conceptually that is what this function does.
+
+    .. cpp:function:: BoxArray& convert (IndexType typ)
+
+      Converts every ``Box`` in the ``BoxArray`` to the specified
+      indexing type. 
+
+      .. note::
+
+        This operation is cheap thanks to the internal implementation
+	of ``BoxArray``.  It does not need to make a new copy of all
+	the ``Box``\ es and applies the conversion to each of them,
+	even though conceptually that is what this function does.
+
+    .. cpp:function:: bool operator== (const BoxArray& rhs) const
+                      bool operator!= (const BoxArray& rhs) const
+
+      Operators for comparison.  Two ``BoxArray``\ es are considered
+      equal if they have the same number of ``Box``\ es and every pair
+      of corresponding ``Box``\ es are equal according to
+      :cpp:func:`Box::operator==`.
 
 .. seealso::
 
