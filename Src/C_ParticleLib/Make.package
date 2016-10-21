@@ -5,9 +5,15 @@ ifeq ($(LBASE),box)
 endif
 
 C$(BOXLIB_BASE)_sources += Particles.cpp TracerParticles.cpp
-C$(BOXLIB_BASE)_headers += Particles.H ParticleInit.H ParGDB.H TracerParticles.H
-F$(BOXLIB_BASE)_headers += Particles_F.H
+C$(BOXLIB_BASE)_headers += Particles.H ParticleInit.H ParGDB.H TracerParticles.H SprayParticles.H
+F$(BOXLIB_BASE)_headers += Particles_F.H 
 F$(BOXLIB_BASE)_sources += Particles_$(DIM)D.F
+
+ifeq ($(USE_BL_SPRAY_PARTICLES), TRUE)
+  DEFINES += -DBL_SPRAY_PARTICLES
+  C$(BOXLIB_BASE)_sources += SprayParticles.cpp
+  C$(BOXLIB_BASE)_headers += SprayParticles.H
+endif
 
 VPATH_LOCATIONS += $(BOXLIB_HOME)/Src/C_ParticleLib
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_ParticleLib

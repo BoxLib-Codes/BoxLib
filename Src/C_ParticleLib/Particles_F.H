@@ -31,6 +31,15 @@ BL_FORT_PROC_DECL(PART_SUMDENSUP,part_sumdensup)
      const Real* plo, const Real* phi, const Real* dx, Real* z);
 #endif
 
+#if (BL_SPRAY_PARTICLES)
+    BL_FORT_PROC_DECL(SPRAY_PART_SRC,spray_part_src)
+        (Real* pstate, Real* fld_at_part, Real* pstate_src,
+         int* n_part, int* n_state, int* n_fld_comp);
+
+    BL_FORT_PROC_DECL(SPRAY_PART_SRC_TO_FLD_SRC,spray_part_src_to_fld_src)
+        (Real* pstate, Real* fld_at_part, Real* pstate_src, Real* fld_src,
+         int* n_part, int* n_state, int* n_fld_comp);
+#endif
 };
 
 #endif
