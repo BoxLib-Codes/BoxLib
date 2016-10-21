@@ -28,7 +28,6 @@ public:
     void ComputeParticleSource (const MultiFab& S, MultiFab& S_src, 
             int level, Real dt, bool calc_field_src = false);
 
-    void AdvectWithUmac (MultiFab* umac, int lev, Real dt);
     int nState() { return nstate; src_time = -1.0;}
 
 	using ParticleContainer<BL_SPACEDIM +2*NR,0,std::vector<Particle<BL_SPACEDIM +2*NR,0> > >::PBox;
