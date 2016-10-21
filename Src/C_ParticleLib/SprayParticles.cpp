@@ -96,15 +96,13 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
         }
 
         // Next call a bunch of FORTRAN to compute RHS for spray particle state update
-        BL_FORT_PROC_CALL(SPRAY_PART_SRC,spray_part_src)
-            ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
-              pstate_src_SOA.dataPtr(),
-              &n, &nstate, &ncomp);
+        spray_part_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
+			 pstate_src_SOA.dataPtr(),
+			 &n, &nstate, &ncomp);
 
-        BL_FORT_PROC_CALL(SPRAY_PART_SRC_TO_FLD_SRC,spray_part_src_to_fld_src)
-            ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
-              pstate_src_SOA.dataPtr(), fld_src_at_part_SOA.dataPtr(), 
-              &n, &nstate, &ncomp);
+        spray_part_src_to_fld_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
+				    pstate_src_SOA.dataPtr(), fld_src_at_part_SOA.dataPtr(), 
+				    &n, &nstate, &ncomp);
 
 
         // Unpack data for this group of particles back into AoS and deposit field src onto grid

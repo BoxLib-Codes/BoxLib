@@ -4,7 +4,7 @@
 ! :: ----------------------------------------------------------
 ! ::
       subroutine spray_part_src(pstate, fld_at_part, pstate_src,
-     &                          n_part, n_state, n_fld_comp)
+     &                          n_part, n_state, n_fld_comp) bind(c)
       implicit none
 
       integer          n_part, n_state, n_fld_comp
@@ -23,7 +23,7 @@
 ! ::
       subroutine spray_part_src(pstate, fld_at_part, pstate_src,
      &                          fld_src,
-     &                          n_part, n_state, n_fld_comp)
+     &                          n_part, n_state, n_fld_comp) bind(c)
       implicit none
 
       integer          n_part, n_state, n_fld_comp
