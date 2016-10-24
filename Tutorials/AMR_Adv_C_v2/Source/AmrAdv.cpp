@@ -49,22 +49,26 @@ AmrAdv::ReadParameters ()
 	pp.query("stop_time", stop_time);
     }
 
+    {
+	ParmParse pp("amr"); // Traditionally, these have prefix, amr.
+
+	pp.query("regrid_int", regrid_int);
+
+	pp.query("check_file", check_file);
+	pp.query("check_int", check_int);
+
+	pp.query("plot_file", plot_file);
+	pp.query("plot_int", plot_int);
+
+	pp.query("restart", restart_chkfile);
+    }
 
     {
 	ParmParse pp("adv");
 	
 	pp.query("cfl", cfl);
 	
-	pp.query("regrid_int", regrid_int);
-	
 	pp.query("do_reflux", do_reflux);
-
-	pp.query("restart", restart_chkfile);
-
-	pp.query("check_file", check_file);
-	pp.query("plot_file", plot_file);
-	pp.query("check_int", check_int);
-	pp.query("plot_int", plot_int);
     }
 }
 
@@ -215,8 +219,11 @@ AmrAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 	GetData(lev  , time, fmf, ftime);
 
 	AmrAdvPhysBC cphysbc, fphysbc;
-	Array<BCRec> bcs(6);
 	Interpolater* mapper = &cell_cons_interp;
+
+	int lo_bc[] = {INT_DIR, INT_DIR, INT_DIR}; // periodic boundaryies
+	int hi_bc[] = {INT_DIR, INT_DIR, INT_DIR};
+	Array<BCRec> bcs(1, BCRec(lo_bc, hi_bc));
 
 	BoxLib::FillPatchTwoLevels(mf, time, cmf, ctime, fmf, ftime,
 				   0, icomp, ncomp, geom[lev-1], geom[lev],
