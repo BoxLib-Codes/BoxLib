@@ -5,21 +5,20 @@
 //
 // Computes particle state source terms as well as field source terms from particles
 //
-template <int NR>
 void
-SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S, 
-        MultiFab& S_src, int level, Real dt, bool calc_field_src )
+SprayParticleContainer::ComputeParticleSource (const MultiFab& S, 
+        MultiFab& S_src, int lev, Real dt, bool calc_field_src )
 {
     // BL_PROFILE("SprayParticleContainer::ComputeParticleSource()");
     BL_ASSERT(Ucc.nGrow() > 0);
-    BL_ASSERT(OK(true, this->lev, S.nGrow()-1));
-    BL_ASSERT(lev >= 0 && this->lev < m_particles.size());
+    BL_ASSERT(OK(true, lev, S.nGrow()-1));
+    BL_ASSERT(lev >= 0 && lev < m_particles.size());
 
     BL_ASSERT(!Ucc.contains_nan());
 
 
     const Real      strttime = ParallelDescriptor::second();
-    const Geometry& geom     = this->m_gdb->Geom(this->lev);
+    const Geometry& geom     = m_gdb->Geom(lev);
 
     BL_ASSERT(OnSameGrids(lev,Ucc));
 
@@ -30,17 +29,16 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
     // typedef typename std::map<int,PBox> PMap;
     // A PBox is the storage for particles - something like
     // std::vector<Particle<BL_SPACEDIM +3,0> >
-    PMap& this->pmap;
-    PMap& this->pmap = this->m_particles[this->lev];
+    PMap& pmap = m_particles[lev];
 
-    for (auto& kv : this->pmap)
+    for (auto& kv : pmap)
     {
         const int grid = kv.first;
-        PBox&     this->pbox = kv.second;
-        const int n    = this->pbox.size();
+        PBox&     pbox = kv.second;
+        const int n    = pbox.size();
 
         const FArrayBox& field_fab = S[grid];
-        FArrayBox& fld_src_fab = S[grid];
+        FArrayBox& fld_src_fab = S_src[grid];
 
         fld_src_fab.setVal(0.0); // Here or outside and just add to it?
 
@@ -71,14 +69,14 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
         // This is the loop over particles to populate arrays
         for (int i = 0; i < n; i++)
         {
-            ParticleType& this->p = this->pbox[i];
+            ParticleType& p = pbox[i];
 
-            if (this->p.m_id <= 0) continue;
+            if (p.m_id <= 0) continue;
 
             BL_ASSERT(p.m_grid == grid);
 
             // Interpolate field data, pack into SoA
-            ParticleBase::Interp(this->p, geom, field_fab, idx, 
+            ParticleBase::Interp(p, geom, field_fab, idx, 
                     state_p.data(), BL_SPACEDIM);
 
             for (int icomp = 0; icomp < ncomp; icomp++)
@@ -90,11 +88,12 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
             for (int istate = 0; istate < nstate; istate++)
             {
                 pstate_SOA(IntVect(D_DECL(i,0,0)),istate)
-                    = this->p.m_data[istate];
+                    = p.m_data[istate];
             }
 
         }
 
+#if 0
         // Next call a bunch of FORTRAN to compute RHS for spray particle state update
         spray_part_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
 			 pstate_src_SOA.dataPtr(),
@@ -103,21 +102,22 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
         spray_part_src_to_fld_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
 				    pstate_src_SOA.dataPtr(), fld_src_at_part_SOA.dataPtr(), 
 				    &n, &nstate, &ncomp);
+#endif
 
 
         // Unpack data for this group of particles back into AoS and deposit field src onto grid
         for (int i = 0; i < n; i++)
         {
-            ParticleType& this->p = this->pbox[i];
+            ParticleType& p = pbox[i];
 
-            if (this->p.m_id <= 0) continue;
+            if (p.m_id <= 0) continue;
 
-            BL_ASSERT(this->p.m_grid == grid);
+            BL_ASSERT(p.m_grid == grid);
             // This just straight up SoA to AoS conversion 
             // Store particle state source terms in NR:2*NR-1 
             for (int istate = 0; istate < nstate; istate++)
             {
-                this->p.m_data[istate+nstate]
+                p.m_data[istate+nstate]
                     = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
             }
 
@@ -126,11 +126,11 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
             for (int icomp = 0; icomp < ncomp; icomp++)
             {
                 Real fld_src = fld_src_at_part_SOA(IntVect(D_DECL(i,0,0)),icomp);
-                deposit(this->p, geom, fld_src_fab, fld_src, icomp);
+                deposit(p, geom, fld_src_fab, fld_src, icomp);
             }
         }
     } // End loop over all the PBoxes for this level
-    if (this->m_verbose > 1)
+    if (m_verbose > 1)
     {
         Real stoptime = ParallelDescriptor::second() - strttime;
 
@@ -150,11 +150,101 @@ SprayParticleContainer<NR>::ComputeParticleSource (const MultiFab& S,
 }
 
 
-template <int NR>
 void
-SprayParticleContainer<NR>::deposit(ParticleBase& prt, const Geometry& geom, 
+SprayParticleContainer::deposit(ParticleBase& prt, const Geometry& geom, 
         FArrayBox& fld_src_fab, Real fld_src, int icomp)
 {
     return;
 
+}
+
+//
+// Uses midpoint method to advance particles using cell-centered velocity
+//
+void
+SprayParticleContainer::AdvectWithUcc (const MultiFab& Ucc, int lev, Real dt)
+{
+    BL_ASSERT(Ucc.nGrow() > 0);
+    BL_ASSERT(OK(true, lev, Ucc.nGrow()-1));
+    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+
+    BL_ASSERT(!Ucc.contains_nan());
+    BL_ASSERT(SPRAY_COMPONENTS >= BL_SPACEDIM);
+
+    const Real      strttime = ParallelDescriptor::second();
+    const Geometry& geom     = m_gdb->Geom(lev);
+
+    BL_ASSERT(OnSameGrids(lev,Ucc));
+
+    int idx[BL_SPACEDIM] = {D_DECL(0,1,2)};
+
+    for (int ipass = 0; ipass < 2; ipass++)
+    {
+        PMap& pmap = m_particles[lev];
+
+        for (auto& kv : pmap)
+        {
+            const int grid = kv.first;
+            PBox&     pbox = kv.second;
+            const int n    = pbox.size();
+
+	    const FArrayBox& fab = Ucc[grid];
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+            for (int i = 0; i < n; i++)
+            {
+                ParticleType& p = pbox[i];
+                
+                if (p.m_id <= 0) continue;
+
+                BL_ASSERT(p.m_grid == grid);
+
+		Real v[BL_SPACEDIM];
+
+		ParticleBase::Interp(p, geom, fab, idx, v, BL_SPACEDIM);
+
+		if (ipass == 0) {
+		    //
+		    // Save old position and the vel & predict location at dt/2.
+		    //
+		    for (int d = 0; d < BL_SPACEDIM; d++)
+		    {
+			p.m_data[d] = p.m_pos[d];
+                        p.m_pos[d] += 0.5*dt*v[d];
+                    }
+		} else {
+		    //
+		    // Update to final time using the orig position and the vel at dt/2.
+		    //
+		    for (int d = 0; d < BL_SPACEDIM; d++)
+		    {
+                        p.m_pos[d]  = p.m_data[d] + dt*v[d];
+                        // Save the velocity for use in Timestamp().
+			p.m_data[d] = v[d];
+                    }
+                }
+                
+                ParticleBase::RestrictedWhere(p,m_gdb, Ucc.nGrow()); 
+            }
+        }
+    }
+    if (m_verbose > 1)
+    {
+        Real stoptime = ParallelDescriptor::second() - strttime;
+
+#ifdef BL_LAZY
+	Lazy::QueueReduction( [=] () mutable {
+#endif
+        ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
+
+        if (ParallelDescriptor::IOProcessor())
+        {
+            std::cout << "TracerParticleContainer::AdvectWithUcc() time: " << stoptime << '\n';
+        }
+#ifdef BL_LAZY
+	});
+#endif
+    }
 }
