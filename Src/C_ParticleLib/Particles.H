@@ -386,7 +386,7 @@ public:
 
     void WritePlotFile (const std::string& dir, const std::string& name) const;
 
-    void WriteAsciiFile          (const std::string& file);
+    void WriteAsciiFile          (const std::string& file, bool point3d_format = false);
     void WriteCoarsenedAsciiFile (const std::string& file);
 
     int Verbose () { return m_verbose; }
@@ -3166,7 +3166,7 @@ ParticleContainer<NR,NI,C>::ReadParticles_SinglePrecision (int            cnt,
 
 template <int NR, int NI, class C>
 void
-ParticleContainer<NR,NI,C>::WriteAsciiFile (const std::string& filename)
+ParticleContainer<NR,NI,C>::WriteAsciiFile (const std::string& filename, bool point3d_format)
 {
     BL_PROFILE("ParticleContainer<NR,NI,C>::WriteAsciiFile()");
     BL_ASSERT(!filename.empty());
@@ -3212,7 +3212,14 @@ ParticleContainer<NR,NI,C>::WriteAsciiFile (const std::string& filename)
         if (!File.good())
             BoxLib::FileOpenFailed(filename);
 
-        File << nparticles << '\n';
+        if (point3d_format)
+        {
+            File << "X Y Z f" << '\n';
+
+        } else
+        {
+            File << nparticles << '\n';
+        }
             
         File.flush();
 
@@ -3258,9 +3265,17 @@ ParticleContainer<NR,NI,C>::WriteAsciiFile (const std::string& filename)
                     {
                         if (it->m_id > 0)
                         {
+                            if (BL_SPACEDIM == 2) {
+                            File << it->m_pos[0] << ' '
+                                        << it->m_pos[1] << ' '
+                                        << 0.0 << ' ';
+                            }
+                            else 
+                            {
                             D_TERM(File << it->m_pos[0] << ' ',
                                         << it->m_pos[1] << ' ',
                                         << it->m_pos[2] << ' ');
+                            }
 
                             for (int i = 0; i < NR; i++)
                             {

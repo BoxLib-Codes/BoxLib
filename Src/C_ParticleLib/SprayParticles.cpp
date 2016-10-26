@@ -7,7 +7,7 @@
 //
 void
 SprayParticleContainer::ComputeParticleSource (const MultiFab& S, 
-        MultiFab& S_src, int lev, Real dt, bool calc_field_src )
+        MultiFab& S_src, int lev, Real dt, int ireg,  bool calc_field_src )
 {
     // BL_PROFILE("SprayParticleContainer::ComputeParticleSource()");
     BL_ASSERT(Ucc.nGrow() > 0);
@@ -62,6 +62,8 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
         // to hold field source terms at particle positions
         FArrayBox fld_src_at_part_SOA(bx,ncomp);
 
+        int state_start = state_start_idx(ireg);
+        int src_start = src_start_idx(ireg);
 
 #ifdef _OPENMP
 #pragma omp parallel 
@@ -76,6 +78,13 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
             BL_ASSERT(p.m_grid == grid);
 
             // Interpolate field data, pack into SoA
+            // This interpolates the first 2-3 fields in the field_fab onto the particle locations
+            // in p->m_pos
+
+            D_TERM( p.m_pos[0] = p.m_data[state_start];,
+                    p.m_pos[1] = p.m_data[state_start+1];,
+                    p.m_pos[2] = p.m_data[state_start+2];);
+
             ParticleBase::Interp(p, geom, field_fab, idx, 
                     state_p.data(), BL_SPACEDIM);
 
@@ -105,6 +114,7 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
 #endif
 
 
+        std::cout << "Not using fortran, hack" << std::endl;
         // Unpack data for this group of particles back into AoS and deposit field src onto grid
         for (int i = 0; i < n; i++)
         {
@@ -115,10 +125,12 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
             BL_ASSERT(p.m_grid == grid);
             // This just straight up SoA to AoS conversion 
             // Store particle state source terms in NR:2*NR-1 
+            // TODO(RG) : Fix this
             for (int istate = 0; istate < nstate; istate++)
             {
-                p.m_data[istate+nstate]
-                    = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
+                p.m_data[src_start+istate] = 
+                    fld_at_part_SOA(IntVect(D_DECL(i,0,0)), istate);
+                //    = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
             }
 
 
@@ -248,3 +260,135 @@ SprayParticleContainer::AdvectWithUcc (const MultiFab& Ucc, int lev, Real dt)
 #endif
     }
 }
+
+
+//
+// Set the first BL_SPACEDIM elements in the particle data to the position
+//
+void
+SprayParticleContainer::PosToState (int ireg, int lev)
+{
+    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    BL_ASSERT(SPRAY_COMPONENTS >= BL_SPACEDIM);
+
+    const Real      strttime = ParallelDescriptor::second();
+    const Geometry& geom     = m_gdb->Geom(lev);
+
+    int idx[BL_SPACEDIM] = {D_DECL(0,1,2)};
+
+    PMap& pmap = m_particles[lev];
+    int state_start = state_start_idx(ireg);
+
+    for (auto& kv : pmap)
+    {
+        const int grid = kv.first;
+        PBox&     pbox = kv.second;
+        const int n    = pbox.size();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (int i = 0; i < n; i++)
+        {
+            ParticleType& p = pbox[i];
+
+            if (p.m_id <= 0) continue;
+
+            for (int d = 0; d < BL_SPACEDIM; d++)
+            {
+                p.m_data[state_start + d] = p.m_pos[d];
+            }
+
+        }
+    }
+}
+
+
+//
+// Set particle position to the  first BL_SPACEDIM in the particle state
+//
+void
+SprayParticleContainer::StateToPos (int ireg, int lev)
+{
+    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    BL_ASSERT(SPRAY_COMPONENTS >= BL_SPACEDIM);
+
+    const Real      strttime = ParallelDescriptor::second();
+    const Geometry& geom     = m_gdb->Geom(lev);
+
+    int idx[BL_SPACEDIM] = {D_DECL(0,1,2)};
+
+    PMap& pmap = m_particles[lev];
+    int state_start = state_start_idx(ireg);
+
+    for (auto& kv : pmap)
+    {
+        const int grid = kv.first;
+        PBox&     pbox = kv.second;
+        const int n    = pbox.size();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (int i = 0; i < n; i++)
+        {
+            ParticleType& p = pbox[i];
+
+            if (p.m_id <= 0) continue;
+
+            for (int d = 0; d < BL_SPACEDIM; d++)
+            {
+                p.m_pos[d] = p.m_data[state_start + d];
+            }
+
+        }
+    }
+}
+
+//
+// Apply tentative update to particle state
+//
+void
+SprayParticleContainer::Update( int ireg_src_terms, int ireg_start_state, int ireg_dest_state, int lev, Real time, Real dt)
+{
+    BL_ASSERT(lev >= 0 && lev < m_particles.size());
+    BL_ASSERT(SPRAY_COMPONENTS >= BL_SPACEDIM);
+
+    const Real      strttime = ParallelDescriptor::second();
+    const Geometry& geom     = m_gdb->Geom(lev);
+
+    int idx[BL_SPACEDIM] = {D_DECL(0,1,2)};
+
+    PMap& pmap = m_particles[lev];
+    int start_state = state_start_idx(ireg_start_state);
+    int start_src = state_start_idx(ireg_src_terms);
+    int dest_state = state_start_idx(ireg_dest_state);
+
+    int nstate = nState();
+
+    for (auto& kv : pmap)
+    {
+        const int grid = kv.first;
+        PBox&     pbox = kv.second;
+        const int n    = pbox.size();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (int i = 0; i < n; i++)
+        {
+            ParticleType& p = pbox[i];
+
+            if (p.m_id <= 0) continue;
+
+            for (int istate = 0; istate < nstate; istate++)
+            {
+                p.m_data[dest_state+istate] = p.m_data[start_state+istate] 
+                    + dt*p.m_data[start_src+istate];
+            }
+            // ParticleBase::RestrictedWhere(p,m_gdb, Ucc.nGrow()); 
+
+        }
+    }
+}
+
