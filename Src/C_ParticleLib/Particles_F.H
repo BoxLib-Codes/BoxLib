@@ -33,7 +33,7 @@ BL_FORT_PROC_DECL(PART_SUMDENSUP,part_sumdensup)
 
 #if (BL_SPRAY_PARTICLES)
     void spray_part_src (Real* pstate, Real* fld_at_part, Real* pstate_src,
-			 int* n_part, int* n_state, int* n_fld_comp);
+			 const int* n_part, const int* n_state, const int* n_fld_comp);
 
     void spray_part_src_to_fld_src (Real* pstate, Real* fld_at_part,
 				    Real* pstate_src, Real* fld_src,

@@ -109,11 +109,11 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
 
         }
 
-#if 0
         // Next call a bunch of FORTRAN to compute RHS for spray particle state update
         spray_part_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
 			 pstate_src_SOA.dataPtr(),
 			 &n, &nstate, &ncomp);
+#if 0
 
         spray_part_src_to_fld_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
 				    pstate_src_SOA.dataPtr(), fld_src_at_part_SOA.dataPtr(), 
@@ -121,7 +121,6 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
 #endif
 
 
-        std::cout << "Not using fortran, hack" << std::endl;
         // Unpack data for this group of particles back into AoS and deposit field src onto grid
         for (int i = 0; i < n; i++)
         {
@@ -135,9 +134,8 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
             // TODO(RG) : Fix this
             for (int istate = 0; istate < nstate; istate++)
             {
-                p.m_data[src_start+istate] = 
-                    fld_at_part_SOA(IntVect(D_DECL(i,0,0)), istate);
-                //    = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
+                p.m_data[src_start+istate] 
+                    = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
             }
 
             // std::cout << " Storing src starting at index: " << src_start << std::endl;
