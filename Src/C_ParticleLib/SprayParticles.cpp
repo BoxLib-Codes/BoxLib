@@ -65,6 +65,7 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
         int state_start = state_start_idx(ireg);
         int src_start = src_start_idx(ireg);
 
+        std::cout << "offset (state, source) stored: " << state_start << ", " << src_start << std::endl;
 #ifdef _OPENMP
 #pragma omp parallel 
 #endif
@@ -81,12 +82,18 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
             // This interpolates the first 2-3 fields in the field_fab onto the particle locations
             // in p->m_pos
 
+            // std::cout << i << " old x " << p.m_pos[0] << "; new x " << p.m_data[state_start] << std::endl;
             D_TERM( p.m_pos[0] = p.m_data[state_start];,
                     p.m_pos[1] = p.m_data[state_start+1];,
                     p.m_pos[2] = p.m_data[state_start+2];);
 
+            // std::cout << "BL_SPACEDIM = " << BL_SPACEDIM << " ncomp = " << ncomp << std::endl;
+
             ParticleBase::Interp(p, geom, field_fab, idx, 
                     state_p.data(), BL_SPACEDIM);
+
+            // std::cout << " old x " << p.m_pos[0] << "; new x " << p.m_data[state_start] << std::endl;
+            // std::cout << p.m_id << ", " << i << " Interp state_p : " << state_p[0] << " ," << state_p[1] << std::endl;
 
             for (int icomp = 0; icomp < ncomp; icomp++)
             {
@@ -97,7 +104,7 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
             for (int istate = 0; istate < nstate; istate++)
             {
                 pstate_SOA(IntVect(D_DECL(i,0,0)),istate)
-                    = p.m_data[istate];
+                    = p.m_data[state_start+istate];
             }
 
         }
@@ -132,6 +139,9 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
                     fld_at_part_SOA(IntVect(D_DECL(i,0,0)), istate);
                 //    = pstate_src_SOA(IntVect(D_DECL(i,0,0)),istate);
             }
+
+            // std::cout << " Storing src starting at index: " << src_start << std::endl;
+            // std::cout << src_start << " ; " <<  p.m_id << ", " << i << " src data: " << p.m_data[src_start] << ", " << p.m_data[src_start+1] << std::endl;
 
 
             // Depost field source at particle location onto S_Src
@@ -361,8 +371,12 @@ SprayParticleContainer::Update( int ireg_src_terms, int ireg_start_state, int ir
 
     PMap& pmap = m_particles[lev];
     int start_state = state_start_idx(ireg_start_state);
-    int start_src = state_start_idx(ireg_src_terms);
+    int start_src = src_start_idx(ireg_src_terms);
     int dest_state = state_start_idx(ireg_dest_state);
+
+    std::cout << "registers (state in, soruce, state dest) " << ireg_start_state << "," << ireg_src_terms<< "," << ireg_dest_state << std::endl;
+    std::cout << "offset (state in, soruce, state dest) " << start_state << "," << start_src << "," << dest_state << std::endl;
+    std::cout.flush();
 
     int nstate = nState();
 
@@ -381,6 +395,8 @@ SprayParticleContainer::Update( int ireg_src_terms, int ireg_start_state, int ir
 
             if (p.m_id <= 0) continue;
 
+            // std::cout << "idx: " << start_src << "; " << p.m_id << ", " << i << " update data: " << p.m_data[start_src] << ", " << p.m_data[start_src+1] << std::endl;
+            // std::cout << " Update looking for src starting at index: " << start_src << std::endl;
             for (int istate = 0; istate < nstate; istate++)
             {
                 p.m_data[dest_state+istate] = p.m_data[start_state+istate] 
