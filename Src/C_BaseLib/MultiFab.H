@@ -49,20 +49,20 @@ namespace BoxLib
 			int                     num_comp,
 			bool                    extrap);
 }
-//
-// A Collection of FArrayBoxes
-//
-// The MultiFab class is publically derived from the
-// FabArray<Real,FArrayBox> class.  It is a collection (stored as an array) of
-// FArrayBoxes useful for storing floating point data on a domain defined by
-// a union of rectangular regions embedded in a uniform index space.  The
-// MultiFab class extends the function of the underlying FabArray class just
-// as the FArrayBox class extends the funtion of BaseFab<Real>.  Additional
-// member functions are defined for I/O and simple arithmetic operations on
-// these aggregate objects.
-//
-// This class does NOT provide a copy constructor or assignment operator.
-//
+/**
+* A Collection of FArrayBoxes
+*
+* The MultiFab class is publically derived from the
+* FabArray<Real,FArrayBox> class.  It is a collection (stored as an array) of
+* FArrayBoxes useful for storing floating point data on a domain defined by
+* a union of rectangular regions embedded in a uniform index space.  The
+* MultiFab class extends the function of the underlying FabArray class just
+* as the FArrayBox class extends the funtion of BaseFab<Real>.  Additional
+* member functions are defined for I/O and simple arithmetic operations on
+* these aggregate objects.
+*
+* This class does NOT provide a copy constructor or assignment operator.
+*/
 class MultiFab
     :
     public FabArray<FArrayBox>
@@ -395,21 +395,21 @@ public:
     static Real Dot (const MultiFab& x, int xcomp,
 		     const MultiFab& y, int ycomp,
 		     int num_comp, int nghost, bool local = false);
-    //
-    // Add src to dst including nghost ghost cells.
-    // The two MultiFabs MUST have the same underlying BoxArray.
-    //
+    /**
+    * Add src to dst including nghost ghost cells.
+    * The two MultiFabs MUST have the same underlying BoxArray.
+    */
     static void Add (MultiFab&       dst,
 		     const MultiFab& src,
 		     int             srccomp,
 		     int             dstcomp,
 		     int             numcomp,
 		     int             nghost);
-    //
-    // Copy from src to dst including nghost ghost cells.
-    // The two MultiFabs MUST have the same underlying BoxArray.
-    // The copy is local.  The parallel copy function is in FabArray.H
-    //
+    /**
+    * Copy from src to dst including nghost ghost cells.
+    * The two MultiFabs MUST have the same underlying BoxArray.
+    * The copy is local.  The parallel copy function is in FabArray.H
+    */
     static void Copy (MultiFab&       dst,
                       const MultiFab& src,
                       int             srccomp,
@@ -446,9 +446,9 @@ public:
 			int             dstcomp,
 			int             numcomp,
 			int             nghost);
-    //
-    // dst += a*src
-    //
+    /**
+    * dst += a*src
+    */
     static void Saxpy (MultiFab&       dst,
 		       Real            a, 
 		       const MultiFab& src,
@@ -530,9 +530,9 @@ public:
     bool is_nodal () const;
 
     bool contains_inf (int scomp, int ncomp, int ngrow = 0, bool local=false) const;
-    //
-    // Sum ghost cells that are covered by valid cells into the valid cells.
-    //
+    /**
+    * Sum ghost cells that are covered by valid cells into the valid cells.
+    */
     void SumBoundary (const Periodicity& period = Periodicity::NonPeriodic());
 
     void SumBoundary (int scomp, int ncomp, const Periodicity& period = Periodicity::NonPeriodic());

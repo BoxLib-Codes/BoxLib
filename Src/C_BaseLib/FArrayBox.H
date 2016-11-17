@@ -10,21 +10,21 @@
 
 class FArrayBox;
 
-//
-// A Class Facilitating I/O for Fabs
-//
-// This data-less class aids I/O for FABs and encapsulates information
-// about the floating point format being used in output.
-// Note that the "new" format for writing out FABs is self-describing;
-//    i.e. we can always read in a FAB written in the "new" format.  For this
-// reason, it is usually preferable to write FABs out in the native
-//    format on the machine, unless you're doing computations in 64 bit and
-// only want to write out 32 bit FABs.
-//
-// With the exception of the enumeration constants, this class is
-// primarily for FArrayBox implementors; i.e. user's shouldn't
-// call any of the member functions in this class directly.
-//
+/**
+* A Class Facilitating I/O for Fabs
+*
+* This data-less class aids I/O for FABs and encapsulates information
+* about the floating point format being used in output.
+* Note that the "new" format for writing out FABs is self-describing;
+*    i.e. we can always read in a FAB written in the "new" format.  For this
+* reason, it is usually preferable to write FABs out in the native
+*    format on the machine, unless you're doing computations in 64 bit and
+* only want to write out 32 bit FABs.
+*
+* With the exception of the enumeration constants, this class is
+* primarily for FArrayBox implementors; i.e. user's shouldn't
+* call any of the member functions in this class directly.
+*/
 
 class FABio
 {
@@ -154,7 +154,7 @@ public:
 			       int&          nCompAvailable);
 };
 
-/*
+/**
   A Fortran Array of REALs
 
   Fortran Array Box's (generally called FAB's) are objects constructed

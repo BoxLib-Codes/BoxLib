@@ -42,7 +42,7 @@ namespace BoxLib
     void update_fab_stats (long n, long s, size_t szt);
 }
 
-/*
+/**
   A Fortran Array-like Object
 
   BaseFab emulates the Fortran array concept.  
@@ -167,21 +167,21 @@ public:
     //  Returns the upper corner of the domain.  See class Box for analogue.
     //
     const IntVect& bigEnd () const { return domain.bigEnd(); }
-    //
-    // Returns the lower corner of the domain.  Instead of
-    // returning them in the form of INTVECTs, as in smallEnd and
-    // bigEnd, it returns the values as a pointer to an array of
-    // constant integers.  This is useful when interfacing to
-    // Fortran subroutines.
-    //
+    /**
+    * Returns the lower corner of the domain.  Instead of
+    * returning them in the form of INTVECTs, as in smallEnd and
+    * bigEnd, it returns the values as a pointer to an array of
+    * constant integers.  This is useful when interfacing to
+    * Fortran subroutines.
+    */
     const int* loVect () const { return domain.loVect(); }
-    //
-    // Returns the upper corner of the domain.  Instead of
-    // returning them in the form of INTVECTs, as in smallEnd and
-    // bigEnd, it returns the values as a pointer to an array of
-    // constant integers.  This is useful when interfacing to
-    // Fortran subroutines.
-    //
+    /**
+    * Returns the upper corner of the domain.  Instead of
+    * returning them in the form of INTVECTs, as in smallEnd and
+    * bigEnd, it returns the values as a pointer to an array of
+    * constant integers.  This is useful when interfacing to
+    * Fortran subroutines.
+    */
     const int* hiVect () const { return domain.hiVect(); }
     //
     // Returns true if the domain of fab is totally contained within
@@ -196,15 +196,15 @@ public:
     // within the domain of this BaseFab.
     //
     bool contains (const Box& bx) const { return box().contains(bx); }
-    //
-    // Returns a pointer to an object of type T that is the
-    // value of the Nth component associated with the cell at the
-    // low end of the domain.  This is commonly used to get a pointer
-    // to data in the array which is then handed off to a Fortran
-    // subroutine.  Remember that data is stored in Fortran array
-    // order, with the component index coming last.   In other words,
-    // dataPtr returns a pointer to all the Nth components.
-    //
+    /**
+    * Returns a pointer to an object of type T that is the
+    * value of the Nth component associated with the cell at the
+    * low end of the domain.  This is commonly used to get a pointer
+    * to data in the array which is then handed off to a Fortran
+    * subroutine.  Remember that data is stored in Fortran array
+    * order, with the component index coming last.   In other words,
+    * dataPtr returns a pointer to all the Nth components.
+    */
     T* dataPtr (int n = 0) { BL_ASSERT(!(dptr == 0)); return &dptr[n*numpts]; }
     //
     // Same as above except works on const FABs.

@@ -4,11 +4,11 @@
 
 #include <Box.H>
 #include <BC_TYPES.H>
-//
-// Boundary Condition Records.
-//
-// Necessary information and functions for computing boundary conditions.
-//
+/**
+* Boundary Condition Records.
+*
+* Necessary information and functions for computing boundary conditions.
+*/
 
 class BCRec
 {

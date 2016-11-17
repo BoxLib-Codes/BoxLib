@@ -6,7 +6,7 @@
 #include <LinOp.H>
 #include <BL_CXX11.H>
 
-/*
+/**
         An ABecLaplacian tailors the description of a linear operator to apply
         the second-order central difference approximation to the differential
         operator, alpha*a(x).phi - beta*div[b(x).grad(phi)], on a cell-centered

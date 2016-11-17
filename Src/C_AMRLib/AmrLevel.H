@@ -21,12 +21,12 @@
 class TagBox;
 class TagBoxArray;
 
-//
-// Virtual base class for managing individual levels.
-//
-// AmrLevel functions both as a container for state data on a level
-// and also manages the advancement of data in time.
-//
+/**
+* Virtual base class for managing individual levels.
+*
+* AmrLevel functions both as a container for state data on a level
+* and also manages the advancement of data in time.
+*/
 
 class AmrLevel
 {

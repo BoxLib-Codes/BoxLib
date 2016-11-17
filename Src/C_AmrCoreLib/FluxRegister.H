@@ -4,11 +4,11 @@
 #include <BndryRegister.H>
 #include <Geometry.H>
 
-//
-// Flux Register.
-//
-// Stores and manipulates fluxes at coarse-fine interfaces.
-//
+/**
+ Flux Register.
+
+ Stores and manipulates fluxes at coarse-fine interfaces.
+*/
 
 class FluxRegister
     :
@@ -94,9 +94,9 @@ public:
                    int             numcomp,
                    Real            mult = -1.0,
                    FrOp            op = FluxRegister::COPY);
-    //
-    // Initialize flux correction with coarse data.
-    //
+    /**
+    * Initialize flux correction with coarse data.
+    */
     void CrseInit (const MultiFab& mflx,
                    int             dir,
                    int             srccomp,
@@ -104,9 +104,9 @@ public:
                    int             numcomp,
                    Real            mult = -1.0,
                    FrOp            op = FluxRegister::COPY);
-    //
-    // Increment flux correction with fine data.
-    //
+    /**
+    Increment flux correction with fine data.
+    */
     void FineAdd (const MultiFab& mflx,
                   int             dir, 
                   int             srccomp,

@@ -10,7 +10,7 @@
 #include <MultiFab.H>
 #include <BndryData.H>
 
-/*
+/**
         A LinOp is a virtual base class for general linear operators capable
         of acting on MultiFabs.  All implementation and access functions are
         designed to make a LinOp object useful for representing and solving
@@ -115,9 +115,9 @@ public:
                         int            dst_comp = 0,
                         int            num_comp = 1,
                         int            bndry_comp = 0);
-    //
-    // Fills level boundary cells using BC_mode flag, int. BC data if reqd.
-    //
+    /**
+    * Fills level boundary cells using BC_mode flag, int. BC data if reqd.
+    */
     virtual void applyBC (MultiFab&      inout,
                   int            src_comp,
                   int            num_comp,

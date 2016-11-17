@@ -873,9 +873,9 @@ public:
     void setFab (int K, FAB* elem);
 
     void setFab (const MFIter&mfi, FAB* elem);
-    //
-    // Releases FAB memory in the FabArray.
-    //
+    /**
+    * Releases FAB memory in the FabArray.
+    */
     void clear ();
     //
     // Set all components in the entire region of each FAB to val.
@@ -1004,17 +1004,17 @@ public:
     bool defined (int i) const;
     bool defined (const MFIter& mfi) const;
 
-    //
-    // Copy on intersection within a FabArray.  Data is copied from
-    // valid regions to intersecting regions of definition.  The
-    // purpose is to fill in the boundary regions of each FAB in
-    // the FabArray.  If cross=true, corner cells are not filled.
-    // If the length of periodic is provided, periodic boundaries are
-    // also filled.  Note that FabArray itself does not contains
-    // any periodicity information.
-    // FillBoundary expects that its cell-centered version of its BoxArray 
-    // is non-overlapping.
-    //
+    /**
+    * Copy on intersection within a FabArray.  Data is copied from
+    * valid regions to intersecting regions of definition.  The
+    * purpose is to fill in the boundary regions of each FAB in
+    * the FabArray.  If cross=true, corner cells are not filled.
+    * If the length of periodic is provided, periodic boundaries are
+    * also filled.  Note that FabArray itself does not contains
+    * any periodicity information.
+    * FillBoundary expects that its cell-centered version of its BoxArray 
+    * is non-overlapping.
+    */
     void FillBoundary (bool cross = false);
     void FillBoundary (const Periodicity& period, bool cross = false);
     //

@@ -18,13 +18,13 @@
 #include <RealBox.H>
 #include <Periodicity.H>
 
-//
-// Rectangular problem domain geometry.
-//
-// This class describes problem domain and coordinate system for
-// RECTANGULAR problem domains.  Since the problem domain is RECTANGULAR,
-// periodicity is meaningful.
-//
+/**
+* Rectangular problem domain geometry.
+*
+* This class describes problem domain and coordinate system for
+* RECTANGULAR problem domains.  Since the problem domain is RECTANGULAR,
+* periodicity is meaningful.
+*/
 
 class Geometry
     :
@@ -141,9 +141,9 @@ public:
                       int             idx,
                       int             dir,
                       int             grow) const;
-    //
-    // Is the domain periodic in the specified direction?
-    //
+    /**
+    * Is the domain periodic in the specified direction?
+    */
     static bool isPeriodic (int dir) { return is_periodic[dir] != 0; }
     //
     // Is domain periodic in any direction?

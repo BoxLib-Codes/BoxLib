@@ -7,20 +7,20 @@
 #include <FabArray.H>
 #include <Geometry.H>
 
-//
-// A Collection of IArrayBoxes
-//
-// The iMultiFab class is publically derived from the
-// FabArray<int,IArrayBox> class.  It is a collection (stored as an array) of
-// IArrayBoxes useful for storing integer data on a domain defined by
-// a union of rectangular regions embedded in a uniform index space.  The
-// iMultiFab class extends the function of the underlying FabArray class just
-// as the IArrayBox class extends the funtion of BaseFab<int>.  Additional
-// member functions are defined for I/O and simple arithmetic operations on
-// these aggregate objects.
-//
-// This class does NOT provide a copy constructor or assignment operator.
-//
+/**
+* A Collection of IArrayBoxes
+*
+* The iMultiFab class is publically derived from the
+* FabArray<int,IArrayBox> class.  It is a collection (stored as an array) of
+* IArrayBoxes useful for storing integer data on a domain defined by
+* a union of rectangular regions embedded in a uniform index space.  The
+* iMultiFab class extends the function of the underlying FabArray class just
+* as the IArrayBox class extends the funtion of BaseFab<int>.  Additional
+* member functions are defined for I/O and simple arithmetic operations on
+* these aggregate objects.
+*
+* This class does NOT provide a copy constructor or assignment operator.
+*/
 class iMultiFab
     :
     public FabArray<IArrayBox>

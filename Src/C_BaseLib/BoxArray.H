@@ -187,13 +187,14 @@ struct BATypeTransformer
 	{ return m_typ == rhs.m_typ; }
 };
 
-//
-// An Array of Boxes
-//
-// A BoxArray is a collection of Boxes stored in an Array.  It is a
-// reference-counted concrete class, not a polymorphic one; i.e. you
-// cannot use any of the List member functions with a BoxList.
-//
+/**
+ An Array of Boxes
+
+ A BoxArray is a collection of Boxes stored in an Array.  It is a
+ reference-counted concrete class, not a polymorphic one; i.e. you
+ cannot use any of the List member functions with a BoxList.
+ */
+
 
 class BoxArray
 {

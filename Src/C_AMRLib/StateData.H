@@ -14,11 +14,11 @@
 #include <RealBox.H>
 #include <StateDescriptor.H>
 
-//
-// Current and previous level-time data.
-//
-// StateData holds state data on a level for the current and previous time step.
-//
+/**
+* Current and previous level-time data.
+*
+* StateData holds state data on a level for the current and previous time step.
+*/
 
 class StateData
 {
@@ -59,10 +59,10 @@ public:
                  const StateDescriptor& d, 
                  Real                   cur_time,
                  Real                   dt);
-    //
-    // Copies old data from another StateData object and sets the same time level.
-    // If old data is uninitialized, allocates it with same properties as the input data.
-    //
+    /**
+    * Copies old data from another StateData object and sets the same time level.
+    * If old data is uninitialized, allocates it with same properties as the input data.
+    */
     void copyOld (const StateData& state);
     //
     // Copies new data from another StateData object and sets the same time level.
@@ -81,9 +81,9 @@ public:
     // Reverts back to initial state.
     //
     void reset ();
-    //
-    // Old data becomes new data and new time is incremented by dt.
-    //
+    /**
+    * Old data becomes new data and new time is incremented by dt.
+    */
     void swapTimeLevels (Real dt);
     //
     // Swaps old data with a new MultiFab.
@@ -94,9 +94,9 @@ public:
     //
     void replaceNewData ( MultiFab* mf );
 
-    //
-    // Sets time of old and new data.
-    //
+    /**
+    * Sets time of old and new data.
+    */
     void setTimeLevel (Real t_new,
                        Real dt_old,
                        Real dt_new);
@@ -230,9 +230,9 @@ public:
     // Prints out the time interval.
     //
     void printTimeInterval (std::ostream& os) const;
-    //
-    // True if there is any old data available.
-    //
+    /**
+    * True if there is any old data available.
+    */
     bool hasOldData () const { return old_data != 0; }
     //
     // True if there is any new data available.

@@ -67,11 +67,11 @@ namespace BoxLib
     // hi <- hi*ratio.
     //
     Box refine (const Box& b, const IntVect& refinement_ratio);
-    //
-    // Return a Box with NODE based coordinates in direction dir
-    // that encloses Box b.  NOTE: equivalent to b.convert(dir,NODE)
-    // NOTE: error if b.type(dir) == NODE.
-    //
+    /**
+    * Return a Box with NODE based coordinates in direction dir
+    * that encloses Box b.  NOTE: equivalent to b.convert(dir,NODE)
+    * NOTE: error if b.type(dir) == NODE.
+    */
     Box surroundingNodes (const Box& b, int dir);
     //
     // Return a Box with NODE based coordinates in all
@@ -490,10 +490,10 @@ public:
     // chop_pnt is an end node of the Box.
     //
     Box chop (int dir, int chop_pnt);
-    //
-    // Grow Box in all directions by given amount.
-    // NOTE: n_cell negative shrinks the Box by that number of cells.
-    //
+    /**
+    * Grow Box in all directions by given amount.
+    * NOTE: n_cell negative shrinks the Box by that number of cells.
+    */
     Box& grow (int i) { smallend.diagShift(-i); bigend.diagShift(i); return *this; }
     //
     // Grow Box in each direction by specified amount.

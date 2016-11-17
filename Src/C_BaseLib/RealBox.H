@@ -8,11 +8,11 @@
 #include <REAL.H>
 #include <Box.H>
 
-//
-// A Real Box
-//
-//  A Box with real dimensions.  A RealBox is OK iff volume > 0.
-//
+/**
+* A Real Box
+*
+*  A Box with real dimensions.  A RealBox is OK iff volume > 0.
+*/
 
 class RealBox
 {

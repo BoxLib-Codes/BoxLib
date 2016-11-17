@@ -15,9 +15,9 @@
 
 class Interpolater;
 
-//
-// Attributes of StateData.
-//
+/**
+* Attributes of StateData.
+*/
 
 class StateDescriptor
 {
