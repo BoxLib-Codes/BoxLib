@@ -19,53 +19,54 @@ class BoxCommHelper;
 namespace BoxLib
 {
     //
-    // Grow Box in all directions by given amount.
-    // NOTE: n_cell negative shrinks the Box by that number of cells.
+    ///  Grow Box in all directions by given amount.
+    ///  NOTE: n_cell negative shrinks the Box by that number of cells.
     //
     Box grow (const Box& b, int i);
     //
-    // Grow Box in each direction by specified amount.
+    /// Returns a ``Box`` by growing the argument ``Box``
+    /// in each direction by specified amount.
     //
     Box grow (const Box& b, const IntVect& v);
-    //
-    // Coarsen Box by given (positive) refinement ratio.
-    // NOTE: if type(dir) = CELL centered: lo <- lo/ratio and
-    // hi <- hi/ratio.
-    // NOTE: if type(dir) = NODE centered: lo <- lo/ratio and
-    // hi <- hi/ratio + ((hi%ratio)==0 ? 0 : 1).
-    // That is, refinement of coarsened Box must contain
-    // the original Box.
-    //
+    /**
+    * Coarsen Box by given (positive) refinement ratio.
+    * NOTE: if type(dir) = CELL centered: lo <- lo/ratio and
+    * hi <- hi/ratio.
+    * NOTE: if type(dir) = NODE centered: lo <- lo/ratio and
+    * hi <- hi/ratio + ((hi%ratio)==0 ? 0 : 1).
+    * That is, refinement of coarsened Box must contain
+    * the original Box.
+    */
     Box coarsen (const Box& b, int refinement_ratio);
-    //
-    // Coarsen Box by given (positive) refinement ratio.
-    // NOTE: if type(dir) = CELL centered: lo <- lo/ratio and
-    // hi <- hi/ratio.
-    // NOTE: if type(dir) = NODE centered: lo <- lo/ratio and
-    // hi <- hi/ratio + ((hi%ratio)==0 ? 0 : 1).
-    // That is, refinement of coarsened Box must contain
-    // the original Box.
-    //
+    /**
+    * Coarsen Box by given (positive) refinement ratio.
+    * NOTE: if type(dir) = CELL centered: lo <- lo/ratio and
+    * hi <- hi/ratio.
+    * NOTE: if type(dir) = NODE centered: lo <- lo/ratio and
+    * hi <- hi/ratio + ((hi%ratio)==0 ? 0 : 1).
+    * That is, refinement of coarsened Box must contain
+    * the original Box.
+    */
     Box coarsen (const Box& b, const IntVect& refinement_ratio);
-    //
-    // Refine Box by given (positive) refinement ratio.
-    // NOTE: if type(dir) = CELL centered: lo <- lo*ratio and
-    // hi <- (hi+1)*ratio - 1.
-    // NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
-    // hi <- hi*ratio.
-    //
+    /**
+    * Refine Box by given (positive) refinement ratio.
+    * NOTE: if type(dir) = CELL centered: lo <- lo*ratio and
+    * hi <- (hi+1)*ratio - 1.
+    * NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
+    * hi <- hi*ratio.
+    */
     Box refine (const Box& b, int refinement_ratio);
     //
-    // Return a Box with indices shifted by nzones in dir direction.
+    /// Return a Box with indices shifted by nzones in dir direction.
     //
     Box shift (const Box& b, int dir, int nzones);
-    //
-    // Refine Box by given (positive) refinement ratio.
-    // NOTE: if type(dir) = CELL centered: lo <- lo*ratio and
-    // hi <- (hi+1)*ratio - 1.
-    // NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
-    // hi <- hi*ratio.
-    //
+    /**
+    * Refine Box by given (positive) refinement ratio.
+    * NOTE: if type(dir) = CELL centered: lo <- lo*ratio and
+    * hi <- (hi+1)*ratio - 1.
+    * NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
+    * hi <- hi*ratio.
+    */
     Box refine (const Box& b, const IntVect& refinement_ratio);
     /**
     * Return a Box with NODE based coordinates in direction dir
@@ -73,26 +74,26 @@ namespace BoxLib
     * NOTE: error if b.type(dir) == NODE.
     */
     Box surroundingNodes (const Box& b, int dir);
-    //
-    // Return a Box with NODE based coordinates in all
-    // directions that encloses Box b.
-    //
+    /**
+    * Return a Box with NODE based coordinates in all
+    * directions that encloses Box b.
+    */
     Box surroundingNodes (const Box& b);
     //
-    // Return a Box with different type
+    /// Return a Box with different type
     //
     Box convert (const Box& b, const IntVect& typ);
     Box convert (const Box& b, const IndexType& typ);
     //
-    // Return a Box with CELL based coordinates in 
-    // direction dir that is enclosed by b.
-    // NOTE: equivalent to b.convert(dir,CELL)
-    // NOTE: error if b.type(dir) == CELL.
-    //
+    /** Return a Box with CELL based coordinates in 
+    * direction dir that is enclosed by b.
+    * NOTE: equivalent to b.convert(dir,CELL)
+    * NOTE: error if b.type(dir) == CELL.
+    */
     Box enclosedCells (const Box& b, int dir);
     //
-    // Return a Box with CELL based coordinates in all
-    // directions that is enclosed by b.
+    /// Return a Box with CELL based coordinates in all
+    /// directions that is enclosed by b.
     //
     Box enclosedCells (const Box& b);
     //
@@ -131,11 +132,11 @@ namespace BoxLib
     // Similar to adjCellLo and adjCellHi; operates on given face.
     //
     Box adjCell (const Box& b, Orientation face, int len=1);
-    //
-    // Modify Box to that of the minimum Box containing both
-    // the original Box and the argument.
-    // Both Boxes must have identical type.
-    //
+    /**
+    * Modify Box to that of the minimum Box containing both
+    * the original Box and the argument.
+    * Both Boxes must have identical type.
+    */
     Box minBox (const Box& b1, const Box& b2);
 
     Array<int> SerializeBox(const Box &b);
@@ -144,11 +145,11 @@ namespace BoxLib
 }
 
 //
-// Write an ASCII representation to the ostream.
+/// Write an ASCII representation to the ostream.
 //
 std::ostream& operator<< (std::ostream& os, const Box& bx);
 //
-// Read from istream.
+/// Read from istream.
 //
 std::istream& operator>> (std::istream& os, Box& bx);
 
@@ -175,137 +176,151 @@ public:
     // invalid and may be tested for validity with ok(). 
     // DO NOT CHANGE THIS BEHAVIOR!
     //
+    /// The default constructor constructs an empty ``Box``.
     Box ();
-    //
-    // Construct cell-centered type Box.
-    //
+    /**
+     * Constructs a cell-centered ``Box`` with specified lower and
+     * upper corners.
+     */
     Box (const IntVect& small,
          const IntVect& big);
-    //
-    // Construct box with specified lengths.
-    //
+    /**
+    *  Constructs a cell-centered ``Box`` with specified lower corner
+    *  and lengths.
+    */
     Box (const IntVect& small,
          const int*     vec_len);
-    //
-    // Construct Box with given type.  small and big are expected
-    // to be consistent with given type.
-    //
+    /**
+     *  Constructs a ``Box`` with given index type ``typ`` (represented
+     *  by ``IntVect``) and lower and upper corners.
+     */
     Box (const IntVect& small,
          const IntVect& big,
          const IntVect& typ);
-    //
-    // Construct dimension specific Boxes.
-    //
+    /**
+     * Constructs a ``Box`` with given index type ``t`` and lower
+     *  and upper corners.
+     */
     Box (const IntVect& small,
          const IntVect& big,
          IndexType      t);
-    //
-    // Get the smallend of the box.
-    //
+    /**
+     * Returns the small end of the ``Box``.
+     */
     const IntVect& smallEnd () const { return smallend; }
-    //
-    // Return the coordinate of the low end in the given direction.
-    //
+    /**
+    * Return the coordinate of the low end in the given direction.
+    */
     int smallEnd (int dir) const { return smallend[dir]; }
-    //
-    // Get the bigend.
-    //
+    /**
+     * Returns the big end of the ``Box``.
+     */
     const IntVect& bigEnd () const { return bigend; }
-    //
-    // Return the coordinate of the high end in the given direction.
-    //
+    /**
+     * Returns the coordinate of the big end in the given direction.
+     */
     int bigEnd (int dir) const { return bigend[dir]; }
-    //
-    // Return the indexing type.
-    //
+    /**
+    * Return the indexing type.
+    */
     IndexType ixType () const { return btype; }
-    //
-    // Return the indexing type.
-    //
+    /**
+    * Return the indexing type.
+    */
     IntVect type () const { return btype.ixType(); }
-    //
-    // Return the indexing type in the specified direction.
-    //
+    /**
+    * Return the indexing type in the specified direction.
+    */
     IndexType::CellIndex type (int dir) const { return btype.ixType(dir); }
-    //
-    // Return the length of the Box.
-    //
+    /**
+    * Return the length of the Box.
+    */
     IntVect size () const
     {
         return IntVect(D_DECL(bigend[0]-smallend[0] + 1,
                               bigend[1]-smallend[1] + 1,
                               bigend[2]-smallend[2] + 1));
     }
-    //
-    // Return the length of the Box in given direction.
-    //
+    /**
+    * Return the length of the ``Box`` in given direction.
+    */
     int length (int dir) const { return bigend[dir] - smallend[dir] + 1; }
-    //
-    // Returns a constant pointer the array of low end coordinates.
-    // Useful for calls to FORTRAN.
-    //
+    /**
+     *     Returns a ``const`` pointer to the array of low or high end
+     *     coordinates of the Box.  Useful for :ref:`calls to Fortran
+     *     <fortran>`.
+     */
     const int* loVect () const { return smallend.getVect(); }
-    //
-    // Returns a constant pointer the array of high end coordinates.
-    // Useful for calls to FORTRAN.
-    //
+    /**
+     *     Returns a ``const`` pointer to the array of low or high end
+     *     coordinates of the Box.  Useful for :ref:`calls to Fortran
+     *     <fortran>`.
+     */
     const int* hiVect () const { return bigend.getVect(); }
-    //
-    // Returns the coordinate normal to given face.
-    //
+    /**
+    * Returns the coordinate normal to given face.
+    */
     int operator[] (Orientation face) const;
     //
-    // Checks if it is an empty box.
+    /// Returns true if the ``Box`` is empty.
     //
     bool isEmpty () const { return !ok(); }
-    //
-    // Checks if it is a proper Box (including a valid type).
-    //
+    /**
+     * Returns true if the ``Box`` is valid (including valid index
+     * type).
+     */
     bool ok () const { return (bigend >= smallend) && btype.ok(); }
     //
     // Returns true if argument is contained within Box.
     //
     bool contains (const IntVect& p) const { return p >= smallend && p <= bigend; }
-    //
-    // Returns true if argument is contained within Box.
-    // It is an error if the Boxes have different types.
-    //
+    /**
+     * Returns true if the argument ``Box`` is contained within this ``Box``. 
+     * For "strictly contained", meaning the two
+     * ``Box``\ es do not share borders, use the `strictly_contains` form.
+     * It's a runtime error if the * two ``Box`` es have different types.
+     */
     bool contains (const Box& b) const { BL_ASSERT(sameType(b)); return b.smallend >= smallend && b.bigend <= bigend; }
     //
     // Returns true if argument is strictly contained within Box.
     //
     bool strictly_contains (const IntVect& p) const { return p > smallend && p < bigend; }
-    //
-    // Returns true if argument is strictly contained within Box.
-    // It is an error if the Boxes have different types.
-    //
+    /**
+     * Returns true if the argument ``Box`` is strictly
+     * contained within this ``Box``.  By "strictly", it means the two
+     * ``Box``\ es do not share borders.  It's a runtime error if the
+     * two ``Box`` es have different types.
+     */
     bool strictly_contains (const Box& b) const 
 	{ BL_ASSERT(sameType(b)); return b.smallend > smallend && b.bigend < bigend; }
-    //
-    // Returns true if Boxes have non-null intersections.
-    // It is an error if the Boxes have different types.
-    //
+    /**
+     * Return true if ``Box``\ es intersect.  It's a runtime error if
+     * the two ``Box`` es have different types.  An empty ``Box`` does
+     * not intersect with any ``Box`` \ es.
+     */
     bool intersects (const Box& b) const { Box isect(*this); isect &= b; return isect.ok(); }
-    //
-    // Returns true is Boxes same size, ie translates of each other,.
-    // It is an error if they have different types.
-    //
+    /**
+     *   Returns true if ``Box``\ es have the same size.  Note that they
+     *  do not need to be identical.  It's a runtime error if the two
+     * ``Box`` es have different types.
+     */
     bool sameSize (const Box& b) const;
     //
-    // Returns true if Boxes have same type.
+    /// Returns true if Boxes have same type.
+    /// Returns true if ``Box``\ es have the same type.
     //
     bool sameType (const Box &b) const { return btype == b.btype; }
     //
-    // Returns true if Boxes are identical (including type).
+    /// Returns true if Boxes are identical (including type).
     //
     bool operator== (const Box& b) const { return smallend == b.smallend && bigend == b.bigend && b.btype == btype; }
     //
-    // Returns true if Boxes differ (including type).
+    /// Returns true if Boxes differ (including type).
     //
     bool operator!= (const Box& b) const { return !operator==(b); }
-    //
-    // Returns true if Box is cell-centered in all indexing directions.
-    //
+    /**
+     * Returns true if Box is cell-centered in all indexing directions.
+    */
     bool cellCentered () const { return !btype.any(); }
     //
     // Is the number calculated by numPts() representable in a long?
@@ -315,68 +330,75 @@ public:
     // Returns the number of points contained in the Box, else
     // abort()s if the number cannot be represented in a long.
     //
+    ///
     long numPts () const;
     //
     // Returns the number of points contained in the Box.
     // This is inteded for use only in diagnostic messages.
-    //
+    ///
     double d_numPts () const;
     //
     // Is the number calculated by volume() representable in a long?
     //
     bool volumeOK () const;
-    //
-    // Return the volume, in indexing space, of region enclosed by
-    // this Box.   This is identical to numPts() for CELL centered
-    // Box; otherwise, numPts() > volume().  Abort()s if the number
-    // cannot be represented in a long.
-    //
+    /**
+     *  Returns the volume, in indexing space, of region enclosed by
+     *  this ``Box``.  This is identical to ``numPts()`` for
+     *  cell-centered ``Box``\ e; otherwise, ``numPts() > volume()``.
+     */
     long volume () const;
-    //
-    // Returns length of longest side.  dir is modified to give
-    // direction with longest side: 0...SPACEDIM-1. Ignores type.
-    //
+    /** Returns the length of the longest side.  The argument ``dir``,
+     *  if provided, is modified to give direction with the longest
+     *  side.
+     */
     int longside (int& dir) const;
     //
     // Returns length of longest side.  Ignores type.
     //
     int longside () const;
-    //
-    // Returns length of shortest side.  dir is modified to give
-    // direction with shortest side: 0...SPACEDIM-1.  Ignores type.
-    //
+    /**
+     * Returns the length of the shortest side.  The argument ``dir``,
+     * if provided, is modified to give direction with the shorest
+     * side.
+     */
     int shortside (int& dir) const;
     //
     // Returns length of shortest side.  Ignores type.
     //
     int shortside () const;
-    //
-    // Returns offset of point from smallend; i.e.
-    // index(smallend) -> 0, bigend would return numPts()-1.
-    // Is used in accessing FArrayBox.
-    //
+    /**
+     * Returns offset of the point represented by ``IntVect`` from the
+     * small end of ``Box``, assuming column-major order as in
+     * Fortran.
+     */
     long index (const IntVect& v) const;
     //
-    // Redefine the small end of the Box.
+    /// Redefines the small end of ``Box`` to ``IntVect sm``.
     //
     Box& setSmall (const IntVect& sm) { smallend = sm; return *this; }
-    //
-    // Redefine the small end of the Box.
-    //
+    /**
+     * Redefines the small end of ``Box`` at direction ``dir`` to
+     * ``sm_index``.
+     */
     Box& setSmall (int dir, int sm_index)  { smallend.setVal(dir,sm_index); return *this; }
-    //
-    // Redefine the big end of the Box.
-    //
+    /**
+    * Redefine the big end of the Box.
+    */
     Box& setBig (const IntVect& bg) { bigend = bg; return *this; }
-    //
-    // Redefine the big end of the Box.
-    //
+    /*
+    * Redefines the big end of ``Box`` at direction ``dir`` to
+    * ``bg_index``.
+    */
     Box& setBig (int dir, int bg_index) { bigend.setVal(dir,bg_index); return *this; }
     //
     // Set the entire range in a given direction, starting at
     // sm_index with length n_cells.  NOTE: This will yield an
     // illegal Box if n_cells <= 0.
     //
+    /**
+     * Set the range in direction ``dir``, starting at ``sm_index``
+     * with length ``n_cells``
+     */
     Box& setRange (int dir,
                    int sm_index,
                    int n_cells = 1);
@@ -384,13 +406,14 @@ public:
     // Set indexing type
     //
     Box& setType (const IndexType& t) { btype = t; return *this; }
-    //
-    // Shift this Box nzones indexing positions in coordinate
-    // direction dir.
-    //
+    /**
+     * Shifts ``Box`` in direction ``dir`` by ``nzones`` indexing
+     * positions. 
+     */
     Box& shift (int dir, int nzones) { smallend.shift(dir,nzones); bigend.shift(dir,nzones); return *this; }
     //
     // Equivalent to b.shift(0,iv[0]).shift(1,iv[1]) ....
+    ///  Shifts ``Box`` by ``IntVect iv``.
     //
     Box& shift (const IntVect& iv) { smallend.shift(iv); bigend.shift(iv); return *this; }
     //
@@ -414,6 +437,12 @@ public:
     // type NODE -> CELL : reduce coordinate by one on high end
     // other type mappings make no change.
     //
+    /**
+     * Converts ``Box`` from the current type into the argument type.
+     * The ``volume`` of ``Box`` does not change, whereas the
+     * ``length`` and the number of points may change.  See also,
+     * functions ``volume`` and ``numPts``.
+     */
     Box& convert (IndexType typ);
     //
     // Convert the Box from the current type into the
@@ -422,10 +451,23 @@ public:
     // type NODE -> CELL : reduce coordinate by one on high end
     // other type mappings make no change.
     //
+    /**
+     * Converts ``Box`` from the current type into the argument type.
+     * The ``volume`` of ``Box`` does not change, whereas the
+     * ``length`` and the number of points may change.  See also,
+     * functions ``volume`` and ``numPts``.
+     */
     Box& convert (const IntVect& typ);
     //
     // Convert to NODE type in all directions.
     //
+    /**
+     *  Converts ``Box`` to ``NODE`` in all directions or given
+     *  direction ``dir``.  The ``volume`` of ``Box`` does not change,
+     *  whereas the ``length`` and the number of points will increase if
+     *  the previous type is ``CELL``.  See also, functions ``volume``
+     *  and ``numPts``.
+     */
     Box& surroundingNodes ();
     //
     // Convert to NODE type in given direction.
@@ -434,20 +476,27 @@ public:
     //
     // Convert to CELL type in all directions.
     //
+    /**
+     * Converts ``Box`` to ``CELL`` in all directions or given
+     * direction ``dir``.  The ``volume`` of ``Box`` does not change,
+     * whereas the ``length`` and the number of points will decrease if
+     * the previous is ``NODE``.  See also, functions ``volume`` and
+     * ``numPts``.
+     */
     Box& enclosedCells ();
     //
     // Convert to CELL type in given direction.
     //
     Box& enclosedCells (int dir);
-    //
-    // Return Box that is intersection of this Box
-    // and argument.  The Boxes MUST be of same type.
-    //
+    /**
+     * Returns a ``Box`` that is intersection of this ``Box`` and
+     * argument.  The ``Box``\ es MUST be of same type.
+     */
     Box operator& (const Box& rhs) const { Box lhs(*this); lhs &= rhs; return lhs; }
-    //
-    // Intersect this Box with its argument.
-    // The Boxes MUST be of the same type.
-    //
+    /**
+     * Intersects this ``Box`` with the argument.  This ``Box`` is
+     * modified.  The ``Box``\ es MUST be of same type.
+     */ 
     Box& operator&= (const Box& rhs)
     {
         BL_ASSERT(sameType(rhs));
@@ -455,27 +504,34 @@ public:
         bigend.min(rhs.bigend);
         return *this;
     }
-    //
-    // Modify Box to that of the minimum Box containing both
-    // the original Box and the argument.
-    // Both Boxes must have identical type.
-    //
+    /**
+     * Modifies ``Box`` to that of the minimum ``Box`` containing both
+     * the original ``Box`` and the argument.  Both ``Box``\ es must
+     * have identical type.
+     */ 
     Box& minBox (const Box&);
-    //
-    // Shift Box (relative) by given IntVect.
-    //
+    /**
+     * Modifies this ``Box`` by shifting (positively) by
+     * given ``IntVect``.
+     */
     Box& operator+= (const IntVect& v) { smallend += v; bigend   += v; return *this; }
-    //
-    // Shift Box (relative) by given IntVect.
-    //
+    /**
+     * Returns a ``Box`` that is this ``Box`` shifted (positively)
+     * by given ``IntVect``.
+     */
     Box operator+ (const IntVect& v) const { Box r(*this); r += v; return r; }
     //
     // Shift Box (relative) by given IntVect.
     //
+    /**
+     * Modifies this ``Box`` by shifting (negatively) by
+     * given ``IntVect``.
+     */
     Box& operator-= (const IntVect& v) { smallend -= v; bigend -= v; return *this; }
-    //
-    // Shift Box (relative) by given IntVect.
-    //
+    /**
+     * Returns a ``Box`` that is this ``Box`` shifted (negatively)
+     * by given ``IntVect``.
+     */
     Box operator- (const IntVect& v) const { Box r(*this); r -= v; return r; }
     //
     // Chop the Box at the chop_pnt in the dir direction
@@ -491,33 +547,37 @@ public:
     //
     Box chop (int dir, int chop_pnt);
     /**
-    * Grow Box in all directions by given amount.
-    * NOTE: n_cell negative shrinks the Box by that number of cells.
-    */
+     * Modifies ``Box`` by growing the low and high ends in all
+     * directions by given amount.
+     * NOTE: n_cell negative shrinks the Box by that number of cells.
+     */
     Box& grow (int i) { smallend.diagShift(-i); bigend.diagShift(i); return *this; }
-    //
-    // Grow Box in each direction by specified amount.
-    //
+    /**
+     * Modifies ``Box`` by growing the low and high ends by specified amount.
+     */
     Box& grow (const IntVect& v) { smallend -= v; bigend += v; return *this;}
-    //
-    // Grow the Box on the low and high end by n_cell cells
-    // in direction idir.
-    //
+    /**
+     * Modifies ``Box`` by growing the low and high ends in direction
+     * ``idir`` by ``n_cell`` points.
+     */
     Box& grow (int idir, int n_cell) { smallend.shift(idir, -n_cell); bigend.shift(idir, n_cell); return *this; }
-    //
-    // Grow the Box on the low end by n_cell cells in direction idir.
-    // NOTE: n_cell negative shrinks the Box by that number of cells.
-    //
+    /**
+     *   Modifies ``Box`` by growing the low end in direction ``idir`` by
+     * ``n_cell`` points.
+     * NOTE: n_cell negative shrinks the Box by that number of cells.
+     */
     Box& growLo (int idir, int n_cell = 1) { smallend.shift(idir, -n_cell); return *this; }
-    //
-    // Grow the Box on the high end by n_cell cells in
-    // direction idir.  NOTE: n_cell negative shrinks the Box by that
-    // number of cells.
-    //
+    /**
+     * Modifies ``Box`` by growing the high end in direction ``idir`` by
+     * ``n_cell`` points.
+     * NOTE: n_cell negative shrinks the Box by that
+     * number of cells.
+     */
     Box& growHi (int idir, int n_cell = 1) { bigend.shift(idir,n_cell); return *this; }
-    //
-    // Grow in the direction of the given face.
-    //
+    /**
+     * Modifies ``Box`` by growing the given face by ``n_cell``
+     * points. 
+     */
     Box& grow (Orientation face, int n_cell = 1);
     //
     // Refine Box by given (positive) refinement ratio.
@@ -526,6 +586,10 @@ public:
     // NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
     // hi <- hi*ratio.
     //
+    /**
+     * Refines ``Box`` by given refinement ratio.  The refined ``Box``
+     * covers the same physical domain as before.  
+     */
     Box& refine (int refinement_ratio);
     //
     // Refine Box by given (positive) refinement ratio.
@@ -534,6 +598,7 @@ public:
     // NOTE: if type(dir) = NODE centered: lo <- lo*ratio and
     // hi <- hi*ratio.
     //
+    /// 
     Box& refine (const IntVect& refinement_ratio);
     //
     // Coarsen Box by given (positive) refinement ratio.
@@ -544,6 +609,9 @@ public:
     // That is, refinement of coarsened Box must contain
     // the original Box.
     //
+    /**
+     * Coarsens ``Box`` by given refinement ratio.
+     */
     Box& coarsen (int refinement_ratio);
     //
     // Coarsen Box by given (positive) refinement ratio.
@@ -554,6 +622,7 @@ public:
     // That is, refinement of coarsened Box must contain
     // the original Box.
     //
+    ///
     Box& coarsen (const IntVect& refinement_ratio);
     //
     // Step through the rectangle.  It is a runtime error to give
