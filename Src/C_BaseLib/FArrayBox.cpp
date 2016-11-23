@@ -18,13 +18,7 @@
 #include <BoxLib.H>
 #include <Looping.H>
 #include <Utility.H>
-#include <BL_CXX11.H>
 #include <MemPool.H>
-
-#if !defined(__PGI) && (__GNUC__ >= 5 || defined(BL_Darwin))
-using std::isinf;
-using std::isnan;
-#endif
 
 bool FArrayBox::initialized = false;
 
@@ -52,23 +46,23 @@ class FABio_8bit
 {
 public:
     virtual void read (std::istream& is,
-                       FArrayBox&    fb) const BL_OVERRIDE;
+                       FArrayBox&    fb) const override;
 
     virtual void write (std::ostream&    os,
                         const FArrayBox& fb,
                         int              comp,
-                        int              num_comp) const BL_OVERRIDE;
+                        int              num_comp) const override;
 
     virtual void skip (std::istream& is,
-                       FArrayBox&    f) const BL_OVERRIDE;
+                       FArrayBox&    f) const override;
 
     virtual void skip (std::istream& is,
                        FArrayBox&    f,
-		       int           nCompToSkip) const BL_OVERRIDE;
+		       int           nCompToSkip) const override;
 private:
     virtual void write_header (std::ostream&    os,
                                const FArrayBox& f,
-                               int              nvar) const BL_OVERRIDE;
+                               int              nvar) const override;
 };
 
 //
@@ -80,23 +74,23 @@ class FABio_ascii
 {
 public:
     virtual void read (std::istream&   is,
-                       FArrayBox&      fb) const BL_OVERRIDE;
+                       FArrayBox&      fb) const override;
 
     virtual void write (std::ostream&    os,
                         const FArrayBox& fb,
                         int              comp,
-                        int              num_comp) const BL_OVERRIDE;
+                        int              num_comp) const override;
 
     virtual void skip (std::istream& is,
-                       FArrayBox&    f) const BL_OVERRIDE;
+                       FArrayBox&    f) const override;
 
     virtual void skip (std::istream& is,
                        FArrayBox&    f,
-		       int           nCompToSkip) const BL_OVERRIDE;
+		       int           nCompToSkip) const override;
 private:
     virtual void write_header (std::ostream&    os,
                                const FArrayBox& f,
-                               int              nvar) const BL_OVERRIDE;
+                               int              nvar) const override;
 };
 
 //
@@ -110,26 +104,26 @@ public:
     FABio_binary (RealDescriptor* rd_);
 
     virtual void read (std::istream& is,
-                       FArrayBox&    fb) const BL_OVERRIDE;
+                       FArrayBox&    fb) const override;
 
     virtual void write (std::ostream&    os,
                         const FArrayBox& fb,
                         int              comp,
-                        int              num_comp) const BL_OVERRIDE;
+                        int              num_comp) const override;
 
     virtual void skip (std::istream& is,
-                       FArrayBox&    f) const BL_OVERRIDE;
+                       FArrayBox&    f) const override;
 
     virtual void skip (std::istream& is,
                        FArrayBox&    f,
-		       int           nCompToSkip) const BL_OVERRIDE;
+		       int           nCompToSkip) const override;
 
 private:
     virtual void write_header (std::ostream&    os,
                                const FArrayBox& f,
-                               int              nvar) const BL_OVERRIDE;
+                               int              nvar) const override;
 
-    CpClassPtr<RealDescriptor> rd;
+    CpClassPtr<RealDescriptor> realDesc;
 };
 
 //
@@ -143,6 +137,7 @@ FABio::write_header (std::ostream&    os,
                      const FArrayBox& f,
                      int              nvar) const
 {
+    BL_PROFILE("FABio::write_header");
     BL_ASSERT(nvar <= f.nComp());
     BoxLib::StreamRetry sr(os, "FABio_write_header", 4);
     while(sr.TryOutput()) {
@@ -191,7 +186,7 @@ FArrayBox::contains_nan () const
 #ifndef _CRAYC
     const Real* dp = dptr;
     for (int i = 0; i < numpts*nvar; i++)
-        if (isnan(*dp++))
+        if (std::isnan(*dp++))
             return true;
 #endif
     return false;
@@ -211,7 +206,7 @@ FArrayBox::contains_nan (const Box& bx, int scomp, int ncomp) const
     {
         for (IntVect p = bx.smallEnd(); p <= bx.bigEnd(); bx.next(p))
         {
-            if (isnan(this->operator()(p,scomp+i)))
+            if (std::isnan(this->operator()(p,scomp+i)))
                 return true;
         }
     }
@@ -239,7 +234,7 @@ FArrayBox::contains_nan (const Box& bx, int scomp, int ncomp, IntVect& where) co
     {
         for (IntVect p = bx.smallEnd(); p <= bx.bigEnd(); bx.next(p))
         {
-            if (isnan(this->operator()(p,scomp+i)))
+            if (std::isnan(this->operator()(p,scomp+i)))
             {
                 where = p;
 
@@ -256,7 +251,7 @@ FArrayBox::contains_inf () const
 {
     const Real* dp = dptr;
     for (int i = 0; i < numpts*nvar; i++)
-        if (isinf(*dp++))
+        if (std::isinf(*dp++))
             return true;
     return false;
 }
@@ -274,7 +269,7 @@ FArrayBox::contains_inf (const Box& bx, int scomp, int ncomp) const
     {
         for (IntVect p = bx.smallEnd(); p <= bx.bigEnd(); bx.next(p))
         {
-            if (isinf(this->operator()(p,scomp+i)))
+            if (std::isinf(this->operator()(p,scomp+i)))
                 return true;
         }
     }
@@ -300,7 +295,7 @@ FArrayBox::contains_inf (const Box& bx, int scomp, int ncomp, IntVect& where) co
     {
         for (IntVect p = bx.smallEnd(); p <= bx.bigEnd(); bx.next(p))
         {
-            if (isinf(this->operator()(p,scomp+i)))
+            if (std::isinf(this->operator()(p,scomp+i)))
             {
                 where = p;
 
@@ -566,6 +561,7 @@ FABio*
 FABio::read_header (std::istream& is,
                     FArrayBox&    f)
 {
+    BL_PROFILE("FArrayBox::read_header_is");
     int nvar;
     Box bx;
     FABio* fio = 0;
@@ -573,18 +569,14 @@ FABio::read_header (std::istream& is,
     char c;
 
     is >> c;
-    if (c != 'F') BoxLib::Error("FABio::read_header(): expected \'F\'");
+    if(c != 'F') BoxLib::Error("FABio::read_header(): expected \'F\'");
     is >> c;
-    if (c != 'A') BoxLib::Error("FABio::read_header(): expected \'A\'");
+    if(c != 'A') BoxLib::Error("FABio::read_header(): expected \'A\'");
     is >> c;
-    if (c != 'B') BoxLib::Error("FABio::read_header(): expected \'B\'");
+    if(c != 'B') BoxLib::Error("FABio::read_header(): expected \'B\'");
 
     is >> c;
-    if (c == ':')
-    {
-        //
-        // The "old" FAB format.
-        //
+    if(c == ':') {  // ---- The "old" FAB format.
         int typ_in, wrd_in;
         is >> typ_in;
         is >> wrd_in;
@@ -614,12 +606,7 @@ FABio::read_header (std::istream& is,
         default:
             BoxLib::Error("FABio::read_header(): Unrecognized FABio header");
         }
-    }
-    else
-    {
-        //
-        // The "new" FAB format.
-        //
+    } else {  // ---- The "new" FAB format.
         is.putback(c);
         rd = new RealDescriptor;
         is >> *rd;
@@ -633,8 +620,9 @@ FABio::read_header (std::istream& is,
         fio = new FABio_binary(rd);
     }
 
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio::read_header() failed");
+    }
 
     return fio;
 }
@@ -646,25 +634,22 @@ FABio::read_header (std::istream& is,
 		    int           compIndex,
 		    int&          nCompAvailable)
 {
+    BL_PROFILE("FArrayBox::read_header_is_i");
     int nvar;
     Box bx;
-    FABio* fio = 0;
-    RealDescriptor* rd = 0;
+    FABio *fio = 0;
+    RealDescriptor *rd = 0;
     char c;
 
     is >> c;
-    if (c != 'F') BoxLib::Error("FABio::read_header(): expected \'F\'");
+    if(c != 'F') BoxLib::Error("FABio::read_header(): expected \'F\'");
     is >> c;
-    if (c != 'A') BoxLib::Error("FABio::read_header(): expected \'A\'");
+    if(c != 'A') BoxLib::Error("FABio::read_header(): expected \'A\'");
     is >> c;
-    if (c != 'B') BoxLib::Error("FABio::read_header(): expected \'B\'");
+    if(c != 'B') BoxLib::Error("FABio::read_header(): expected \'B\'");
 
     is >> c;
-    if (c == ':')
-    {
-        //
-        // The "old" FAB format.
-        //
+    if(c == ':') {  // ---- The "old" FAB format.
         int typ_in, wrd_in;
         is >> typ_in;
         is >> wrd_in;
@@ -696,12 +681,7 @@ FABio::read_header (std::istream& is,
         default:
             BoxLib::Error("FABio::read_header(): Unrecognized FABio header");
         }
-    }
-    else
-    {
-        //
-        // The "new" FAB format.
-        //
+    } else {  // ---- The "new" FAB format.
         is.putback(c);
         rd = new RealDescriptor;
         is >> *rd;
@@ -717,8 +697,9 @@ FABio::read_header (std::istream& is,
         fio = new FABio_binary(rd);
     }
 
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio::read_header() failed");
+    }
 
     return fio;
 }
@@ -728,6 +709,7 @@ FArrayBox::writeOn (std::ostream& os,
                     int           comp,
                     int           num_comp) const
 {
+    BL_PROFILE("FArrayBox::writeOn");
     BL_ASSERT(comp >= 0 && num_comp >= 1 && (comp+num_comp) <= nComp());
     fabio->write_header(os, *this, num_comp);
     os.flush();  // 2016-08-30: Titan requires this flush() (probably due to a bug).
@@ -737,6 +719,7 @@ FArrayBox::writeOn (std::ostream& os,
 void
 FArrayBox::readFrom (std::istream& is)
 {
+    BL_PROFILE("FArrayBox::readFrom_is");
     FABio* fabrd = FABio::read_header(is, *this);
     fabrd->read(is, *this);
     delete fabrd;
@@ -746,6 +729,7 @@ FArrayBox::readFrom (std::istream& is)
 int
 FArrayBox::readFrom (std::istream& is, int compIndex)
 {
+    BL_PROFILE("FArrayBox::readFrom_is_i");
     int nCompAvailable;
     FABio* fabrd = FABio::read_header(is, *this, compIndex, nCompAvailable);
     BL_ASSERT(compIndex >= 0 && compIndex < nCompAvailable);
@@ -785,17 +769,18 @@ FABio_ascii::write (std::ostream&    os,
     IntVect sm = bx.smallEnd();
     IntVect bg = bx.bigEnd();
 
-    for (IntVect p = sm; p <= bg; bx.next(p))
-    {
+    for(IntVect p(sm); p <= bg; bx.next(p)) {
         os << p;
-        for (int k=0; k < num_comp; k++)
+        for(int k(0); k < num_comp; ++k) {
             os << "  " << f(p,k+comp);
+	}
         os << '\n';
     }
     os << '\n';
 
-    if (os.fail())
+    if(os.fail()) {
         BoxLib::Error("FABio_ascii::write() failed");
+    }
 }
 
 void
@@ -807,11 +792,9 @@ FABio_ascii::read (std::istream& is,
     IntVect sm = bx.smallEnd();
     IntVect bg = bx.bigEnd();
     IntVect p, q;
-    for (p = sm; p <= bg; bx.next(p))
-    {
+    for(p = sm; p <= bg; bx.next(p)) {
         is >> q;
-        if (p != q)
-        {
+        if(p != q) {
           std::cerr << "Error: read IntVect "
                     << q
                     << "  should be "
@@ -819,12 +802,14 @@ FABio_ascii::read (std::istream& is,
                     << '\n';
           BoxLib::Error("FABio_ascii::read() bad IntVect");
         }
-        for (int k = 0; k < f.nComp(); k++)
+        for(int k(0); k < f.nComp(); ++k) {
             is >> f(p, k);
+	}
     }
 
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio_ascii::read() failed");
+    }
 }
 
 void
@@ -868,17 +853,15 @@ FABio_8bit::write (std::ostream&    os,
     const Real eps = Real(1.0e-8); // FIXME - whats a better value?
     const long siz = f.box().numPts();
 
-    unsigned char* c = new unsigned char[siz];
+    unsigned char *c = new unsigned char[siz];
 
-    for (int k = 0; k < num_comp; k++)
-    {
+    for(int k(0); k < num_comp; ++k) {
         const Real mn   = f.min(k+comp);
         const Real mx   = f.max(k+comp);
         const Real* dat = f.dataPtr(k+comp);
         Real rng = std::fabs(mx-mn);
         rng = (rng < eps) ? 0.0 : 255.0/(mx-mn);
-        for (long i = 0; i < siz; i++)
-        {
+        for(long i(0); i < siz; ++i) {
             Real v = rng*(dat[i]-mn);
             int iv = (int) v;
             c[i]   = (unsigned char) iv;
@@ -889,8 +872,9 @@ FABio_8bit::write (std::ostream&    os,
 
     delete [] c;
 
-    if (os.fail())
+    if(os.fail()) {
         BoxLib::Error("FABio_8bit::write() failed");
+    }
 }
 
 void
@@ -901,12 +885,12 @@ FABio_8bit::read (std::istream& is,
     unsigned char* c = new unsigned char[siz];
 
     Real mn, mx;
-    for (int nbytes, k = 0; k < f.nComp(); k++)
-    {
+    for(int nbytes, k = 0; k < f.nComp(); ++k) {
         is >> mn >> mx >> nbytes;
         BL_ASSERT(nbytes == siz);
-        while (is.get() != '\n')
-            ;
+        while (is.get() != '\n') {
+            ;  // ---- do nothing
+	}
         is.read((char*)c,siz);
         Real* dat       = f.dataPtr(k);
         const Real rng  = (mx-mn)/255.0;
@@ -917,8 +901,9 @@ FABio_8bit::read (std::istream& is,
             dat[i] = mn + rng*v;
         }
     }
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio_8bit::read() failed");
+    }
 
     delete [] c;
 }
@@ -930,17 +915,18 @@ FABio_8bit::skip (std::istream& is,
     const Box& bx = f.box();
     long siz      = bx.numPts();
     Real mn, mx;
-    for (int nbytes, k = 0; k < f.nComp(); k++)
-    {
+    for(int nbytes, k = 0; k < f.nComp(); ++k) {
         is >> mn >> mx >> nbytes;
         BL_ASSERT(nbytes == siz);
-        while (is.get() != '\n')
-            ;
+        while(is.get() != '\n') {
+            ;  // ---- do nothing
+	}
         is.seekg(siz, std::ios::cur);
     }
 
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio_8bit::skip() failed");
+    } 
 }
 
 void
@@ -951,17 +937,18 @@ FABio_8bit::skip (std::istream& is,
     const Box& bx = f.box();
     long siz      = bx.numPts();
     Real mn, mx;
-    for (int nbytes, k = 0; k < nCompToSkip; k++)
-    {
+    for(int nbytes, k = 0; k < nCompToSkip; ++k) {
         is >> mn >> mx >> nbytes;
         BL_ASSERT(nbytes == siz);
-        while (is.get() != '\n')
-            ;
+        while(is.get() != '\n') {
+            ;  // ---- do nothing
+	}
         is.seekg(siz, std::ios::cur);
     }
 
-    if (is.fail())
+    if(is.fail()) {
         BoxLib::Error("FABio_8bit::skip() failed");
+    }
 }
 
 void
@@ -975,15 +962,17 @@ FABio_8bit::write_header (std::ostream&    os,
 
 FABio_binary::FABio_binary (RealDescriptor* rd_)
     :
-    rd(rd_)
-{}
+    realDesc(rd_)
+{
+}
 
 void
 FABio_binary::write_header (std::ostream&    os,
                             const FArrayBox& f,
                             int              nvar) const
 {
-    os << "FAB " << *rd;
+    BL_PROFILE("FABio_binary::write_header");
+    os << "FAB " << *realDesc;
     FABio::write_header(os, f, nvar);
 }
 
@@ -991,12 +980,14 @@ void
 FABio_binary::read (std::istream& is,
                     FArrayBox&    f) const
 {
+    BL_PROFILE("FABio_binary::read");
     const long base_siz = f.box().numPts();
     Real* comp_ptr      = f.dataPtr(0);
     const long siz      = base_siz*f.nComp();
-    RealDescriptor::convertToNativeFormat(comp_ptr, siz, is, *rd);
-    if (is.fail())
+    RealDescriptor::convertToNativeFormat(comp_ptr, siz, is, *realDesc);
+    if(is.fail()) {
         BoxLib::Error("FABio_binary::read() failed");
+    }
 }
 
 void
@@ -1005,15 +996,18 @@ FABio_binary::write (std::ostream&    os,
                      int              comp,
                      int              num_comp) const
 {
+    BL_PROFILE("FABio_binary::write");
     BL_ASSERT(comp >= 0 && num_comp >= 1 && (comp+num_comp) <= f.nComp());
 
     const long base_siz  = f.box().numPts();
     const Real* comp_ptr = f.dataPtr(comp);
     const long siz       = base_siz*num_comp;
-    RealDescriptor::convertFromNativeFormat(os, siz, comp_ptr, *rd);
 
-    if (os.fail())
+    RealDescriptor::convertFromNativeFormat(os, siz, comp_ptr, *realDesc);
+
+    if(os.fail()) {
         BoxLib::Error("FABio_binary::write() failed");
+    }
 }
 
 void
@@ -1023,9 +1017,10 @@ FABio_binary::skip (std::istream& is,
     const Box& bx = f.box();
     long base_siz = bx.numPts();
     long siz      = base_siz * f.nComp();
-    is.seekg(siz*rd->numBytes(), std::ios::cur);
-    if (is.fail())
+    is.seekg(siz*realDesc->numBytes(), std::ios::cur);
+    if(is.fail()) {
         BoxLib::Error("FABio_binary::skip() failed");
+    }
 }
 
 void
@@ -1036,9 +1031,10 @@ FABio_binary::skip (std::istream& is,
     const Box& bx = f.box();
     long base_siz = bx.numPts();
     long siz      = base_siz * nCompToSkip;
-    is.seekg(siz*rd->numBytes(), std::ios::cur);
-    if (is.fail())
+    is.seekg(siz*realDesc->numBytes(), std::ios::cur);
+    if(is.fail()) {
         BoxLib::Error("FABio_binary::skip(..., int nCompToSkip) failed");
+    }
 }
 
 std::ostream&
@@ -1054,7 +1050,7 @@ std::istream&
 operator>> (std::istream& is,
             FArrayBox&    f)
 {
-    FABio* fabrd = FABio::read_header(is,f);
+    FABio *fabrd = FABio::read_header(is,f);
     fabrd->read(is,f);
     delete fabrd;
     return is;

@@ -476,7 +476,6 @@ namespace ParallelDescriptor
 
 	return std::make_pair(rb,re);
     }
-#ifdef BL_USE_CXX11
     template <typename F>
     void team_for (int begin, int end, const F& f)
     {
@@ -501,7 +500,6 @@ namespace ParallelDescriptor
 	    f(i);
 	}
     }
-#endif
     //
     // BoxLib's Parallel Communicators
     //    m_comm_all       is for all ranks, probably MPI_COMM_WORLD
@@ -820,7 +818,11 @@ namespace ParallelDescriptor
                  Real* recvbuf,
                  int   root);
     //
-    // Returns sequential message sequence numbers in range 1000-9000.
+    // Returns sequential message sequence numbers, usually used as
+    // tags for send/recv.  getsetinc has these values:
+    // 0:  return the current sequence number and increment
+    // 1:  return the current sequence number
+    // 2:  set the current sequence number to newvalue
     //
     int SeqNum (int getsetinc = 0, int newvalue = 0);
     int SubSeqNum (int getsetinc = 0, int newvalue = 0);

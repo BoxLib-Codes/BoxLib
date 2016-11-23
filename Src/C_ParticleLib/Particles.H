@@ -21,7 +21,6 @@
 #include <VisMF.H>
 #include <Particles_F.H>
 #include <RealBox.H>
-#include <BL_CXX11.H>
 
 #ifdef BL_LAZY
 #include <Lazy.H>
@@ -1533,7 +1532,7 @@ ParticleContainer<NR,NI,C>::CreateGhostParticles (int   level,
             //
             // Here we add the particle to each potential grid.
             //
-            for (int i = 0; i < isects.size(); i++)
+	    for (const auto& isec : isects)
             {
                 //
                 // Create a copy.
@@ -1547,7 +1546,7 @@ ParticleContainer<NR,NI,C>::CreateGhostParticles (int   level,
                 // Set its position.
                 //
                 p.m_lev  = level + 1;
-                p.m_grid = isects[i].first;
+                p.m_grid = isec.first;
                 p.m_cell = iv;
                 //
                 // Store it in the PBox.
@@ -2684,7 +2683,7 @@ ParticleContainer<NR,NI,C>::Restart (const std::string& dir,
         BL_ASSERT(!version.empty());
         BL_ASSERT(vbuf.size() > version.size());
 
-        for (int i = 0; i < version.size(); i++)
+        for (size_t i = 0; i < version.size(); ++i)
             vbuf[i] = version[i];
 
         vbuf[version.size()] = '\0';
@@ -4795,14 +4794,15 @@ ParticleContainer<NR,NI,C>::AssignCellDensitySingleLevel (int rho_index,
     {
         const PBox& pbx = *pbxs[j];
         FArrayBox&  fab = (*mf_pointer)[pgrd[j]];
+	auto N = pbx.size();
 
         Array<Real>    fracs;
         Array<IntVect> cells;
 
 #ifdef _OPENMP
-#pragma omp parallel for default(none) private(fracs,cells) shared(plo,dx,dx_particle,gm,fab,ncomp,pbx)
+#pragma omp parallel for default(none) private(fracs,cells) shared(N,plo,dx,dx_particle,gm,fab,ncomp,pbx)
 #endif
-	for (int ip = 0; ip < pbx.size(); ++ip)
+	for (size_t ip = 0; ip < N; ++ip)
         {
             const ParticleType& p = pbx[ip];
 
