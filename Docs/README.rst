@@ -16,7 +16,7 @@ functions available.
 
 The build process is therefore two steps::
 
-    Doxygen doxyfile
+    doxygen Doxyfile
     cd sphinx_doc
     make html
 
