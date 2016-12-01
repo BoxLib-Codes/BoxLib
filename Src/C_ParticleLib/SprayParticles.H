@@ -51,6 +51,9 @@ public:
 
     void Update( int ireg_src_terms, int ireg_start_state, int ireg_dest_state, int lev, Real time, Real dt);
 
+    /// Set the value of particle state for all partilces on a level
+    void SetAll (Real val, int pstate_idx, int lev);
+
 private:
     int nstate;
     Real src_time[NREG];

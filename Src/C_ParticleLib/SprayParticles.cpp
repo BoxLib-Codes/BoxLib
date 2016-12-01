@@ -1,6 +1,7 @@
 
 #include <SprayParticles.H>
 #include <Particles_F.H>
+#include <Transport_F.H>
 
 //
 // Computes particle state source terms as well as field source terms from particles
@@ -65,7 +66,8 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
         int state_start = state_start_idx(ireg);
         int src_start = src_start_idx(ireg);
 
-        std::cout << "offset (state, source) stored: " << state_start << ", " << src_start << std::endl;
+        // std::cout << "offset (state, source) stored: " << state_start << ", " << src_start << std::endl;
+
 #ifdef _OPENMP
 #pragma omp parallel 
 #endif
@@ -109,10 +111,11 @@ SprayParticleContainer::ComputeParticleSource (const MultiFab& S,
 
         }
 
+        // What is particle state... and where to define?
         // Next call a bunch of FORTRAN to compute RHS for spray particle state update
-        spray_part_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
-			 pstate_src_SOA.dataPtr(),
-			 &n, &nstate, &ncomp);
+        spray_part_src (pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
+			            pstate_src_SOA.dataPtr(),
+			            &n, &nstate, &ncomp);
 #if 0
 
         spray_part_src_to_fld_src ( pstate_SOA.dataPtr(), fld_at_part_SOA.dataPtr(),
