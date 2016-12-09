@@ -6,7 +6,7 @@ Typically an application will have its own `GNUmakefile`.  (See
 complicated example.)  `Make.defs` is included near the beginning, and
 `Make.rules` is included in the end.  Depending the need,
 `GNUmakefile` includes a number of
-`$(BOXLIB_HOME)/Src/xxx/Make.package`, where `xxx` is `C_BaseLib` etc.
+`$(BOXLIB_HOME)/Src/xxx/Make.package`, where `xxx` is `Base` etc.
 These `Make.package` files add sources to the make system.  An
 application also has its own `Make.package`.  The make variables for
 the sources are:
