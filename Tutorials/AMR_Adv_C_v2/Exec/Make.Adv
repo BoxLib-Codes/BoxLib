@@ -15,7 +15,7 @@ INCLUDE_LOCATIONS += $(Blocs)
 VPATH_LOCATIONS   += $(Blocs)
 
 
-Pdirs 	:= C_BaseLib C_BoundaryLib C_AmrCoreLib
+Pdirs 	:= Base Boundary AmrCore
 Ppack	+= $(foreach dir, $(Pdirs), $(BOXLIB_HOME)/Src/$(dir)/Make.package)
 
 include $(Ppack)

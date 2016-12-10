@@ -22,10 +22,10 @@ include $(TOP)/Src/Base/Make.package
 INCLUDE_LOCATIONS += . 
 INCLUDE_LOCATIONS += $(TOP)/Src/Base 
 
-vpath %.H   . $(TOP)/Source/C_BaseLib
-vpath %.cpp . $(TOP)/Source/C_BaseLib
-vpath %.F   . $(TOP)/Source/C_BaseLib
-vpath %.f   . $(TOP)/Source/C_BaseLib
+vpath %.H   . $(TOP)/Source/Base
+vpath %.cpp . $(TOP)/Source/Base
+vpath %.F   . $(TOP)/Source/Base
+vpath %.f   . $(TOP)/Source/Base
 
 all: $(executable)
 

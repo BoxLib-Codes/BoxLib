@@ -9,7 +9,7 @@ all: $(executable)
 	@echo SUCCESS
 
 Bdirs 	:= Source
-Pdirs 	:= C_BaseLib F_Interfaces/BaseLib
+Pdirs 	:= Base F_Interfaces/BaseLib
 
 Bpack	+= $(foreach dir, $(Pdirs), $(BOXLIB_HOME)/Src/$(dir)/Make.package)
 Blocs	+= $(foreach dir, $(Pdirs), $(BOXLIB_HOME)/Src/$(dir))

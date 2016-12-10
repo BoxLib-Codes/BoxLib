@@ -24,7 +24,7 @@ set(F90_header_files)
 
 set(F77_source_files)
 
-# These files are in C_ParticleLib
+# These files are in Particle
 if(BL_USE_PARTICLES EQUAL 1)
   list(APPEND CXX_header_files AMReX_AmrParGDB.H AMReX_AmrParticles.H)
 endif()
