@@ -48,7 +48,7 @@
 
 #include <MGT_Solver.H>
 #include <stencil_types.H>
-#include <MacBndry.H>
+#include <AMReX_MacBndry.H>
 #include <mg_cpp_f.h>
 
 class FMultiGrid

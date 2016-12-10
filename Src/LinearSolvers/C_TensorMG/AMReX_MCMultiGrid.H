@@ -2,10 +2,10 @@
 #ifndef _MCMULTIGRID_H_
 #define _MCMULTIGRID_H_
 
-#include <Array.H>
-#include <Pointers.H>
+#include <AMReX_Array.H>
+#include <AMReX_Pointers.H>
 
-#include <MultiFab.H>
+#include <AMReX_MultiFab.H>
 #include <MCLinOp.H>
 
 /*

@@ -2,7 +2,7 @@
 #define _MCVISCBNDRY_H_
 
 #include <MCInterpBndryData.H>
-#include <BC_TYPES.H>
+#include <AMReX_BC_TYPES.H>
 
 class MCViscBndry : public MCInterpBndryData
 {

@@ -7,12 +7,12 @@
 
 #include "Solver.H"
 
-#include <Utility.H>
-#include <ParmParse.H>
-#include <ParallelDescriptor.H>
-#include <MultiFab.H>
+#include <AMReX_Utility.H>
+#include <AMReX_ParmParse.H>
+#include <AMReX_ParallelDescriptor.H>
+#include <AMReX_MultiFab.H>
 #include "Epetra_MpiComm.h"
-#include <VisMF.H>
+#include <AMReX_VisMF.H>
 #include <writePlotFile.H>
 
 #include <vector>

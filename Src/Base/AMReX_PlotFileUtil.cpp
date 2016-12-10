@@ -2,8 +2,8 @@
 #include <fstream>
 #include <iomanip>
 
-#include <VisMF.H>
-#include <PlotFileUtil.H>
+#include <AMReX_VisMF.H>
+#include <AMReX_PlotFileUtil.H>
 
 static std::string LevelPath (int level)
 {

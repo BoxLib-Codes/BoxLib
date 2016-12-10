@@ -2,7 +2,7 @@
 #ifndef _ABec2_H_
 #define _ABec2_H_
 
-#include <Tuple.H>
+#include <AMReX_Tuple.H>
 #include <LinOp.H>
 #include <ABecLaplacian.H>
 

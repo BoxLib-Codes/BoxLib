@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <BoxLib.H>
-#include <MultiFabUtil.H>
+#include <AMReX_BoxLib.H>
+#include <AMReX_MultiFabUtil.H>
 #include <MultiFab_C_F.H>
 
 extern "C" {

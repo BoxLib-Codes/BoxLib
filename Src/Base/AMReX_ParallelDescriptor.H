@@ -1,14 +1,14 @@
 #ifndef BL_PARALLELDESCRIPTOR_H
 #define BL_PARALLELDESCRIPTOR_H
 
-#include <BLProfiler.H>
-#include <BLassert.H>
-#include <REAL.H>
-#include <Array.H>
+#include <AMReX_BLProfiler.H>
+#include <AMReX_BLassert.H>
+#include <AMReX_REAL.H>
+#include <AMReX_Array.H>
 #ifndef BL_AMRPROF
-#include <Box.H>
+#include <AMReX_Box.H>
 #endif
-#include <ccse-mpi.H>
+#include <AMReX_ccse-mpi.H>
 
 #ifdef BL_USE_UPCXX
 #include <upcxx.h>
@@ -23,7 +23,7 @@
 #endif
 
 #ifdef BL_LAZY
-#include <Lazy.H>
+#include <AMReX_Lazy.H>
 #endif
 
 #include <iostream>

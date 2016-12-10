@@ -1,13 +1,13 @@
 
-#include <winstd.H>
+#include <AMReX_winstd.H>
 
-#include <MacBndry.H>
+#include <AMReX_MacBndry.H>
 #include <MacOperator.H>
 #include <MacOpMacDrivers.H>
 #include <MACOPERATOR_F.H>
 #include <CGSolver.H>
 #include <MultiGrid.H>
-#include <ParmParse.H>
+#include <AMReX_ParmParse.H>
 
 #ifdef MG_USE_HYPRE
 #include <HypreABec.H>

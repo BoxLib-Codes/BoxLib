@@ -10,8 +10,8 @@
 //==========================================================================
 
 #include <ABecLaplacian.H>
-#include <BndryData.H>
-#include <AmrCore.H>
+#include <AMReX_BndryData.H>
+#include <AMReX_AmrCore.H>
 
 class MacOperator
     :

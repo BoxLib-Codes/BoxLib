@@ -1,7 +1,7 @@
-#include <winstd.H>
+#include <AMReX_winstd.H>
 #include <cmath>
 
-#include <LO_BCTYPES.H>
+#include <AMReX_LO_BCTYPES.H>
 #include <MCInterpBndryData.H>
 #include <MCINTERPBNDRYDATA_F.H>
 #include <MCLinOp.H>

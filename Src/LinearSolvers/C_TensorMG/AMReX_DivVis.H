@@ -1,7 +1,7 @@
 #ifndef _DivVis_H_
 #define _DivVis_H_
 
-#include <Tuple.H>
+#include <AMReX_Tuple.H>
 #include <MCLinOp.H>
 
 /*
