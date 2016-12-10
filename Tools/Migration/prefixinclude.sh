@@ -108,7 +108,7 @@ NUM_HEADERS=102
 I_HEADER=0
 
 for header in ${BOXLIB_HEADERS}; do
-  find . -path .git -prune -o -type f -exec grep -Iq . {} \; -exec sed -i 's/\(#include\s*\(<\|\"\)\s*\)'"${header}"'\(\s*\(>\|\"\)\)/\1AMReX_'"${header}"'\3/g' {} +
+  find . -path './.git' -prune -o -path './Tools/Migration' -prune -o -type f -exec grep -Iq . {} \; -exec sed -i 's/\(#include\s*\(<\|\"\)\s*\)'"${header}"'\(\s*\(>\|\"\)\)/\1AMReX_'"${header}"'\3/g' {} +
   I_HEADER=$((I_HEADER+1))
   percent=$(awk "BEGIN { pc=100*${I_HEADER}/${NUM_HEADERS}; i=int(pc); print (pc-i<0.5)?i:i+1 }")
   echo -ne "Progress: ${percent}%"\\r
