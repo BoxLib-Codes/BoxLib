@@ -21,13 +21,13 @@ EBASE     = main
 include ./Make.package
 include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 include $(BOXLIB_HOME)/Src/F_Interfaces/BaseLib/Make.package
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/F_Interfaces/BaseLib
 
-VPATH_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+VPATH_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 VPATH_LOCATIONS += $(BOXLIB_HOME)/Src/F_Interfaces/BaseLib
 
 vpath %.c   . $(VPATH_LOCATIONS)

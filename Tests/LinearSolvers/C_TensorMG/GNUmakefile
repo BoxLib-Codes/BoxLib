@@ -24,20 +24,20 @@ include ./Make.package
 
 include $(BOXLIB_HOME)/Src/LinearSolvers/C_TensorMG/Make.package
 include $(BOXLIB_HOME)/Src/LinearSolvers/C_CellMG/Make.package
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
-include $(BOXLIB_HOME)/Src/C_BoundaryLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
+include $(BOXLIB_HOME)/Src/Boundary/Make.package
 
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/LinearSolvers/C_TensorMG
 vpathdir          += $(BOXLIB_HOME)/Src/LinearSolvers/C_TensorMG
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BoundaryLib
-vpathdir          += $(BOXLIB_HOME)/Src/C_BoundaryLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Boundary
+vpathdir          += $(BOXLIB_HOME)/Src/Boundary
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-vpathdir          += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+vpathdir          += $(BOXLIB_HOME)/Src/Base
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_AMRLib
-vpathdir          += $(BOXLIB_HOME)/Src/C_AMRLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Amr
+vpathdir          += $(BOXLIB_HOME)/Src/Amr
 
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/LinearSolvers/C_CellMG
 vpathdir          += $(BOXLIB_HOME)/Src/LinearSolvers/C_CellMG

@@ -18,11 +18,11 @@ include ./Make.package
 
 include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 
-vpathdir += $(BOXLIB_HOME)/Src/C_BaseLib
+vpathdir += $(BOXLIB_HOME)/Src/Base
 
 vpath %.c   : . $(vpathdir)
 vpath %.h   : . $(vpathdir)

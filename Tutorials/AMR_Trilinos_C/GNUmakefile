@@ -33,13 +33,13 @@ include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 CEXE_sources += $(EBASE).cpp
 
 include Make.package
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_AMRLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Amr
 
-vpathdir += $(BOXLIB_HOME)/Src/C_BaseLib
-vpathdir += $(BOXLIB_HOME)/Src/C_AMRLib
+vpathdir += $(BOXLIB_HOME)/Src/Base
+vpathdir += $(BOXLIB_HOME)/Src/Amr
 
 # trilinos library
 INCLUDE_LOCATIONS += $(TRILINOS_DIR)/include

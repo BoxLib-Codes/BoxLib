@@ -17,10 +17,10 @@ CEXE_sources += $(EBASE).cpp
 DEFINES += -DBL_PARALLEL_IO
 include $(TOP)/Tools/C_mk/Make.defs ./Make.package
 
-include $(TOP)/Src/C_BaseLib/Make.package
+include $(TOP)/Src/Base/Make.package
 
 INCLUDE_LOCATIONS += . 
-INCLUDE_LOCATIONS += $(TOP)/Src/C_BaseLib 
+INCLUDE_LOCATIONS += $(TOP)/Src/Base 
 
 vpath %.H   . $(TOP)/Source/C_BaseLib
 vpath %.cpp . $(TOP)/Source/C_BaseLib

@@ -20,16 +20,16 @@ include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 
 CEXE_sources += $(EBASE).cpp
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 INCLUDE_LOCATIONS += $(HERE)
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Extern/amrdata
 
 include $(BOXLIB_HOME)/Src/Extern/amrdata/Make.package
 
 PATHDIRS  = $(HERE)
-PATHDIRS += $(BOXLIB_HOME)/Src/C_BaseLib
+PATHDIRS += $(BOXLIB_HOME)/Src/Base
 PATHDIRS += $(BOXLIB_HOME)/Src/Extern/amrdata
 
 

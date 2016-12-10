@@ -28,22 +28,22 @@ DEFINES += -DBL_NOLINEVALUES -DBL_PARALLEL_IO
 
 include Make.package
 include ../Make.package
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
-include $(BOXLIB_HOME)/Src/C_BoundaryLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
+include $(BOXLIB_HOME)/Src/Boundary/Make.package
 include $(BOXLIB_HOME)/Src/Extern/amrdata/Make.package
 
 INCLUDE_LOCATIONS += .
 INCLUDE_LOCATIONS += ..
 vpathdir += ..
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-vpathdir += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+vpathdir += $(BOXLIB_HOME)/Src/Base
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BoundaryLib
-vpathdir += $(BOXLIB_HOME)/Src/C_BoundaryLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Boundary
+vpathdir += $(BOXLIB_HOME)/Src/Boundary
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_AMRLib
-vpathdir += $(BOXLIB_HOME)/Src/C_AMRLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Amr
+vpathdir += $(BOXLIB_HOME)/Src/Amr
 
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Extern/amrdata
 vpathdir += $(BOXLIB_HOME)/Src/Extern/amrdata

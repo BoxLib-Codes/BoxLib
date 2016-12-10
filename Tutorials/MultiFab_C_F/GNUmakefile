@@ -15,9 +15,9 @@ EBASE     = main
 include ./Make.package
 include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-vpathdir += $(BOXLIB_HOME)/Src/C_BaseLib
+include $(BOXLIB_HOME)/Src/Base/Make.package
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+vpathdir += $(BOXLIB_HOME)/Src/Base
 
 include $(BOXLIB_HOME)/Src/F_BaseLib/FParallelMG.mak
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/F_BaseLib

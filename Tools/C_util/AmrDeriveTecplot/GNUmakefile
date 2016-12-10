@@ -32,14 +32,14 @@ endif
 
 DEFINES += -DBL_PARALLEL_IO
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 INCLUDE_LOCATIONS += .
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Extern/amrdata
 
 PATHDIRS  = .
-PATHDIRS += $(BOXLIB_HOME)/Src/C_BaseLib
+PATHDIRS += $(BOXLIB_HOME)/Src/Base
 PATHDIRS += $(BOXLIB_HOME)/Src/Extern/amrdata
 
 

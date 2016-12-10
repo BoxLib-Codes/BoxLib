@@ -7,7 +7,7 @@ The development branch was merged into master on November 1, 2016.
 
 * New Features
 ** Some AMR core functionalites have been moved into a new directory,
-Src/C_AmrCoreLib, and part of the Amr class is now in a new class,
+Src/AmrCore, and part of the Amr class is now in a new class,
 AmrCore.  This allows the user to write an Amr application without
 using Amr, AmrLevel and StateData classes.  An example of this can be
 found at Tutorials/AMR_Adv_C_v2/.

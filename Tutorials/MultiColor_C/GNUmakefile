@@ -15,9 +15,9 @@ include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
 CEXE_sources += $(EBASE).cpp
 
 include Make.package
-include $(BOXLIB_HOME)/Src/C_BoundaryLib/Make.package
+include $(BOXLIB_HOME)/Src/Boundary/Make.package
 include $(BOXLIB_HOME)/Src/LinearSolvers/C_CellMG/Make.package
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 all: $(executable)
 	@echo SUCCESS

@@ -18,16 +18,16 @@ EBASE     = gridmovetest
 
 include ./Make.package
 include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
-include $(BOXLIB_HOME)/Src/C_BoundaryLib/Make.package
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Boundary/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BoundaryLib
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_AMRLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Boundary
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Amr
 
-vpathdir += $(BOXLIB_HOME)/Src/C_BoundaryLib
-vpathdir += $(BOXLIB_HOME)/Src/C_BaseLib
-vpathdir += $(BOXLIB_HOME)/Src/C_AMRLib
+vpathdir += $(BOXLIB_HOME)/Src/Boundary
+vpathdir += $(BOXLIB_HOME)/Src/Base
+vpathdir += $(BOXLIB_HOME)/Src/Amr
 
 vpath %.c   : . $(vpathdir)
 vpath %.h   : . $(vpathdir)

@@ -50,7 +50,7 @@ ifeq ($(_progs),tFillFab)
   fEXE_sources += fillfab.f
 endif
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 all: $(addsuffix $(optionsSuffix).ex, $(_progs))
 

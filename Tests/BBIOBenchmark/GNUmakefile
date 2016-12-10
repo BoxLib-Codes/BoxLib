@@ -19,18 +19,18 @@ EBASE = bbiotest
 
 HERE = .
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 INCLUDE_LOCATIONS += $(HERE)
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
 
 CEXE_sources += BBIOTestDriver.cpp BBIOTest.cpp
 
-vpath %.H   $(HERE) $(BOXLIB_HOME)/Src/C_BaseLib
-vpath %.cpp $(HERE) $(BOXLIB_HOME)/Src/C_BaseLib
-vpath %.F   $(HERE) $(BOXLIB_HOME)/Src/C_BaseLib
-vpath %.f   $(HERE) $(BOXLIB_HOME)/Src/C_BaseLib
-vpath %.f90 $(HERE) $(BOXLIB_HOME)/Src/C_BaseLib
+vpath %.H   $(HERE) $(BOXLIB_HOME)/Src/Base
+vpath %.cpp $(HERE) $(BOXLIB_HOME)/Src/Base
+vpath %.F   $(HERE) $(BOXLIB_HOME)/Src/Base
+vpath %.f   $(HERE) $(BOXLIB_HOME)/Src/Base
+vpath %.f90 $(HERE) $(BOXLIB_HOME)/Src/Base
 
 all: $(executable)
 

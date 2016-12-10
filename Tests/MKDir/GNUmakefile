@@ -16,6 +16,6 @@ EBASE        = mkdirtest
 CEXE_sources += MKDir.cpp
 
 include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 include $(BOXLIB_HOME)/Tools/C_mk/Make.rules

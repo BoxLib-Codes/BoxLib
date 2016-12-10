@@ -49,24 +49,24 @@ include ./Make.package
 
 DEFINES += -DBL_PARALLEL_IO
 
-include $(BOXLIB_HOME)/Src/C_BaseLib/Make.package
+include $(BOXLIB_HOME)/Src/Base/Make.package
 
 INCLUDE_LOCATIONS += $(HERE)
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BaseLib
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_AMRLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Amr
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Extern/amrdata
-INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/C_BoundaryLib
+INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Boundary
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Tutorials/Exp_CNS_NoSpec/HyptermKernels/HyptermKernel_cpp_F
 
 
-include $(BOXLIB_HOME)/Src/C_BoundaryLib/Make.package
-INCLUDES += $(BOXLIB_HOME)/Src/C_BoundaryLib
+include $(BOXLIB_HOME)/Src/Boundary/Make.package
+INCLUDES += $(BOXLIB_HOME)/Src/Boundary
 
 PATHDIRS  = $(HERE)
-PATHDIRS += $(BOXLIB_HOME)/Src/C_BaseLib
-PATHDIRS += $(BOXLIB_HOME)/Src/C_AMRLib
+PATHDIRS += $(BOXLIB_HOME)/Src/Base
+PATHDIRS += $(BOXLIB_HOME)/Src/Amr
 PATHDIRS += $(BOXLIB_HOME)/Src/Extern/amrdata
-PATHDIRS += $(BOXLIB_HOME)/Src/C_BoundaryLib
+PATHDIRS += $(BOXLIB_HOME)/Src/Boundary
 PATHDIRS += $(BOXLIB_HOME)/Tutorials/Exp_CNS_NoSpec/HyptermKernels/HyptermKernel_c_c
 PATHDIRS += $(BOXLIB_HOME)/Tutorials/Exp_CNS_NoSpec/HyptermKernels/HyptermKernel_cpp_F
 
