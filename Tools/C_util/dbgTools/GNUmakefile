@@ -15,7 +15,7 @@ EBASE = crsGrids
 CEXE_sources += $(EBASE).cpp
 
 DEFINES += -DBL_PARALLEL_IO
-include $(TOP)/Tools/C_mk/Make.defs ./Make.package
+include $(TOP)/Tools/GNUMake/Make.defs ./Make.package
 
 include $(TOP)/Src/Base/Make.package
 

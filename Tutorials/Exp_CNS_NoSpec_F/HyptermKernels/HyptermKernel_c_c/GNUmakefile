@@ -18,7 +18,7 @@ USE_MPI=TRUE
 USE_OMP=TRUE
 
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 
 override CXXOPTF = -O3 -msse3
@@ -47,6 +47,6 @@ vpath %.a $(LIBRARY_LOCATIONS)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 
 

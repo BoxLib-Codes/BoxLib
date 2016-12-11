@@ -16,7 +16,7 @@ USE_CXX11 = TRUE
 #TRACE_PROFILE = TRUE
 #COMM_PROFILE  = FALSE
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 EBASE = iotest
 
@@ -37,5 +37,5 @@ vpath %.f90 $(HERE) $(BOXLIB_HOME)/Src/Base
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 

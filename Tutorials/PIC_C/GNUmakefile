@@ -30,7 +30,7 @@ HPGMG_USE_SUBCOMM = TRUE
 HPGMG_BOTTOM_SOLVER= BICGSTAB
 HPGMG_SMOOTHER = GSRB
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 include ./Make.package
 include $(BOXLIB_HOME)/Src/Base/Make.package
@@ -41,4 +41,4 @@ include $(BOXLIB_HOME)/Src/LinearSolvers/C_CellMG/Make.package
 include $(BOXLIB_HOME)/Src/LinearSolvers/F_MG/FParallelMG.mak
 include $(BOXLIB_HOME)/Src/F_BaseLib/FParallelMG.mak
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

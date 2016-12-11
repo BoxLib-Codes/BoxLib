@@ -71,9 +71,9 @@ The `Make.defs` includes the following files in the listed order:
   as HPGMG, if it is used.
 
 * `sites/Make.xxx`: Here which file to include is resolved as follows.
-  If a file `$(BOXLIB_HOME)/Tools/C_mk/sites/Make.$(host_name)`
+  If a file `$(BOXLIB_HOME)/Tools/GNUMake/sites/Make.$(host_name)`
   exists, it is included.  Otherwise,
-  `$(BOXLIB_HOME)/Tools/C_mk/sites/Make.$(which_site)` is included.
+  `$(BOXLIB_HOME)/Tools/GNUMake/sites/Make.$(which_site)` is included.
   Note that both `host_name` and `which_site` are defined in
   `Make.machines`.  This file is used for site specific setup.
   Typically this is used for MPI related setup.  The file

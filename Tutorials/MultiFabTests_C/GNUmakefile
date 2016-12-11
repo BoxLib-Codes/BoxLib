@@ -17,7 +17,7 @@ EBASE     = mfreadwrite
 EBASE     = gridmovetest
 
 include ./Make.package
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 include $(BOXLIB_HOME)/Src/Boundary/Make.package
 include $(BOXLIB_HOME)/Src/Base/Make.package
 
@@ -39,4 +39,4 @@ vpath %.f90 : . $(vpathdir)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

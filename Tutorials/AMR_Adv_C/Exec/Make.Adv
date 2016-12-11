@@ -5,7 +5,7 @@ TOP := $(ADR_DIR)
 
 EBASE := main
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 
 Bdirs 	:= Source Source/Src_nd Source/Src_$(DIM)d
@@ -27,5 +27,5 @@ include $(Ppack)
 all: $(executable) 
 	@echo SUCCESS
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 

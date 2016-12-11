@@ -15,7 +15,7 @@ HERE = .
 
 DEFINES += -DBL_NOLINEVALUES
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 
 CEXE_sources += $(EBASE).cpp
@@ -42,5 +42,5 @@ vpath %.cpp $(PATHDIRS)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 

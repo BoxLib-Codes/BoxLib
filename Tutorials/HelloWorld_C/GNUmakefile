@@ -12,9 +12,9 @@ PRECISION = DOUBLE
 USE_MPI   = FALSE
 USE_OMP   = FALSE
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 include ./Make.package
 include $(BOXLIB_HOME)/Src/Base/Make.package
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

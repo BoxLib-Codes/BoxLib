@@ -22,7 +22,7 @@ Bpack := ./Make.package
 
 EBASE = SMC
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 all: $(executable)
 	@echo SUCCESS
@@ -30,7 +30,7 @@ all: $(executable)
 include ./Make.package
 include $(BOXLIB_HOME)/Src/Base/Make.package
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 
 
 #-----------------------------------------------------------------------------

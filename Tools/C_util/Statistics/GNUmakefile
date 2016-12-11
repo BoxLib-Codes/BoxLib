@@ -22,7 +22,7 @@ EBASE = PltFileFluxAve
 #EBASE = PltFileList
 
 CEXE_sources += $(EBASE).cpp
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 DEFINES += -DBL_NOLINEVALUES -DBL_PARALLEL_IO
 
@@ -61,4 +61,4 @@ vpath %.f90 : . $(vpathdir)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

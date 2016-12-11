@@ -14,7 +14,7 @@ USE_MPI = FALSE
 
 EBASE = main
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 CXXFLAGS +=
 CXXOPTF  +=
@@ -55,6 +55,6 @@ vpath %.f90 : . $(vpathdir)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 
 

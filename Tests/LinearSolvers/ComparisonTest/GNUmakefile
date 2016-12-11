@@ -34,7 +34,7 @@ USE_MPI=TRUE
 
 EBASE = LST
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 CEXE_sources += main.cpp
 
@@ -69,4 +69,4 @@ endif
 all: $(executable)
 	@echo SUCCESS
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

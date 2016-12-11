@@ -26,7 +26,7 @@ USE_OMP = TRUE
 
 HERE = .
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 
 override CXXOPTF = -O3 -msse3
@@ -80,6 +80,6 @@ vpath %.cpp $(PATHDIRS)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 
 

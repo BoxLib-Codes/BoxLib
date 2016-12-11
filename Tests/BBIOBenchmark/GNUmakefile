@@ -13,7 +13,7 @@ FCOMP     = gfortran
 USE_MPI=FALSE
 USE_MPI=TRUE
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 EBASE = bbiotest
 
@@ -34,5 +34,5 @@ vpath %.f90 $(HERE) $(BOXLIB_HOME)/Src/Base
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 

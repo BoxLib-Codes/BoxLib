@@ -19,7 +19,7 @@ TRACE_PROFILE = FALSE
 #DEFINES += -DBL_PROFILING_SPECIAL
 
 BOXLIB_HOME = ../..
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 #
 # Base name of each of the executables we want to build.
@@ -64,4 +64,4 @@ clean::
 	$(RM) bl3_prof bl3_prof.m
 	$(RM) *.ex *.o
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

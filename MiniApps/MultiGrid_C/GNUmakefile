@@ -31,7 +31,7 @@ EBASE        = main
 CPPFLAGS += -DCG_USE_OLD_CONVERGENCE_CRITERIA
 
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 CEXE_sources += $(EBASE).cpp
 
@@ -43,4 +43,4 @@ include $(BOXLIB_HOME)/Src/Base/Make.package
 all: $(executable)
 	@echo SUCCESS
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules

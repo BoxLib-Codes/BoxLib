@@ -13,7 +13,7 @@ PRECISION = DOUBLE
 EBASE     = main
 
 include ./Make.package
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 include $(BOXLIB_HOME)/Src/Base/Make.package
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Base
@@ -33,7 +33,7 @@ vpath %.f90 : . $(vpathdir)
 
 all: $(executable)
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
 
 #-----------------------------------------------------------------------------
 # for debugging.  To see the value of a Makefile variable,

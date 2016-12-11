@@ -52,7 +52,7 @@ USE_OMP=FALSE
 
 EBASE = main
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.defs
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.defs
 
 CEXE_sources += $(EBASE).cpp
 
@@ -127,4 +127,4 @@ vpath %.f90 : . $(VPATH_LOCATIONS)
 all: $(executable)
 	@echo SUCCESS
 
-include $(BOXLIB_HOME)/Tools/C_mk/Make.rules
+include $(BOXLIB_HOME)/Tools/GNUMake/Make.rules
