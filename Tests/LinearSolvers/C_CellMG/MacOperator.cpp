@@ -5,16 +5,16 @@
 #include <MacOperator.H>
 #include <MacOpMacDrivers.H>
 #include <MACOPERATOR_F.H>
-#include <CGSolver.H>
-#include <MultiGrid.H>
+#include <AMReX_CGSolver.H>
+#include <AMReX_MultiGrid.H>
 #include <AMReX_ParmParse.H>
 
 #ifdef MG_USE_HYPRE
 #include <HypreABec.H>
 #endif
 
-#include <MGT_Solver.H>
-#include <stencil_types.H>
+#include <AMReX_MGT_Solver.H>
+#include <AMReX_stencil_types.H>
 #include <mg_cpp_f.h>
 
 #ifndef _NavierStokes_H_

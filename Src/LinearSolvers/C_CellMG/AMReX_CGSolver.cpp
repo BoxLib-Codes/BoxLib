@@ -8,8 +8,8 @@
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_Utility.H>
 #include <AMReX_LO_BCTYPES.H>
-#include <CGSolver.H>
-#include <MultiGrid.H>
+#include <AMReX_CGSolver.H>
+#include <AMReX_MultiGrid.H>
 #include <AMReX_VisMF.H>
 
 #ifdef _OPENMP

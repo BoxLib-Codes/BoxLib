@@ -5,8 +5,8 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_LO_BCTYPES.H>
-#include <LO_F.H>
-#include <LinOp.H>
+#include <AMReX_LO_F.H>
+#include <AMReX_LinOp.H>
 
 namespace
 {

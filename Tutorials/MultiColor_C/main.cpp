@@ -5,7 +5,7 @@
 #include <AMReX_Geometry.H>
 #include <AMReX_BndryData.H>
 #include <AMReX_LO_BCTYPES.H>
-#include <MultiGrid.H>
+#include <AMReX_MultiGrid.H>
 
 namespace {
     int ncomp  = 8;

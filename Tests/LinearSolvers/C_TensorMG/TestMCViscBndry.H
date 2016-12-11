@@ -1,7 +1,7 @@
 #ifndef _MCVISCBNDRY_H_
 #define _MCVISCBNDRY_H_
 
-#include <MCInterpBndryData.H>
+#include <AMReX_MCInterpBndryData.H>
 #include <AMReX_BC_TYPES.H>
 
 class MCViscBndry : public MCInterpBndryData

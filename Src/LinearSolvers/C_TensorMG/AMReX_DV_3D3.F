@@ -1,6 +1,6 @@
 #include <AMReX_REAL.H>
 
-#include "DivVis_F.H"
+#include "AMReX_DivVis_F.H"
 #include <AMReX_LO_BCTYPES.H>
 #include "AMReX_ArrayLim.H"
 

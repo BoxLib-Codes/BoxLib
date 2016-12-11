@@ -6,9 +6,9 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_Utility.H>
 #include <AMReX_ParallelDescriptor.H>
-#include <MCCGSolver.H>
-#include <MG_F.H>
-#include <MCMultiGrid.H>
+#include <AMReX_MCCGSolver.H>
+#include <AMReX_MG_F.H>
+#include <AMReX_MCMultiGrid.H>
 
 #ifdef _OPENMP
 #include <omp.h>

@@ -22,10 +22,10 @@
 #endif
 
 #include <TestMCViscBndry.H>
-#include <DivVis.H>
+#include <AMReX_DivVis.H>
 #include <AMReX_LO_BCTYPES.H>
-#include <MCMultiGrid.H>
-#include <MCCGSolver.H>
+#include <AMReX_MCMultiGrid.H>
+#include <AMReX_MCCGSolver.H>
 #include <AMReX_ParallelDescriptor.H>
 
 #include <main_F.H>

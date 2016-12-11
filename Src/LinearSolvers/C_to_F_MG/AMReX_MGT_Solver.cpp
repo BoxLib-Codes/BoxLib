@@ -1,5 +1,5 @@
 #include <AMReX_ParmParse.H>
-#include <MGT_Solver.H>
+#include <AMReX_MGT_Solver.H>
 #include <AMReX_ParallelDescriptor.H>
 
 #ifdef BL_MEM_PROFILING

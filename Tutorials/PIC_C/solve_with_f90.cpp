@@ -5,7 +5,7 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_BLFort.H>
-#include <FMultiGrid.H>
+#include <AMReX_FMultiGrid.H>
 
 void 
 solve_with_f90(const Array<MultiFab*>& rhs,

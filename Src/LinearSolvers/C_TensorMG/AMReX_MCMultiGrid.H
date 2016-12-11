@@ -6,7 +6,7 @@
 #include <AMReX_Pointers.H>
 
 #include <AMReX_MultiFab.H>
-#include <MCLinOp.H>
+#include <AMReX_MCLinOp.H>
 
 /*
   A MCMultiGrid solves the linear equation, L(phi)=rhs, for a MCLinOp L and

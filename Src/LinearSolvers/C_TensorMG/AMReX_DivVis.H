@@ -2,7 +2,7 @@
 #define _DivVis_H_
 
 #include <AMReX_Tuple.H>
-#include <MCLinOp.H>
+#include <AMReX_MCLinOp.H>
 
 /*
 

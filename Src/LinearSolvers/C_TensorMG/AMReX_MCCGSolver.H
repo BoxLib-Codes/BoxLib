@@ -9,8 +9,8 @@
 
 #include <AMReX_MultiFab.H>
 
-#include <MCLinOp.H>
-#include <MCMultiGrid.H>
+#include <AMReX_MCLinOp.H>
+#include <AMReX_MCMultiGrid.H>
 
 /*
         A CGColver solves the linear equation, L(phi)=rhs, for a MCLinOp L and

@@ -27,9 +27,9 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_LO_BCTYPES.H>
 #include <AMReX_MacBndry.H>
-#include <MultiGrid.H>
-#include <CGSolver.H>
-#include <Laplacian.H>
+#include <AMReX_MultiGrid.H>
+#include <AMReX_CGSolver.H>
+#include <AMReX_Laplacian.H>
 #include <MacOperator.H>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_VisMF.H>

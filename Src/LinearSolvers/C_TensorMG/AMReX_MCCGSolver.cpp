@@ -4,7 +4,7 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_Utility.H>
-#include <MCCGSolver.H>
+#include <AMReX_MCCGSolver.H>
 
 namespace
 {

@@ -6,8 +6,8 @@
 #include <AMReX_Pointers.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_BndryData.H>
-#include <LinOp.H>
-#include <CGSolver.H>
+#include <AMReX_LinOp.H>
+#include <AMReX_CGSolver.H>
 
 #include <algorithm>
 

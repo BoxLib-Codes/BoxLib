@@ -2,9 +2,9 @@
 #include <cmath>
 
 #include <AMReX_LO_BCTYPES.H>
-#include <MCInterpBndryData.H>
-#include <MCINTERPBNDRYDATA_F.H>
-#include <MCLinOp.H>
+#include <AMReX_MCInterpBndryData.H>
+#include <AMReX_MCINTERPBNDRYDATA_F.H>
+#include <AMReX_MCLinOp.H>
 
 static BDInterpFunc* bdfunc[2*BL_SPACEDIM];
 static BDPhysDerivative* bdider[2*BL_SPACEDIM];

@@ -9,7 +9,7 @@
 // through a few driver functions which scale variables.
 //==========================================================================
 
-#include <ABecLaplacian.H>
+#include <AMReX_ABecLaplacian.H>
 #include <AMReX_BndryData.H>
 #include <AMReX_AmrCore.H>
 

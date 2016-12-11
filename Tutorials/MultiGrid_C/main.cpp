@@ -10,15 +10,15 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_LO_BCTYPES.H>
 #include <AMReX_BndryData.H>
-#include <MultiGrid.H>
-#include <CGSolver.H>
-#include <Laplacian.H>
-#include <ABecLaplacian.H>
-#include <ABec4.H>
+#include <AMReX_MultiGrid.H>
+#include <AMReX_CGSolver.H>
+#include <AMReX_Laplacian.H>
+#include <AMReX_ABecLaplacian.H>
+#include <AMReX_ABec4.H>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_MacBndry.H>
 #ifdef USE_F90_SOLVERS
-#include <FMultiGrid.H>
+#include <AMReX_FMultiGrid.H>
 #endif
 
 #ifdef USEHYPRE

@@ -1,7 +1,7 @@
 #include <AMReX_winstd.H>
 #include <algorithm>
-#include <ABecLaplacian.H>
-#include <ABec_F.H>
+#include <AMReX_ABecLaplacian.H>
+#include <AMReX_ABec_F.H>
 #include <AMReX_ParallelDescriptor.H>
 
 Real ABecLaplacian::a_def     = 0.0;

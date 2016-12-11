@@ -6,9 +6,9 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_Utility.H>
 #include <AMReX_ParallelDescriptor.H>
-#include <CGSolver.H>
-#include <MG_F.H>
-#include <MultiGrid.H>
+#include <AMReX_CGSolver.H>
+#include <AMReX_MG_F.H>
+#include <AMReX_MultiGrid.H>
 
 namespace
 {

@@ -6,7 +6,7 @@
 #include <AMReX_CONSTANTS.H>
 #include <AMReX_REAL.H>
 
-#include "LP_F.H"
+#include "AMReX_LP_F.H"
 #include "AMReX_ArrayLim.H"
 
 c-----------------------------------------------------------------------
