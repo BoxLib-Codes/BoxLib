@@ -7,7 +7,7 @@ endif
 C$(BOXLIB_BASE)_sources += AMReX_Particles.cpp AMReX_TracerParticles.cpp
 C$(BOXLIB_BASE)_headers += AMReX_Particles.H AMReX_ParticleInit.H AMReX_ParGDB.H AMReX_TracerParticles.H
 F$(BOXLIB_BASE)_headers += AMReX_Particles_F.H
-F$(BOXLIB_BASE)_sources += Particles_$(DIM)D.F
+F$(BOXLIB_BASE)_sources += AMReX_Particles_$(DIM)D.F
 
 VPATH_LOCATIONS += $(BOXLIB_HOME)/Src/Particle
 INCLUDE_LOCATIONS += $(BOXLIB_HOME)/Src/Particle
