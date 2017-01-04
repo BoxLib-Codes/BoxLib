@@ -11,6 +11,10 @@ enable_language(C)
 enable_language(CXX)
 enable_language(Fortran)
 
+if (ENABLE_POSITION_INDEPENDENT_CODE)
+  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+endif ()
+
 # No idea why we need this.
 # I think it was required for Franklin build. -- lpritch
 if(PREFER_STATIC_LIBRARIES)
