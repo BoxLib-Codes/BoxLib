@@ -524,8 +524,9 @@ ParticleContainer<NR,NI,C>::NumberOfParticlesAtLevel (int  lev,
 						    bool only_local) const
 {
     long nparticles = 0;
+    int nlevs = m_particles.size();
 
-    if (lev >= 0 && lev < m_particles.size())
+    if (lev >= 0 && lev < nlevs)
     {
         const PMap& pmap = m_particles[lev];
 
@@ -1343,7 +1344,7 @@ void
 ParticleContainer<NR,NI,C>::RemoveParticlesAtLevel (int level)
 {
     BL_PROFILE("ParticleContainer<NR,NI,C>::RemoveParticlesAtLevel()");
-    if (level >= this->m_particles.size())
+    if (level >= static_cast<int>(this->m_particles.size()))
         return;
 
     if (!this->m_particles[level].empty())
@@ -1636,7 +1637,7 @@ ParticleContainer<NR,NI,C>::Redistribute (bool where_already_called,
     while (!m_gdb->LevelDefined(theEffectiveFinestLevel))
         theEffectiveFinestLevel--;
 
-    if (m_particles.size() < theEffectiveFinestLevel+1)
+    if (static_cast<int>(m_particles.size()) < theEffectiveFinestLevel+1)
     {
         if (ParallelDescriptor::IOProcessor())
         {
@@ -1652,7 +1653,7 @@ ParticleContainer<NR,NI,C>::Redistribute (bool where_already_called,
     //
     PMap not_ours;
 
-    for (int lev = lev_min; lev < m_particles.size(); lev++)
+    for (int lev = lev_min, nlevs = m_particles.size(); lev < nlevs; lev++)
     {
         PMap& pmap = m_particles[lev];
 
@@ -1758,7 +1759,7 @@ ParticleContainer<NR,NI,C>::Redistribute (bool where_already_called,
         }
     }
 
-    if (m_particles.size() > theEffectiveFinestLevel+1)
+    if (static_cast<int>(m_particles.size()) > theEffectiveFinestLevel+1)
     {
         //
         // Looks like we lost an AmrLevel on a regrid.
@@ -3802,9 +3803,9 @@ ParticleContainer<NR,NI,C>::AssignDensity (int rho_index,
 
                         gm.periodicShift(dest, grids[j], pshifts);
 
-                        for (int k = 0; k < pshifts.size(); k++)
+			for (const auto& iv : pshifts)
                         {
-                            const Box& sbx = grids[j] + pshifts[k];
+                            const Box& sbx = grids[j] + iv;
                             const Box& dbx = dest & sbx;
 
                             BL_ASSERT(dbx.ok());
@@ -3870,9 +3871,9 @@ ParticleContainer<NR,NI,C>::AssignDensity (int rho_index,
 
                             gm.periodicShift(dest, cgrids[j], pshifts);
 
-                            for (int k = 0; k < pshifts.size(); k++)
+			    for (const auto& iv : pshifts)
                             {
-                                const Box& sbx = cfba[i] - pshifts[k];
+                                const Box& sbx = cfba[i] - iv;
 
                                 cvalid.push_back(sbx);
                             }
@@ -4393,7 +4394,7 @@ ParticleContainer<NR,NI,C>::AssignDensity (int rho_index,
                                 //
                                 ParticleBase::FineCellsToUpdateFromCrse(p,lev,m_gdb,cells[i],cfshifts[i],fgrid,ffracs,fcells,isects);
 
-                                for (int j = 0; j < fcells.size(); j++)
+                                for (int j = 0, nj=fcells.size(); j < nj; ++j)
                                 {
                                     const int who = (*mf)[lev_index+1].DistributionMap()[fgrid[j]];
 
@@ -4740,7 +4741,7 @@ ParticleContainer<NR,NI,C>::AssignDensitySingleLevel (int rho_index,
     BL_ASSERT(NR >= 1);
     BL_ASSERT(ncomp == 1 || ncomp == BL_SPACEDIM+1);
 
-    if (lev >= m_particles.size())
+    if (lev >= static_cast<int>(m_particles.size()))
     {
         //
         // Don't do anything if there are no particles at this level.
