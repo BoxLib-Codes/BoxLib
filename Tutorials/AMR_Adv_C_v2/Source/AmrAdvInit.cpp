@@ -77,7 +77,7 @@ AmrAdv::InitFromScratch ()
 		    grids_the_same = false;
 		    DistributionMapping dm(new_grids[lev], ParallelDescriptor::NProcs());
 		    MakeNewLevel(lev, time, new_grids[lev], dm);
-		    InitLevelData(new_finest);
+		    InitLevelData(lev);
 		}
 	    }
 	    if (grids_the_same) break;
