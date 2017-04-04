@@ -562,7 +562,8 @@ contains
              write(unit=*, fmt='("    BiCGStab: Zero iterations: rnorm ",g15.8," < eps*bnorm ",g15.8)') tres0,eps*bnorm
           end if
        end if
-       go to 100
+       call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+       return
     end if
 
     rho_1 = ZERO
@@ -574,13 +575,17 @@ contains
        else
           if ( rho_1 == ZERO ) then
              if ( present(stat) ) then
-                call bl_warn("BiCGStab_SOLVE: failure 1"); stat = 2; goto 100
+                call bl_warn("BiCGStab_SOLVE: failure 1"); stat = 2
+                call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+                return
              end if
              call bl_error("BiCGStab: failure 1")
           end if
           if ( omega == ZERO ) then
              if ( present(stat) ) then
-                call bl_warn("BiCGStab_SOLVE: failure 2"); stat = 3; goto 100
+                call bl_warn("BiCGStab_SOLVE: failure 2"); stat = 3
+                call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+                return
              end if
              call bl_error("BiCGStab: failure 2")
           end if
@@ -602,7 +607,9 @@ contains
        den = dot(rt, vv, nodal_mask, comm = comm)
        if ( den == ZERO ) then
           if ( present(stat) ) then
-             call bl_warn("BICGSTAB_solve: breakdown in bicg, going with what I have"); stat = 30; goto 100
+             call bl_warn("BICGSTAB_solve: breakdown in bicg, going with what I have"); stat = 30
+             call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+             return
           endif
           call bl_error("BiCGStab: failure 3")
        end if
@@ -638,7 +645,9 @@ contains
 
        if ( den == ZERO ) then
           if ( present(stat) ) then
-             call bl_warn("BICGSTAB_solve: breakdown in bicg, going with what I have"); stat = 31; goto 100
+             call bl_warn("BICGSTAB_solve: breakdown in bicg, going with what I have"); stat = 31
+             call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+             return
           endif
           call bl_error("BiCGStab: failure 3")
        end if
@@ -676,7 +685,17 @@ contains
        end if
     end if
 
-100 continue
+    call itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+
+  end subroutine itsol_bicgstab_solve
+  !
+  ! Cleans up multifabs and misc profiling data.
+  !
+  subroutine itsol_bicgstab_solve_cleanup(rh_local, aa_local, rr, rt, pp, ph, vv, tt, ss, bpt)
+    implicit none
+
+    type(multifab), intent(inout) :: rr, rt, pp, ph, vv, tt, ss, rh_local, aa_local
+    type(bl_prof_timer), intent(inout) :: bpt
 
     call multifab_destroy(rh_local)
     call multifab_destroy(aa_local)
@@ -690,7 +709,7 @@ contains
 
     call destroy(bpt)
 
-  end subroutine itsol_bicgstab_solve
+  end subroutine itsol_bicgstab_solve_cleanup
   !
   ! This is a slightly simplified version of the BLAS 2 routine.
   !
@@ -915,7 +934,8 @@ contains
              write(unit=*, fmt='("    CABiCGStab: Zero iterations: delta == 0")')
           end if
        end if
-       go to 100
+       call itsol_CABiCGStab_solve_cleanup(rh_local, aa_local, rr, rt, pp, tt, ph, pr, bpt)
+       return
     end if
 
     L2_norm_of_resid = 0
@@ -1160,18 +1180,7 @@ contains
        end if
     end if
 
-100 continue
-
-    call multifab_destroy(rh_local)
-    call multifab_destroy(aa_local)
-    call multifab_destroy(rr)
-    call multifab_destroy(rt)
-    call multifab_destroy(pp)
-    call multifab_destroy(tt)
-    call multifab_destroy(ph)
-    call multifab_destroy(pr)
-
-    call destroy(bpt)
+    call itsol_CABiCGStab_solve_cleanup(rh_local, aa_local, rr, rt, pp, tt, ph, pr, bpt)
 
   contains
 
@@ -1259,6 +1268,27 @@ contains
     end subroutine BuildGramMatrix
 
   end subroutine itsol_CABiCGStab_solve
+  !
+  ! Cleans up multifabs and misc profiling data.
+  !
+  subroutine itsol_CABiCGStab_solve_cleanup(rh_local, aa_local, rr, rt, pp, tt, ph, pr, bpt)
+    implicit none
+
+    type(multifab), intent(inout) :: rr, rt, pp, pr, rh_local, aa_local, ph, tt
+    type(bl_prof_timer), intent(inout) :: bpt
+
+    call multifab_destroy(rh_local)
+    call multifab_destroy(aa_local)
+    call multifab_destroy(rr)
+    call multifab_destroy(rt)
+    call multifab_destroy(pp)
+    call multifab_destroy(tt)
+    call multifab_destroy(ph)
+    call multifab_destroy(pr)
+
+    call destroy(bpt)
+
+  end subroutine itsol_CABiCGStab_solve_cleanup
 
   subroutine itsol_cg_solve(aa, uu, rh, mm, eps, max_iter, verbose, stencil_type, lcross, &
                             stat, singular_in, uniform_dh, nodal_mask)
@@ -1364,7 +1394,8 @@ contains
              write(unit=*, fmt='("          CG: Zero iterations: rnorm ",g15.8," < eps*bnorm ",g15.8)') tres0,eps*bnorm
           end if
        end if
-       go to 100
+       call itsol_cg_solve_cleanup(rr,zz,pp,qq,bpt,aa_local,rh_local)
+       return
     end if
 
     rho_1 = ZERO
@@ -1378,7 +1409,9 @@ contains
        else
           if ( rho_1 == ZERO ) then
              if ( present(stat) ) then
-                call bl_warn("CG_solve: failure 1"); stat = 1; goto 100
+                call bl_warn("CG_solve: failure 1"); stat = 1
+                call itsol_cg_solve_cleanup(rr,zz,pp,qq,bpt,aa_local,rh_local)
+                return
              end if
              call bl_error("CG_solve: failure 1")
           end if
@@ -1396,7 +1429,9 @@ contains
        den = dot(pp, qq, nodal_mask)
        if ( den == ZERO ) then
           if ( present(stat) ) then
-             call bl_warn("CG_solve: breakdown in solver, going with what I have"); stat = 30; goto 100
+             call bl_warn("CG_solve: breakdown in solver, going with what I have"); stat = 30
+             call itsol_cg_solve_cleanup(rr,zz,pp,qq,bpt,aa_local,rh_local)
+             return
           end if
           call bl_error("CG_solve: failure 1")
        end if
@@ -1428,7 +1463,18 @@ contains
        end if
     end if
 
-100 continue
+  call itsol_cg_solve_cleanup(rr,zz,pp,qq,bpt,aa_local,rh_local)
+
+  end subroutine itsol_cg_solve
+  !
+  ! Cleans up multifabs and misc profiling data.
+  !
+  subroutine itsol_cg_solve_cleanup(rr,zz,pp,qq,bpt,aa_local,rh_local)
+    implicit none
+
+    type(multifab), intent(inout) :: aa_local, rh_local
+    type(multifab), intent(inout) :: rr, zz, pp, qq
+    type(bl_prof_timer), intent(inout) :: bpt
 
     call multifab_destroy(rr)
     call multifab_destroy(zz)
@@ -1440,7 +1486,7 @@ contains
     call multifab_destroy(aa_local)
     call multifab_destroy(rh_local)
 
-  end subroutine itsol_cg_solve
+  end subroutine itsol_cg_solve_cleanup
 
   subroutine itsol_precon(aa, uu, rh, mm, method)
     use bl_prof_module
