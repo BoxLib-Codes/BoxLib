@@ -669,20 +669,15 @@ ParticleContainer<NR,NI,C>::addOneParticle (int                  id_in,
 
 template <int NR, int NI, class C>
 void
-ParticleContainer<NR,NI,C>::addNParticles(int n_part, Array<double>& x, Array<double>& y, 
-#if (BL_SPACEDIM == 3)
-                                                      Array<double>& z, 
-#endif
-                                                      Array<double>& u, Array<double>& v, 
-#if (BL_SPACEDIM == 3)
-                                                      Array<double>& w, 
-#endif
+ParticleContainer<NR,NI,C>::addNParticles(int n_part,
+                                          D_DECL(Array<double>& x, Array<double>& y, Array<double>& z),
+                                          D_DECL(Array<double>& u, Array<double>& v, Array<double>& w),
                                           int n_attr, Array<double>& attributes)
 {
     BL_PROFILE("ParticleContainer<NR,NI,C>::addNParticles()");
 
     BL_ASSERT(OK());
-    BL_ASSERT(NR >= BL_SPACEDIM+n_attr);
+    BL_ASSERT(NR >= n_attr);
 
     if (m_particles.size() == 0)
        m_particles.resize(m_gdb->finestLevel()+1);
@@ -691,25 +686,19 @@ ParticleContainer<NR,NI,C>::addNParticles(int n_part, Array<double>& x, Array<do
 
     for (long j = 0; j < n_part; j++)
     {
-       ParticleType p;
+       D_TERM(p.m_pos[0] = x[j];,   // x
+              p.m_pos[1] = y[j];,   // y
+              p.m_pos[2] = z[j];);  // z
 
-       p.m_pos[j  ] = x[j]; // x
-       p.m_pos[j+1] = y[j]; // y
-#if (BL_SPACEDIM == 3)
-       p.m_pos[j+2] = z[j]; // z
-#endif
-
-       p.m_data[j  ] = u[j]; // u
-       p.m_data[j+1] = v[j]; // v
-#if (BL_SPACEDIM == 3)
-       p.m_data[j+2] = w[j]; // w
-#endif
+       D_TERM(p.m_data[0] = u[j];,  // u
+              p.m_data[1] = v[j];,  // v
+              p.m_data[2] = w[j];); // w
 
        if (!ParticleBase::Where(p,m_gdb))
               BoxLib::Abort("ParticleContainer<NR,NI,C>::addNParticles(): invalid particle location");
 
        for (int i = 0; i < n_attr; i++)
-          p.m_data[BL_SPACEDIM+i] = attributes[n_attr*j + i];
+           p.m_data[i] = attributes[n_attr*j + i];
 
        p.m_id  = ParticleBase::NextID();
        p.m_cpu = ParallelDescriptor::MyProc();
