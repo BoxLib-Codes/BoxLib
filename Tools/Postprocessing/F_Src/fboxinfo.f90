@@ -14,7 +14,7 @@ program fboxinfo
   integer :: unit
   integer :: i, j, f
 
-  integer :: ncells, ncells_domain
+  integer (kind=ll_t) :: ncells, ncells_domain
 
   integer :: lo(MAX_SPACEDIM), hi(MAX_SPACEDIM)
   integer :: dim
@@ -114,9 +114,9 @@ program fboxinfo
         do i = 1, pf%flevel
            ncells = 0
            do j = 1, nboxes(pf, i)
-              ncells = ncells + volume(get_pbox(pf, i, j))
+              ncells = ncells + i8volume(get_pbox(pf, i, j))
            enddo
-           ncells_domain = volume(plotfile_get_pd_box(pf, i)) 
+           ncells_domain = i8volume(plotfile_get_pd_box(pf, i)) 
 
            write (*,1000) i, nboxes(pf, i), 100.0*dble(ncells)/ncells_domain
 
