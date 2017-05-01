@@ -1,3 +1,6 @@
+BoxLib is deprecated and has been superseded by AMReX
+(https://github.com/AMReX-Codes/amrex).
+
 BoxLib Version 2014-02-28, Copyright (c) 2014, The Regents of the
 University of California, through Lawrence Berkeley National
 Laboratory (subject to receipt of any required approvals from the U.S.
