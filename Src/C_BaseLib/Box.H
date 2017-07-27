@@ -580,6 +580,15 @@ public:
 
     bool isSquare() const;
 
+    void normalize ()
+    {
+        for (int idim=0; idim < BL_SPACEDIM; ++idim) {
+            if (this->length(idim) == 0) {
+                this->growHi(idim,1);
+            }
+        }
+    }
+
 private:
     //
     // A helper function for numPtsOK() and numPts().
