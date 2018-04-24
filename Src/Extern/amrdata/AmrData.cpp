@@ -1749,14 +1749,21 @@ bool AmrData::DefineFab(int level, int componentIndex, int fabIndex) {
 
 
 // ---------------------------------------------------------------
+void AmrData::FlushGrids() {
+    for (int componentIndex(0); componentIndex < nComp; ++componentIndex) {
+        FlushGrids(componentIndex);
+    }
+}
+
+
+// ---------------------------------------------------------------
 void AmrData::FlushGrids(int componentIndex) {
 
   BL_ASSERT(componentIndex < nComp);
   for(int lev(0); lev <= finestLevel; ++lev) {
     if(dataGrids.size() > lev
        && dataGrids[lev].size() > componentIndex
-       && dataGrids[lev][componentIndex]
-       && dataGrids[lev][componentIndex]->ok())
+       && dataGrids[lev][componentIndex])
     {
       BoxArray ba = dataGrids[lev][componentIndex]->boxArray();
       int nGrow = dataGrids[lev][componentIndex]->nGrow();
