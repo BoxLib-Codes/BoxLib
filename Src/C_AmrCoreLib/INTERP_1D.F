@@ -161,7 +161,7 @@ c ::: first fill a strip that will fit
             do lx = 0, lratio-1
               do ic = ARG_L1(cb), ARG_H1(cb)-1
                 i = ic*lratio + lx
-                x = denom*(two*lratio + one)
+                x = denom*(two*lx + one)
                 strip(i) = crse(ic,n) + x*sl(ic,SLX) 
 	      enddo
 	    enddo
